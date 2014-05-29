@@ -1,0 +1,27 @@
+BoardDisplay:
+    orientation: "vertical"
+
+    BoxLayout:
+        CardDisplay:
+            card: root.board[0][0]
+        CardDisplay:
+            card: root.board[0][1]
+        CardDisplay:
+            card: root.board[0][2]
+        CardDisplay:
+            card: root.board[0][3]
+
+    BoxLayout:
+        CardDisplay:
+            card: root.board[1][0]
+        CardDisplay:
+            card: root.board[1][1]
+        CardDisplay:
+            card: root.board[1][2]
+        CardDisplay:
+            card: root.board[1][3]
+
+
+<CardDisplay>:
+    Label:
+        text: root.card and root.card.name
