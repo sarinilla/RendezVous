@@ -1,17 +1,31 @@
 from kivy.app import App
+from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import ObjectProperty, ListProperty, ReferenceListProperty
-from deck import Deck, Card
+from kivy.uix.floatlayout import FloatLayout
+from kivy.properties import ObjectProperty
+from deck import DeckDefinition, Deck, Card
 
-class CardDisplay(BoxLayout):
+__version__ = '0.0.2'
 
-    card = ObjectProperty(Card("Default", 0))
 
-    
-class BoardDisplay(BoxLayout):
-    board1 = ListProperty([Card("Player1", i+1) for i in range(4)])
-    board2 = ListProperty([Card("Player2", i+1) for i in range(4)])
-    board = ReferenceListProperty(board1, board2)
+class CardDisplay(Widget):
+
+    card = ObjectProperty(Card("Default", 0, None))
+
+
+class DeckDraw(FloatLayout):
+
+    last_card = ObjectProperty(Card(" ", 0, None))
+
+    def __init__(self, **kwargs):
+        FloatLayout.__init__(self, **kwargs)
+        self.deck = Deck(DeckDefinition())
+
+    def on_touch_down(self, touch):
+        self.last_card = self.deck.draw()
+        self.add_widget(CardDisplay(card=self.last_card, pos=touch.pos))
+        #new_card.center = touch.pos
+        
 
 
 class RendezVousApp(App):

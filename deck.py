@@ -1,4 +1,7 @@
+import os
 import random
+
+from kivy.core.image import Image
 
 
 class Card:
@@ -9,15 +12,17 @@ class Card:
       description -- a user-friendly description of the card's purpose
       suit        -- the name of the card's suit
       value       -- the value of the card
+      texture     -- the texture to display for the card
 
     """
 
-    def __init__(self, suit, value):
+    def __init__(self, suit, value, texture):
         """Set name and description based on the suit and value combination."""
         self.name = "%s %s" % (suit, value)
         self.description = "A normal %s card worth %s points." % (suit, value)
         self.suit = suit
         self.value = value
+        self.texture = texture
 
     def __str__(self):
         """Return the name of the card."""
@@ -39,9 +44,21 @@ class Card:
     
 class DeckDefinition:
     
-    """The available cards to play with."""
+    """The available cards to play with, and other deck details.
 
-    name = "Standard RendezVous Deck"
+    Attributes:
+      name     -- the name of the selected deck
+      desc     -- brief description of the deck
+      suits    -- names of all suits, in order to match the images
+      values   -- all possible values, in order to match the images
+      specials -- list of SpecialCards, in order to match the image
+
+    Methods:
+      cards -- generator that returns all cards, unshuffled
+
+    """
+
+    name = "Standard"
     desc = "A simple 5-suit deck."
     suits = ['Boyfriend', 'Girlfriend', 'Spy', 'Counterspy', 'Time']
     values = list(range(1, 11))
@@ -49,9 +66,16 @@ class DeckDefinition:
 
     def cards(self):
         """Generator; return all card in the deck, unshuffled."""
-        for suit in self.suits:
-            for value in self.values:
-                yield Card(suit, value)
+        cards_image = os.path.join("images", "decks", self.name + "_Cards.png")
+        cards_texture = Image(cards_image).texture
+        width, height = cards_texture.size
+        grid_w, grid_h = width / 28, height / 10
+        for s, suit in enumerate(self.suits):
+            for v, value in enumerate(self.values):
+                yield Card(suit, value,
+                           cards_texture.get_region(grid_w + s * 3 * grid_w,
+                                                    v * grid_h,
+                                                    2 * grid_w, grid_h))
         for special in self.specials:
             yield special
 
@@ -66,9 +90,9 @@ class Deck:
 
     """
 
-    def __init__(self, cards, shuffle=True):
+    def __init__(self, definition, shuffle=True):
         """Prep the card list."""
-        self._cards = list(cards)
+        self._cards = list(definition.cards())
         self._next = self._draw()
         if shuffle:
             self.shuffle()

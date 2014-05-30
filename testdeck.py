@@ -1,6 +1,6 @@
 import unittest
 
-from rvmechanics import *
+from deck import *
 
 
 class TestCard(unittest.TestCase):

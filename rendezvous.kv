@@ -1,27 +1,14 @@
-BoardDisplay:
-    orientation: "vertical"
-
-    BoxLayout:
-        CardDisplay:
-            card: root.board[0][0]
-        CardDisplay:
-            card: root.board[0][1]
-        CardDisplay:
-            card: root.board[0][2]
-        CardDisplay:
-            card: root.board[0][3]
-
-    BoxLayout:
-        CardDisplay:
-            card: root.board[1][0]
-        CardDisplay:
-            card: root.board[1][1]
-        CardDisplay:
-            card: root.board[1][2]
-        CardDisplay:
-            card: root.board[1][3]
+DeckDraw:
+    Label:
+        text: "Spies & Lovers"
 
 
 <CardDisplay>:
-    Label:
-        text: root.card and root.card.name
+    canvas:
+        Rectangle:
+            texture: root.card and root.card.texture
+            size: dp(200), dp(280)
+            pos: root.pos[0]-dp(100), root.pos[1]-dp(140)
+    #Label:
+    #    pos: root.pos[0]-dp(50), root.pos[1]-dp(200)
+    #    text: root.card.name
