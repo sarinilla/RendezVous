@@ -14,7 +14,7 @@ def combinable_class(cls):
         AND = 0
         OR  = 1
         
-        def __init__(self, *args, combo=None, items=None, **kwargs):
+        def __init__(self, combo=None, items=None, *args, **kwargs):
             """Combine the given classes.
 
             Arguments:

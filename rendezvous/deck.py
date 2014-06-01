@@ -309,8 +309,8 @@ class DeckDefinition:
             op = Operator.AT_LEAST
         elif match.group(1) == "MAX":
             op = Operator.NO_MORE_THAN
-        return Requirement(op, match.group(2),
-                           self._parse_application(match.group(3)))
+        return Requirement(operator=op, count=int(match.group(2)),
+                           style=self._parse_application(match.group(3)))
 
     def _parse_application(self, app_text):
         """[FRIENDLY|ENEMY|ALL] [<suit name>] [<operator> <value>] [VS <Application>]"""
@@ -355,7 +355,9 @@ class DeckDefinition:
         elif match.group(3) != "":
             min_value = max_value = int(match.group(4))
 
-        return Application(alignment, suits, min_value, max_value, opposite)
+        return Application(alignment=alignment, suits=suits, 
+			   min_value=min_value, max_value=max_value, 
+			   opposite=opposite)
             
     def _parse_effect(self, eff_text):
         words = eff_text.upper().split(' ')
