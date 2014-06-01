@@ -1,0 +1,117 @@
+[DECK-NAME]Standard RendezVous Deck
+[DECK-DESC]A standard deck featuring Lovers & Spies.
+
+[SUIT]Boyfriend
+[SUIT]Girlfriend
+[SUIT]Spy
+[SUIT]Counterspy
+[SUIT]Time
+
+
+[SPECIAL-NAME]Muscle
+[SPECIAL-DESC]Let the Testosterone flow!
+[SPECIAL-REQ]Min 2 Boyfriend
+[SPECIAL-APP]Friendly Boyfriend
+[SPECIAL-EFF]Buff 2
+
+[SPECIAL-NAME]Anniversary
+[SPECIAL-DESC]They always forget, don't they?
+[SPECIAL-REQ]Min 1 Girlfriend
+[SPECIAL-APP]Enemy Boyfriend
+[SPECIAL-EFF]Debuff 2
+
+[SPECIAL-NAME]Flowers
+[SPECIAL-DESC]Win her over quickly!
+[SPECIAL-REQ]Min 1 Boyfriend
+[SPECIAL-APP]Friendly Boyfriend VS Girlfriend
+[SPECIAL-EFF]WIN
+
+[SPECIAL-NAME]Perfume
+[SPECIAL-DESC]Girl Power!
+[SPECIAL-REQ]Min 1 Girlfriend
+[SPECIAL-APP]Friendly Girlfriend
+[SPECIAL-EFF]Buff 2
+
+[SPECIAL-NAME]Jealousy
+[SPECIAL-DESC]That green-eyed monster...
+[SPECIAL-REQ]Min 1 Boyfriend
+[SPECIAL-APP]Enemy Girlfriend
+[SPECIAL-EFF]Debuff 2
+
+[SPECIAL-NAME]Gossip
+[SPECIAL-DESC]Cast any situation in a new light.
+[SPECIAL-REQ]Min 2 Girlfriend
+[SPECIAL-APP]Friendly Girlfriend
+[SPECIAL-EFF]Reverse
+
+[SPECIAL-NAME]Training
+[SPECIAL-DESC]
+[SPECIAL-REQ]Min 1 Spy
+[SPECIAL-APP]Friendly Spy
+[SPECIAL-APP]Friendly Counterspy
+[SPECIAL-EFF]Buff 2
+
+[SPECIAL-NAME]Poison
+[SPECIAL-DESC]
+[SPECIAL-REQ]Min 1 Counterspy
+[SPECIAL-APP]Enemy Spy
+[SPECIAL-APP]Enemy Counterspy
+[SPECIAL-EFF]Debuff 2
+
+[SPECIAL-NAME]Cement Shoes
+[SPECIAL-DESC]
+[SPECIAL-REQ]Min 1 Counterspy
+[SPECIAL-APP]Enemy Spy
+[SPECIAL-EFF]WAIT
+
+[SPECIAL-NAME]Blown Cover
+[SPECIAL-DESC]
+[SPECIAL-REQ]Min 1 Spy
+[SPECIAL-APP]Enemy Counterspy
+[SPECIAL-EFF]LOSE
+
+[SPECIAL-NAME]Dark of Night
+[SPECIAL-DESC]
+[SPECIAL-REQ]Min 1 Time
+[SPECIAL-APP]Friendly Time
+[SPECIAL-EFF]Buff 2
+
+[SPECIAL-NAME]Missed Opportunity
+[SPECIAL-DESC]
+[SPECIAL-REQ]Max 0 Time
+[SPECIAL-APP]Enemy Time
+[SPECIAL-EFF]Debuff 2
+
+[SPECIAL-NAME]Time Waits for No Man
+[SPECIAL-DESC]
+[SPECIAL-REQ]Min 1 Girlfriend
+[SPECIAL-APP]Enemy Time
+[SPECIAL-EFF]WAIT
+
+[SPECIAL-NAME]Reinforcements
+[SPECIAL-DESC]
+[SPECIAL-REQ]
+[SPECIAL-APP]Hand
+[SPECIAL-EFF]Flush
+
+[SPECIAL-NAME]Love and Honor
+[SPECIAL-DESC]
+[SPECIAL-REQ]
+[SPECIAL-APP]All All
+[SPECIAL-EFF]KISS
+
+[SPECIAL-NAME]Turning Tables
+[SPECIAL-DESC]
+[SPECIAL-REQ]Min 1 Boyfriend
+[SPECIAL-REQ]Min 1 Girlfriend
+[SPECIAL-APP]Friendly Boyfriend
+[SPECIAL-APP]Friendly Girlfriend
+[SPECIAL-EFF]Switch
+
+[SPECIAL-NAME]Counter Intelligence
+[SPECIAL-DESC]
+[SPECIAL-REQ]Min 1 Spy
+[SPECIAL-REQ]Min 1 Counterspy
+[SPECIAL-APP]Friendly Spy
+[SPECIAL-APP]Friendly Counterspy
+[SPECIAL-EFF]Switch
