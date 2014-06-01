@@ -208,7 +208,7 @@ class TestRequirement(unittest.TestCase):
     def test_init(self):
         """Verify __init__ function."""
         a = Application()
-        r = Requirement(Operator.NO_MORE_THAN, 3, a)
+        r = Requirement(operator=Operator.NO_MORE_THAN, count=3, style=a)
         self.assertEqual(r.operator, Operator.NO_MORE_THAN)
         self.assertEqual(r.count, 3)
         self.assertIs(r.style, a)
@@ -227,51 +227,70 @@ class TestRequirement(unittest.TestCase):
         
     def test_verify_at_least_exact(self):
         """Test Operator.AT_LEAST in verify function."""
-        r = Requirement(Operator.AT_LEAST, 2, Application(min_value=3))
-        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3), Card("Suit", 4)]))
+        r = Requirement(operator=Operator.AT_LEAST, count=2,
+                        style=Application(min_value=3))
+        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3),
+                                  Card("Suit", 4)]))
 
     def test_verify_at_least_match(self):
         """Test Operator.AT_LEAST in verify function."""
-        r = Requirement(Operator.AT_LEAST, 1, Application(min_value=3))
-        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3), Card("Suit", 4)]))
+        r = Requirement(operator=Operator.AT_LEAST, count=1,
+                        style=Application(min_value=3))
+        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3),
+                                  Card("Suit", 4)]))
         
     def test_verify_at_least_no_match(self):
         """Test Operator.AT_LEAST in verify function."""
-        r = Requirement(Operator.AT_LEAST, 3, Application(min_value=3))
-        self.assertFalse(r.verify([Card("Suit", 2), Card("Suit", 3), Card("Suit", 4)]))
+        r = Requirement(operator=Operator.AT_LEAST, count=3,
+                        style=Application(min_value=3))
+        self.assertFalse(r.verify([Card("Suit", 2), Card("Suit", 3),
+                                   Card("Suit", 4)]))
         
     def test_verify_exactly_match(self):
         """Test Operator.EXACTLY in verify function."""
-        r = Requirement(Operator.EXACTLY, 1, Application(max_value=2))
-        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3), Card("Suit", 4)]))
+        r = Requirement(operator=Operator.EXACTLY, count=1,
+                        style=Application(max_value=2))
+        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3),
+                                  Card("Suit", 4)]))
         
     def test_verify_exactly_no_match(self):
         """Test Operator.EXACTLY in verify function."""
-        r = Requirement(Operator.EXACTLY, 2, Application(max_value=2))
-        self.assertFalse(r.verify([Card("Suit", 2), Card("Suit", 3), Card("Suit", 4)]))
+        r = Requirement(operator=Operator.EXACTLY, count=2,
+                        style=Application(max_value=2))
+        self.assertFalse(r.verify([Card("Suit", 2), Card("Suit", 3),
+                                   Card("Suit", 4)]))
         
     def test_verify_no_more_than_exact(self):
         """Test Operator.NO_MORE_THAN in verify function."""
-        r = Requirement(Operator.NO_MORE_THAN, 2, Application(min_value=3))
-        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3), Card("Suit", 4)]))
+        r = Requirement(operator=Operator.NO_MORE_THAN, count=2,
+                        style=Application(min_value=3))
+        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3),
+                                  Card("Suit", 4)]))
         
     def test_verify_no_more_than_match(self):
         """Test Operator.NO_MORE_THAN in verify function."""
-        r = Requirement(Operator.NO_MORE_THAN, 3, Application(min_value=3))
-        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3), Card("Suit", 4)]))
+        r = Requirement(operator=Operator.NO_MORE_THAN, count=3,
+                        style=Application(min_value=3))
+        self.assertTrue(r.verify([Card("Suit", 2), Card("Suit", 3),
+                                  Card("Suit", 4)]))
         
     def test_verify_no_more_than_no_match(self):
         """Test Operator.NO_MORE_THAN in verify function."""
-        r = Requirement(Operator.NO_MORE_THAN, 1, Application(min_value=3))
-        self.assertFalse(r.verify([Card("Suit", 2), Card("Suit", 3), Card("Suit", 4)]))
+        r = Requirement(operator=Operator.NO_MORE_THAN, count=1,
+                        style=Application(min_value=3))
+        self.assertFalse(r.verify([Card("Suit", 2), Card("Suit", 3),
+                                   Card("Suit", 4)]))
 
     def test_string_(self):
         """Test string output."""
-        self.assertEqual(str(Requirement(Operator.AT_LEAST, 2, Application())),
+        self.assertEqual(str(Requirement(operator=Operator.AT_LEAST, count=2,
+                                         style=Application())),
                          "At least 2 cards")
-        self.assertEqual(str(Requirement(Operator.EXACTLY, 3, Application())),
+        self.assertEqual(str(Requirement(operator=Operator.EXACTLY, count=3,
+                                         style=Application())),
                          "Exactly 3 cards")
-        self.assertEqual(str(Requirement(Operator.NO_MORE_THAN, 1, Application())),
+        self.assertEqual(str(Requirement(operator=Operator.NO_MORE_THAN,
+                                         count=1, style=Application())),
                          "No more than 1 cards")
 
 
@@ -280,7 +299,9 @@ class TestApplication(unittest.TestCase):
     def test_init(self):
         """Verify the __init__."""
         opp = Alignment()
-        a = Application(Alignment.FRIENDLY, ["Suit 1", "Suit 2"], 3, 5, opp)
+        a = Application(alignment=Alignment.FRIENDLY,
+                        suits=["Suit 1", "Suit 2"], min_value=3, max_value=5,
+                        opposite=opp)
         self.assertEqual(a.alignment, Alignment.FRIENDLY)
         self.assertEqual(a.suits, ["Suit 1", "Suit 2"])
         self.assertEqual(a.min_value, 3)
