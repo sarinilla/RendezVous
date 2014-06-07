@@ -38,7 +38,10 @@ class Card:
     
     def __eq__(self, other):
         """Equality rests on both suit and value."""
-        return self.suit == other.suit and self.value == other.value
+        try:
+            return self.suit == other.suit and self.value == other.value
+        except AttributeError:
+            return False
 
     def __lt__(self, other):
         """Compare by value only."""
@@ -119,7 +122,10 @@ class SpecialCard(Card):
                          
     def __eq__(self, other):
         """Equality rests on full name."""
-        return self.name == other.name
+        try:
+            return self.name == other.name
+        except AttributeError:
+            return False
 
     def apply(self, effect):
         """Nothing affects a SpecialCard."""
@@ -400,7 +406,7 @@ class DeckDefinition:
             yield special
 
     def get_card_texture(self, card):
-        """Return (L, R, W, H) rectangle for the given card."""
+        """Return (L, B, W, H) rectangle for the given card."""
         return self._get_rect(*self._get_card_loc(card))
 
     def get_back_texture(self):
@@ -415,7 +421,7 @@ class DeckDefinition:
         else:
             loc = (8, 8 + index - 3)
         rect = self._get_rect(*loc)
-        return (rect[0], rect[1], rect[2], rect[2])  # square
+        return (rect[0], rect[1] + rect[3] - rect[2], rect[2], rect[2])  # square
 
     def _get_card_loc(self, card):
         """Return the grid (col, row) for this card."""
@@ -438,10 +444,10 @@ class DeckDefinition:
         else:
             return (self.suits.index(card.suit), card.value - 1)
         
-    def _get_rect(self, col, row, width=1820, height=1820):
-        """Return (left, top, width, height) of the given card."""
+    def _get_rect(self, col, row, width=2048, height=2048):
+        """Return (left, bottom, width, height) of the given card."""
         grid_w, grid_h = width / 28, height / 10
-        return (grid_w + col * 3 * grid_w, row * grid_h, 2 * grid_w, grid_h)
+        return (grid_w + col * 3 * grid_w, (9-row) * grid_h, 2 * grid_w, grid_h)
 
 
 class Deck:

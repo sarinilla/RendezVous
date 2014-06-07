@@ -1,11 +1,22 @@
-DeckDraw:
-    Label:
-        text: "Lovers & Spies"
-
-
 <CardDisplay>:
     canvas:
         Rectangle:
-            texture: root.texture
-            size: dp(200), dp(280)
-            pos: root.pos[0]-dp(100), root.pos[1]-dp(140)
+            texture: app.deck_texture and app.get_texture(root.card)
+            size: min(root.size[0], root.size[1] * 5 / 7), min(root.size[1], root.size[0] * 7 / 5)
+            pos: root.pos
+
+
+<SuitDisplay>:
+    Widget:
+        canvas:
+            Rectangle:
+                texture: app.deck_texture and app.get_suit_texture(root.suit)
+                pos: self.pos[0], self.pos[1] + (self.size[1] - min(self.size[0], self.size[1])) / 2
+                size: min(self.size[0], self.size[1]), min(self.size[0], self.size[1])
+    Label:
+        text: str(root.pscore)
+    ProgressBar:
+        max: root.pscore + root.dscore
+        value: root.pscore
+    Label:
+        text: str(root.dscore)
