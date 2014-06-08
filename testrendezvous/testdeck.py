@@ -16,7 +16,7 @@ class TestCard(unittest.TestCase):
         """Test the __init__ function's attribute settings."""
         self.c = Card("My Suit", 5)
         self.assertEqual(self.c.name, "My Suit 5")
-        self.assertEqual(self.c.description, "A normal My Suit card worth 5 points.")
+        self.assertEqual(self.c.description, "A normal My Suit card with value 5.")
         self.assertEqual(self.c.suit, "My Suit")
         self.assertEqual(self.c.value, 5)
 
@@ -146,6 +146,23 @@ class TestSpecialEffects(unittest.TestCase):
         self.card.apply(Effect(EffectType.SWITCH, 10))
         self.card.apply(Effect(EffectType.CLONE, Card("New Suit", 10)))
         self.assertEqual(self.card.description, "Test.")
+
+    def test_reset(self):
+        """Verify the reset() method to undo SpecialCard Effects."""
+        self.card.apply(Effect(EffectType.BUFF, 2))
+        self.card.apply(Effect(EffectType.BUFF, -2))
+        self.card.apply(Effect(EffectType.BUFF, SpecialValue.WIN))
+        self.card.apply(Effect(EffectType.BUFF, SpecialValue.LOSE))
+        self.card.apply(Effect(EffectType.REVERSE))
+        self.card.apply(Effect(EffectType.REPLACE, "New Suit"))
+        self.card.apply(Effect(EffectType.SWITCH, 10))
+        self.card.apply(Effect(EffectType.CLONE, Card("New Suit", 10)))
+        self.card.apply(Effect(EffectType.KISS))
+        self.card.reset()
+        self.assertEqual(self.card.suit, "My Suit")
+        self.assertEqual(self.card.value, 5)
+        self.assertEqual(self.card.name, "My Suit 5")
+        self.assertEqual(self.card.description, "A normal My Suit card with value 5.")
         
 
 class TestSpecialCard(unittest.TestCase):

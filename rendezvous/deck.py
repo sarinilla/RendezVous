@@ -24,9 +24,15 @@ class Card:
     def __init__(self, suit, value):
         """Set name and description based on the suit and value combination."""
         self.name = "%s %s" % (suit, value)
-        self.description = "A normal %s card worth %s points." % (suit, value)
+        self.description = "A normal %s card with value %s." % (suit, value)
         self.suit = suit
         self.value = value
+        self.original = (suit, value)
+
+    def reset(self):
+        """Undo the effects of all SpecialCards."""
+        self.suit, self.value = self.original
+        self.description = "A normal %s card with value %s." % self.original
 
     def __str__(self):
         """Return the name of the card."""
@@ -114,6 +120,10 @@ class SpecialCard(Card):
         self.application = application
         self.effect = effect
 
+    def __str__(self):
+        """Return the name of the card."""
+        return self.name
+
     def __repr__(self):
         """Return the initialization statement for this SpecialCard."""
         return self.__class__.__name__ + repr((self.name, self.description,
@@ -129,6 +139,10 @@ class SpecialCard(Card):
 
     def apply(self, effect):
         """Nothing affects a SpecialCard."""
+        return
+
+    def reset(self):
+        """No effects to undo."""
         return
             
         

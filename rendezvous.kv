@@ -1,9 +1,13 @@
 <CardDisplay>:
     canvas:
+        Color: 
+            rgba: root.color
         Rectangle:
             texture: app.deck_texture and app.get_texture(root.card)
             size: min(root.size[0], root.size[1] * 5 / 7), min(root.size[1], root.size[0] * 7 / 5)
             pos: root.pos
+    on_card: root.canvas.ask_update()
+    on_color: root.canvas.ask_update()
 
 
 <SuitDisplay>:
@@ -16,7 +20,11 @@
     Label:
         text: str(root.pscore)
     ProgressBar:
-        max: root.pscore + root.dscore
+        max: max(root.pscore, 0) + max(root.dscore, 0)
         value: root.pscore
     Label:
         text: str(root.dscore)
+
+
+<RoundCounter>:
+    text: "Round\n%s of %s" % (root.round_number, root.max_round)
