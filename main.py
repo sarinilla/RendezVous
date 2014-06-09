@@ -18,6 +18,9 @@ from rendezvous.deck import DeckDefinition, Deck, Card
 from rendezvous.gameplay import Hand, Gameboard, Scoreboard, RendezVousGame
 
 
+__version__ = '0.1.0'
+
+
 # Readability constants for the two players
 DEALER = 0
 PLAYER = 1
