@@ -40,7 +40,10 @@ def runtests(path, separate=False):
 
             # Import * from module
             module_name = "%s.%s" % (package_name, filename[:-3])
-            module = __import__(module_name, globals(), locals(), ['*'])
+            try:
+                module = __import__(module_name, globals(), locals(), ['*'])
+            except ImportError:
+                continue
 
             # Browse module
             for class_name in dir(module):

@@ -27,10 +27,11 @@ PLAYER = 1
 
 # Quick color constants
 BLANK = [1, 1, 1, 1]
-WHITE = [1, 1, 1, .5]
-GREEN = [.25, 1, .25, .5]
-RED = [1, .25, .25, .5]
-BLUE = [.25, .25, 1, .5]
+DARKEN = [1, 1, 1, .5]
+WHITE = [1, 1, 1, 1]
+GREEN = [.25, 1, .25, 1]
+RED = [1, .25, .25, 1]
+BLUE = [.25, .25, 1, 1]
 
 
 class CardDisplay(Widget):
@@ -309,6 +310,7 @@ class RendezVousWidget(ScreenManager):
         for card in dplay:
             self.game.players[DEALER].remove(card)
         self.main.gameboard.update()
+        self.main.gameboard.highlight(DARKEN)
         Clock.schedule_once(self._apply_specials, 0.5)
 
     def _apply_specials(self, dt, i=None, p=None):
@@ -327,7 +329,7 @@ class RendezVousWidget(ScreenManager):
         if i is None:
             i, p = 0, 0
         else:
-            self.main.gameboard.slots[p][i].highlight(None)
+            self.main.gameboard.slots[p][i].highlight(DARKEN)
             i, p = increment(i, p)
             if i is None: return
             
@@ -343,16 +345,22 @@ class RendezVousWidget(ScreenManager):
         Clock.schedule_once(partial(self._apply_specials, i=i, p=p), 1.0)
 
 
-    def _score_round(self, dt):
+    def _score_round(self, dt, i=None):
         """Score the round."""
-        for i in range(len(self.game.board[0])):
-            for p in range(len(self.game.board)):
-                result = self.game.score._score_match(p, self.game.board[p][i],
-                                                p-1, self.game.board[p-1][i])
-                color = [WHITE, GREEN, RED][result]
-                self.main.gameboard.slots[p][i].highlight(color)
+        if i is None:
+            i = 0
+        else:
+            i += 1
+            if i >= len(self.game.board[0]):
+                Clock.schedule_once(self._next_round)
+                return
+        for p in range(len(self.game.board)):
+            result = self.game.score._score_match(p, self.game.board[p][i],
+                                                  p-1, self.game.board[p-1][i])
+            color = [WHITE, GREEN, RED][result]
+            self.main.gameboard.slots[p][i].highlight(color)
         self.main.scoreboard.update()
-        Clock.schedule_once(self._next_round, 3.0)
+        Clock.schedule_once(lambda dt: self._score_round(dt, i), 1.0)
 
     def _next_round(self, dt):
         """Clear the board for the next round."""
