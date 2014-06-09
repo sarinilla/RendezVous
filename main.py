@@ -185,7 +185,7 @@ class GameScreen(Screen):
                                       size_hint=(4, 1))
         self.round_counter = RoundCounter(round_number=1,
                                           max_round=GameSettings.NUM_ROUNDS,
-                                          size_hint=(1, .1))
+                                          size_hint=(1, .075))
         self.scoreboard = ScoreDisplay(scoreboard=game.score,
                                        size_hint=(1, .4))
         self.tooltip = ToolTipDisplay(size_hint=(1, .5))
