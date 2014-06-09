@@ -5,7 +5,7 @@
         Rectangle:
             texture: app.deck_texture and app.get_texture(root.card)
             size: min(root.size[0], root.size[1] * 5 / 7), min(root.size[1], root.size[0] * 7 / 5)
-            pos: root.pos
+            pos: root.pos[0] + (root.size[0] - self.size[0]) / 2, root.pos[1]
     on_card: root.canvas.ask_update()
     on_color: root.canvas.ask_update()
 
@@ -28,3 +28,25 @@
 
 <RoundCounter>:
     text: "Round\n%s of %s" % (root.round_number, root.max_round)
+
+
+<ToolTipDisplay>:
+    orientation: "vertical"
+    ProgressBar:
+        value: 0
+        size_hint: 1, .2
+    CardDisplay:
+        card: root.card
+        pos: root.pos[0] + (root.size[0] - self.size[0]) / 2, root.pos[1]
+    Label:
+        text: root.card and "[b]%s[/b]" % root.card.name
+        text_size: self.size
+        markup: True
+        size_hint: 1, .25
+    ScrollView:
+        do_scroll_x: False
+        Label:
+            text: root.card and root.card.description
+            text_size: self.parent.size[0], self.text_size[1]
+            font_size: dp(12)
+            size_hint: 1, None

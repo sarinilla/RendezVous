@@ -37,6 +37,11 @@ class CardDisplay(Widget):
     card = ObjectProperty(allownone=True)
     color = ListProperty(BLANK)
 
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            touch.card = self.card
+            touch.push(attrs=["card"])
+
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
             App.get_running_app().root.card_touched(self)
@@ -131,9 +136,28 @@ class ScoreDisplay(BoxLayout):
             self.add_widget(display)
 
     def update(self):
+        """Update the display scales."""
         for i, display in enumerate(self.rows):
             display.pscore = self.scoreboard[PLAYER][i]
             display.dscore = self.scoreboard[DEALER][i]
+
+
+class ToolTipDisplay(BoxLayout):
+
+    """Display the details of a card."""
+
+    DUMMY_CARD = Card(" ", 0)
+    DUMMY_CARD.name = " "
+    DUMMY_CARD.description = "Drag a card here for more information."
+
+    card = ObjectProperty(DUMMY_CARD)
+
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos):
+            if 'card' in dir(touch):
+                touch.pop()
+                if touch.card is not None:
+                    self.card = touch.card
 
 
 class RoundCounter(Label):
@@ -159,9 +183,10 @@ class GameScreen(Screen):
                                           max_round=GameSettings.NUM_ROUNDS,
                                           size_hint=(1, .1))
         self.scoreboard = ScoreDisplay(scoreboard=game.score,
-                                       size_hint=(1, 1))
+                                       size_hint=(1, .4))
+        self.tooltip = ToolTipDisplay(size_hint=(1, .5))
         self.hand_display = HandDisplay(hand=game.players[PLAYER],
-                                        size_hint=(1, .5))
+                                        size_hint=(1, .3))
 
         # Lay out the display
         main = BoxLayout(orientation="vertical")
@@ -170,6 +195,7 @@ class GameScreen(Screen):
         sidebar = BoxLayout(orientation="vertical")
         sidebar.add_widget(self.round_counter)
         sidebar.add_widget(self.scoreboard)
+        sidebar.add_widget(self.tooltip)
         layout.add_widget(sidebar)
         main.add_widget(layout)
         main.add_widget(self.hand_display)
@@ -372,7 +398,7 @@ class RendezVousApp(App):
 
     def get_texture(self, card):
         """Return the appropriate texture to display."""
-        if card is None:
+        if card is None or card.name is " ":
             #return Texture.create()
             region = self.loaded_deck.get_back_texture()
         else:

@@ -119,7 +119,8 @@ class SpecialCard(Card):
     def __init__(self, name, description, requirement, application, effect):
         Card.__init__(self, SpecialSuit.SPECIAL, SpecialValue.SPECIAL)
         self.name = name
-        self.description = description
+        self.description = "%s\nRequires: %s\nApplies to: %s\nEffect: %s" % \
+                           (description, requirement, application, effect)
         self.requirement = requirement
         self.application = application
         self.effect = effect

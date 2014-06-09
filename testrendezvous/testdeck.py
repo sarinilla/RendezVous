@@ -185,7 +185,7 @@ class TestSpecialCard(unittest.TestCase):
     def test_init(self):
         """Verify the attributes created on __init__."""
         self.assertEqual(self.sc.name, "Name")
-        self.assertEqual(self.sc.description, "Desc")
+        self.assertEqual(self.sc.description, "Desc\nRequires: Nothing\nApplies to: cards\nEffect: No effect")
         self.assertEqual(self.sc.suit, SpecialSuit.SPECIAL)
         self.assertEqual(self.sc.value, SpecialValue.SPECIAL)
         self.assertIs(self.sc.requirement, self.req)
@@ -202,7 +202,7 @@ class TestSpecialCard(unittest.TestCase):
         self.sc.apply(Effect(EffectType.REPLACE, "New Suit"))
         self.sc.apply(Effect(EffectType.SWITCH, 10))
         self.sc.apply(Effect(EffectType.CLONE, Card("New Suit", 10)))
-        self.assertEqual(self.sc.description, "Desc")
+        self.assertEqual(self.sc.description, "Desc\nRequires: Nothing\nApplies to: cards\nEffect: No effect")
         self.assertEqual(self.sc.suit, SpecialSuit.SPECIAL)
         self.assertEqual(self.sc.value, SpecialValue.SPECIAL)
     
