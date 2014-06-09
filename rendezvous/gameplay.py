@@ -142,6 +142,7 @@ class Scoreboard:
     Methods:
       score -- update based on the cards in play
       zero  -- reset all scores to zero
+      total -- returns the total score for a specific player
 
     """
 
@@ -162,6 +163,10 @@ class Scoreboard:
         """Zero the score for all players and suits."""
         self.scores = [[0 for suit in self.suits]
                        for p in range(GameSettings.NUM_PLAYERS)]
+
+    def total(self, player):
+        """Return player's total score."""
+        return sum(self.scores[player])
 
     def score(self, board):
         """Score the board, adjusting each player's totals."""
@@ -303,6 +308,9 @@ class RendezVousGame:
                                                  self.board[p-1][c]):
                         hold_value = self.board[p][c].value
                         special.effect.value = self.board[p-1][c].value
+                        if (hold_value == SpecialValue.SPECIAL or
+                            special.effect.value == SpecialValue.SPECIAL):
+                            continue
                         self.board[p][c].apply(special.effect)
                         special.effect.value = hold_value
                         self.board[p-1][c].apply(special.effect)

@@ -8,10 +8,12 @@ from kivy.core.image import Image
 from kivy.graphics.texture import Texture
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
+from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.loader import Loader
 
-from rendezvous import GameSettings, SpecialSuit
+from rendezvous import GameSettings, SpecialSuit, EffectType
 from rendezvous.deck import DeckDefinition, Deck, Card
 from rendezvous.gameplay import Hand, Gameboard, Scoreboard, RendezVousGame
 
@@ -89,12 +91,18 @@ class BoardDisplay(BoxLayout):
             self.add_widget(layout)
 
     def update(self):
+        """Update the visual display."""
         for i in range(len(self.board)):
             for j, card in enumerate(self.board[i]):
                 self.slots[i][j].card = None # force update
                 self.slots[i][j].card = card
-                print("%s at %s, %s" % (card, i, j))
                 self.slots[i][j].canvas.ask_update()
+
+    def highlight(self, color):
+        """Update all highlight colors at once."""
+        for side in self.slots:
+            for display in side:
+                display.highlight(color)
 
 
 class SuitDisplay(BoxLayout):
@@ -136,63 +144,119 @@ class RoundCounter(Label):
     max_round = NumericProperty()
 
 
-class RendezVousWidget(BoxLayout):
-
-    """Arrange the screen - hand at the bottom, gameboard, score, etc."""
+class GameScreen(Screen):
+    
+    """Displays the game in progress."""
 
     def __init__(self, **kwargs):
-        """Arrange the widgets."""
-        BoxLayout.__init__(self, orientation="vertical", **kwargs)
-        app = kwargs["app"]
-
-        # Prepare internal storage
-        self.game = RendezVousGame(deck=app.loaded_deck)
-        self.game.new_game()
-        self.cards_played = []
+        Screen.__init__(self, **kwargs)
 
         # Prepare the display areas
-        self.gameboard = BoardDisplay(board=self.game.board,
+        game = kwargs["game"]
+        self.gameboard = BoardDisplay(board=game.board,
                                       size_hint=(4, 1))
         self.round_counter = RoundCounter(round_number=1,
                                           max_round=GameSettings.NUM_ROUNDS,
                                           size_hint=(1, .1))
-        self.scoreboard = ScoreDisplay(scoreboard=self.game.score,
+        self.scoreboard = ScoreDisplay(scoreboard=game.score,
                                        size_hint=(1, 1))
-        self.hand_display = HandDisplay(hand=self.game.players[PLAYER],
+        self.hand_display = HandDisplay(hand=game.players[PLAYER],
                                         size_hint=(1, .5))
 
         # Lay out the display
+        main = BoxLayout(orientation="vertical")
         layout = BoxLayout()
         layout.add_widget(self.gameboard)
         sidebar = BoxLayout(orientation="vertical")
         sidebar.add_widget(self.round_counter)
         sidebar.add_widget(self.scoreboard)
         layout.add_widget(sidebar)
-        self.add_widget(layout)
-        self.add_widget(self.hand_display)
+        main.add_widget(layout)
+        main.add_widget(self.hand_display)
+        self.add_widget(main)
+
+
+class WinnerScreen(Screen):
+
+    """Displays the winner/loser announcement."""
+
+    def __init__(self, game, **kwargs):
+        Screen.__init__(self, **kwargs)
+        winner = game.score.total(PLAYER) >= game.score.total(DEALER)
+
+        main = BoxLayout(orientation="vertical")
+        text = Label()
+        text.text = "YOU WIN!" if winner else "Dealer won."
+        main.add_widget(text)
+        main.add_widget(SuitDisplay(pscore=game.score.total(PLAYER),
+                                    dscore=game.score.total(DEALER)))
+        main.add_widget(Label(text="Play Again?"))
+        buttons = BoxLayout()
+        play_again = Button(text='YES')
+        play_again.bind(on_press=self.replay)
+        buttons.add_widget(play_again)
+        end = Button(text="no")
+        end.bind(on_press=App.get_running_app().stop)
+        buttons.add_widget(end)
+        main.add_widget(buttons)
+        self.add_widget(main)
+
+    def replay(self, *args):
+        """Convenience function to play again."""
+        self.manager.play_again()
+
+
+class RendezVousWidget(ScreenManager):
+
+    """Arrange the screen - hand at the bottom, gameboard, score, etc."""
+
+    def __init__(self, **kwargs):
+        """Arrange the widgets."""
+        ScreenManager.__init__(self, transition=FadeTransition(), **kwargs)
+        app = kwargs["app"]
+
+        # Prepare internal storage
+        self.game = RendezVousGame(deck=app.loaded_deck)
+        self.game.new_game()
+        self._cards_played = []
+
+        # Prepare the screens
+        self.main = GameScreen(game=self.game, name='main')
+        self.add_widget(self.main)
 
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
         if card_display.card is None:
             return
         loc = card_display.parent
-        if loc is self.hand_display:
+        if loc is self.main.hand_display:
             self._place_on_board(card_display)
-            print("placed:", self.game.board.board)
             if self.game.board.is_full(PLAYER):
                 if not self._validate():
                     return
                 self._complete_play()
                     
-        elif loc.parent is self.gameboard:
+        elif loc.parent is self.main.gameboard:
             self._return_to_hand(card_display)
+
+    def _return_to_hand(self, card_display):
+        """Return a touched board card to the hand."""
+        try:
+            iboard = self.game.board[PLAYER].index(card_display.card)
+            ihand = self.game.players[PLAYER].index(card_display.card)
+        except ValueError:
+            return
+        self._cards_played.remove(ihand)
+        self.game.board[PLAYER][iboard] = None
+        self.main.hand_display.slots[ihand].card = card_display.card
+        card_display.card = None
 
     def _place_on_board(self, card_display):
         """Place the touched hand card onto the board."""
         iboard = self.game.board.play_cards(PLAYER, [card_display.card])[0]
         ihand = self.game.players[PLAYER].index(card_display.card)
-        self.cards_played.append(ihand)
-        self.gameboard.slots[PLAYER][iboard].card = card_display.card
+        self._cards_played.append(ihand)
+        self.main.gameboard.slots[PLAYER][iboard].card = card_display.card
         card_display.card = None
 
     def _validate(self):
@@ -201,22 +265,21 @@ class RendezVousWidget(BoxLayout):
         if not failures:
             return True
         for iboard in failures:
-            self._return_to_hand(self.gameboard.slots[PLAYER][iboard])
+            self._return_to_hand(self.main.gameboard.slots[PLAYER][iboard])
         return False
 
     def _complete_play(self):
         """Finalize the move and let the dealer play."""
-        for ihand in reversed(sorted(self.cards_played)):
+        for ihand in reversed(sorted(self._cards_played)):
             self.game.players[PLAYER].pop(ihand)
-        self.cards_played = []
+        self._cards_played = []
         dplay = self.game.players[DEALER].AI_play(DEALER,
                                                   self.game.board,
                                                   self.game.score)
         self.game.board.play_cards(DEALER, dplay)
         for card in dplay:
             self.game.players[DEALER].remove(card)
-        self.gameboard.update()
-        print("completed:", self.game.board.board)
+        self.main.gameboard.update()
         Clock.schedule_once(self._apply_specials, 0.5)
 
     def _apply_specials(self, dt, i=None, p=None):
@@ -230,14 +293,12 @@ class RendezVousWidget(BoxLayout):
                 if i >= len(self.game.board[0]):
                     Clock.schedule_once(self._score_round)
                     return None, None
-            print("increment to", (p, i))
             return i, p
 
-        print("applying specials to", (p, i))
         if i is None:
             i, p = 0, 0
         else:
-            self.gameboard.slots[p][i].highlight(None)
+            self.main.gameboard.slots[p][i].highlight(None)
             i, p = increment(i, p)
             if i is None: return
             
@@ -245,10 +306,11 @@ class RendezVousWidget(BoxLayout):
             i, p = increment(i, p)
             if i is None: return
 
-        print(".. found special at", (p, i))
-        self.gameboard.slots[p][i].highlight(BLUE)
+        self.main.gameboard.slots[p][i].highlight(BLUE)
         self.game._apply(p, i)
-        self.gameboard.update()
+        self.main.gameboard.update()
+        if self.main.gameboard.slots[p][i].card.effect.effect == EffectType.FLUSH:
+            self.main.hand_display.update()
         Clock.schedule_once(partial(self._apply_specials, i=i, p=p), 1.0)
 
 
@@ -259,34 +321,33 @@ class RendezVousWidget(BoxLayout):
                 result = self.game.score._score_match(p, self.game.board[p][i],
                                                 p-1, self.game.board[p-1][i])
                 color = [WHITE, GREEN, RED][result]
-                self.gameboard.slots[p][i].highlight(color)
-        self.scoreboard.update()
+                self.main.gameboard.slots[p][i].highlight(color)
+        self.main.scoreboard.update()
         Clock.schedule_once(self._next_round, 3.0)
-        print("scored:", self.game.board.board)
 
     def _next_round(self, dt):
         """Clear the board for the next round."""
         game_over = self.game.next_round()
         if game_over:
+            self._winner = WinnerScreen(self.game, name='winner')
+            self.switch_to(self._winner)
             return
-        self.round_counter.round_number = self.game.round
-        for side in self.gameboard.slots:
+        self.main.round_counter.round_number = self.game.round
+        for side in self.main.gameboard.slots:
             for slot in side:
                 slot.highlight(None)
-        self.gameboard.update()
-        self.hand_display.update()
+        self.main.gameboard.update()
+        self.main.hand_display.update()
 
-    def _return_to_hand(self, card_display):
-        """Return a touched board card to the hand."""
-        try:
-            iboard = self.game.board[PLAYER].index(card_display.card)
-            ihand = self.game.players[PLAYER].index(card_display.card)
-        except IndexError:
-            return
-        self.cards_played.remove(ihand)
-        self.game.board[PLAYER][iboard] = None
-        self.hand_display.slots[ihand].card = card_display.card
-        card_display.card = None
+    def play_again(self):
+        self.game.new_game()
+        self.main.gameboard.highlight(None)
+        self.main.gameboard.update()
+        self.main.hand_display.update()
+        self.main.scoreboard.update()
+        self.main.round_counter.round = 1
+        self.current = 'main'
+        self.remove_widget(self._winner)
 
 
 class RendezVousApp(App):
@@ -320,8 +381,11 @@ class RendezVousApp(App):
 
     def get_suit_texture(self, suit):
         """Return the appropriate texture to display."""
-        region = self.loaded_deck.get_suit_texture(suit)
-        return self.deck_texture.get_region(*region)
+        if suit:
+            region = self.loaded_deck.get_suit_texture(suit)
+            return self.deck_texture.get_region(*region)
+        else:
+            return Image(self.icon).texture
 
 
 if __name__ == '__main__':

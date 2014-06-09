@@ -67,6 +67,8 @@ class Card:
                     self.description += "  Winning!"
                 elif effect.value == SpecialValue.LOSE:
                     self.description += "  Losing!"
+            elif self.value in SpecialValue.all():
+                return
             else:
                 self.value += effect.value
                 if effect.value >= 0:
@@ -82,6 +84,8 @@ class Card:
             if self.value in (SpecialValue.WIN, SpecialValue.LOSE):
                 self.value = -self.value
                 self.description += "  Reversed."
+            elif self.value in SpecialValue.all():
+                return
             else:
                 self.value = 11 - self.value
                 self.description += "  Reversed to %s." % self.value

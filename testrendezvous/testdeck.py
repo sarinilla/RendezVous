@@ -71,6 +71,12 @@ class TestSpecialEffects(unittest.TestCase):
         self.assertEqual(self.card.value, 3)
         self.assertEqual(self.card.description, "Test.  Debuffed to 3.")
 
+    def test_buff_lose(self):
+        """Verify that WIN/LOSE is not affected by buffs."""
+        self.card.value = SpecialValue.LOSE
+        self.card.apply(Effect(EffectType.BUFF, 2))
+        self.assertEqual(self.card.value, SpecialValue.LOSE)
+
     def test_win(self):
         """Test a WIN."""
         self.card.apply(Effect(EffectType.BUFF, SpecialValue.WIN))
@@ -126,7 +132,7 @@ class TestSpecialEffects(unittest.TestCase):
         self.assertEqual(self.card.suit, "My Suit")
         self.assertEqual(self.card.value, 10)
         self.assertEqual(self.card.description, "Test.  Switched to 10.")
-
+        
     def test_clone(self):
         """Test a CLONE."""
         self.card.apply(Effect(EffectType.CLONE, Card("New Suit", 10)))

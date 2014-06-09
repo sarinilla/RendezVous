@@ -146,6 +146,13 @@ class TestScoreboard(unittest.TestCase):
         self.assertEqual(len(self.score[0]), 5)
         self.assertEqual(sum([1 for spot in self.score]), 10)
 
+    def test_total(self):
+        """Verify the total is calculated correctly."""
+        self.score[0][0] = 10
+        self.score[1][3] = 20
+        self.assertEqual(self.score.total(0), 10)
+        self.assertEqual(self.score.total(1), 20)
+
     def test_win(self):
         """Verify a win."""
         self.score._win(1, "Boyfriend")
