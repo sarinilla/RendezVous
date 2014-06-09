@@ -49,7 +49,14 @@ class Hand:
             self.cards.append(self.deck.draw())
 
     def AI_play(self, player_index, gameboard, score):
-        return self.cards[:gameboard[player_index].count(None)]
+        """Select cards to play (by brute force)."""
+        needed = gameboard[player_index].count(None)
+        play = self.cards[:needed]
+        while gameboard.validate(play):  # invalid specials found
+            self.cards = self.cards[needed:]
+            self.refill()
+            play = self.cards[:needed]
+        return play
 
     def flush(self):
         """Empty hand and refill from deck."""
@@ -129,6 +136,15 @@ class Gameboard:
         """Reset the board for a new game."""
         self._clear_wait()
         self._clear_board()
+
+    def validate(self, cards):
+        """Confirm cards may be played together; return invalid indices list."""
+        invalid = []
+        for i, card in enumerate(cards):
+            if card.suit == SpecialSuit.SPECIAL:
+                if not card.requirement.verify(cards):
+                    invalid.append(i)
+        return invalid
 
 
 class Scoreboard:
@@ -268,17 +284,7 @@ class RendezVousGame:
 
     def validate(self, player):
         """Return list of invalid board indices (if any)."""
-        invalid = []
-        for i, card in enumerate(self.board[player]):
-            if card.suit == SpecialSuit.SPECIAL:
-                if not self._require(player, i):
-                    invalid.append(i)
-        return invalid
-
-    def _require(self, player_index, board_index):
-        """Determine whether the SpecialCard's requirements are met."""
-        requirement = self.board[player_index][board_index].requirement
-        return requirement.verify(self.board[player_index])
+        return self.board.validate(self.board[player])
     
     def _apply_specials(self):
         """Apply all special cards in play, left-to-right, top-to-bottom."""
