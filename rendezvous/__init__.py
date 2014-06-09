@@ -60,6 +60,7 @@ class SpecialValue:
     SPECIAL = 999     #: SpecialCard (ignore value)
     # Note: WIN and LOSE as opposites is counted upon by Card.apply()
 
+    @staticmethod
     def all():
         for i in (SpecialValue.WIN, SpecialValue.LOSE, SpecialValue.KISS):
             yield i
