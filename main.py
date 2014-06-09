@@ -18,7 +18,7 @@ from rendezvous.deck import DeckDefinition, Deck, Card
 from rendezvous.gameplay import Hand, Gameboard, Scoreboard, RendezVousGame
 
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 
 # Readability constants for the two players
@@ -414,7 +414,7 @@ class RendezVousApp(App):
             region = self.loaded_deck.get_suit_texture(suit)
             return self.deck_texture.get_region(*region)
         else:
-            return Image(self.icon).texture
+            return Image(os.path.join("data", "RVlogo.png")).texture
 
 
 if __name__ == '__main__':
