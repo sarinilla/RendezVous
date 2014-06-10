@@ -21,6 +21,11 @@ class DeckSyntaxWarning(SyntaxWarning):
     pass
 
 
+class AchievementSyntaxWarning(SyntaxWarning):
+    """There is a non-fatal error in the achievement definition file."""
+    pass
+
+
 class GameSettings:
     NUM_PLAYERS = 2     #: the number of players in the game (including AI)
     CARDS_ON_BOARD = 4  #: the number of cards each players plays per turn
@@ -36,6 +41,7 @@ class Operator:
     AT_LEAST = -1
     EXACTLY = 0
     NO_MORE_THAN = 1
+    LESS_THAN = 2
 
 
 class Alignment:
@@ -48,8 +54,12 @@ class Alignment:
 
 
 class SpecialSuit:
-    """Special values for a Card's suit."""
+    """Special values for a Card's suit, or for Achievements."""
     SPECIAL = "**SPECIAL**"  #: indicates a SpecialCard
+    ANY = "Any"              #: any suit, or many of them
+    EACH = "Each"            #: every suit
+    ONE = "One"              #: exactly one suit
+    TOTAL = "Total"          #: total score
 
 
 class SpecialValue:
@@ -84,4 +94,12 @@ class EffectType:
                  #      VALUE: new Card (substituted dynamically)
     FLUSH = 7    #: the player's hand is flushed and refilled
                  #      VALUE: N/A
+                 
+
+class AchieveType:
+    """Types of Achievements to shoot for."""
+    SCORE = 0    #: suit or total score threshold
+    PLAY = 1     #: number of games played
+    WIN = 2      #: number of games won
+    STREAK = 3   #: number of games won in a row
     

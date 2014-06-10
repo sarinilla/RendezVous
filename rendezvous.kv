@@ -50,3 +50,27 @@
             text_size: self.parent.size[0], self.text_size[1]
             font_size: dp(12)
             size_hint: 1, None
+            
+
+<UnlockDisplay>:
+    canvas:
+        Rectangle:
+            texture: app.get_achievement_texture(root.achievement)
+            size: min(root.size[0], root.size[1]), min(root.size[1], root.size[0])
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            text: "[b]%s[/b]" % root.achievement.name
+            markup: True
+        Label:
+            text: root.achievement.description
+    CardDisplay:
+        card: root.reward
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            text: "[b]%s[/b]" % root.reward.name
+            markup: True
+        Label:
+            text: root.reward.description
+

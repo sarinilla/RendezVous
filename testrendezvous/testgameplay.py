@@ -84,8 +84,7 @@ class TestGameBoard(unittest.TestCase):
         self.assertEqual([1], self.board.play_cards(0, [Card("Test", 2)]))
         self.board[0][2] = Card("Test", 3)
         self.assertEqual([3], self.board.play_cards(0, [Card("Test", 4)]))
-        self.assertRaises(ValueError,
-                          self.board.play_cards, 0, [Card("Test", 5)])
+        self.assertEqual([],  self.board.play_cards(0, [Card("Test", 5)]))
         self.assertEqual(self.board.board[0], [Card("Test", 1),
                                                Card("Test", 2),
                                                Card("Test", 3),
@@ -100,7 +99,7 @@ class TestGameBoard(unittest.TestCase):
         self.assertEqual(self.board.board[1], [Card("Test", 1),
                                                Card("Wait", 1),
                                                Card("Test", 2),
-                                               Card("Test", 3)])        
+                                               Card("Test", 3)])  
 
     def test_waits(self):
         """Verify that WAIT works correctly."""

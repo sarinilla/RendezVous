@@ -416,13 +416,21 @@ class DeckDefinition:
             return Effect(EffectType.FLUSH)
         
 
-    def cards(self):
+    def cards(self, achievements=None):
         """Generator; return all card in the deck, unshuffled."""
         for suit in self.suits:
             for value in self.values:
                 yield Card(suit, value)
         for special in self.specials:
-            yield special
+            if achievements is None or achievements.unlocked(special):
+                yield special
+                
+    def get_special(self, name):
+        """Return the named SpecialCard, or None."""
+        for special in self.specials:
+            if special.name == name:
+                return special
+        return None
 
     def get_card_texture(self, card):
         """Return (L, B, W, H) rectangle for the given card."""
@@ -479,17 +487,18 @@ class Deck:
 
     """
 
-    def __init__(self, definition, shuffle=True):
+    def __init__(self, definition, shuffle=True, achievements=None):
         """Prep the card list."""
         self.definition = definition
-        self._cards = list(definition.cards())
+        self.achievements = achievements
+        self._cards = list(definition.cards(self.achievements))
         self._next = self._draw()
         if shuffle:
             self.shuffle()
 
     def shuffle(self):
         """Shuffle the full deck together."""
-        self._cards = list(self.definition.cards())
+        self._cards = list(self.definition.cards(self.achievements))
         random.shuffle(self._cards)
         self._next = self._draw()
 

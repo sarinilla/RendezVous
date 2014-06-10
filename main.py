@@ -3,7 +3,8 @@ import os
 from functools import partial
 from kivy.clock import Clock
 from kivy.app import App
-from kivy.properties import ObjectProperty, ListProperty, StringProperty, NumericProperty
+from kivy.properties import ObjectProperty, ListProperty
+from kivy.properties import StringProperty, NumericProperty
 from kivy.core.image import Image
 from kivy.graphics.texture import Texture
 from kivy.uix.widget import Widget
@@ -16,9 +17,11 @@ from kivy.loader import Loader
 from rendezvous import GameSettings, SpecialSuit, EffectType
 from rendezvous.deck import DeckDefinition, Deck, Card
 from rendezvous.gameplay import Hand, Gameboard, Scoreboard, RendezVousGame
+from rendezvous.statistics import Statistics
+from rendezvous.achievements import AchievementList, Achievement
 
 
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 
 
 # Readability constants for the two players
@@ -206,20 +209,41 @@ class GameScreen(Screen):
         self.add_widget(main)
 
 
+class UnlockDisplay(BoxLayout):
+
+    """Show an Achievement earned this game."""
+    DUMMY_CARD = Card(" ", 0)
+    DUMMY_CARD.name = " "
+    DUMMY_CARD.description = " "
+    
+    achievement = ObjectProperty(Achievement(' '))
+    reward = ObjectProperty(DUMMY_CARD)
+
+
 class WinnerScreen(Screen):
 
-    """Displays the winner/loser announcement."""
+    """Displays the winner/loser announcement [and an unlock]."""
 
-    def __init__(self, game, **kwargs):
+    def __init__(self, score, achieved=None, **kwargs):
         Screen.__init__(self, **kwargs)
-        winner = game.score.total(PLAYER) >= game.score.total(DEALER)
+        pscore = score.total(PLAYER)
+        dscore = score.total(DEALER)
 
         main = BoxLayout(orientation="vertical")
         text = Label()
-        text.text = "YOU WIN!" if winner else "Dealer won."
+        if pscore > dscore:
+            text.text = "YOU WIN!" 
+        elif pscore == dscore:
+            text.text = "It's a draw!"
+        else:
+            text.text = "Dealer won."
         main.add_widget(text)
-        main.add_widget(SuitDisplay(pscore=game.score.total(PLAYER),
-                                    dscore=game.score.total(DEALER)))
+        main.add_widget(SuitDisplay(pscore=pscore,
+                                    dscore=dscore))
+        deck = App.get_running_app().loaded_deck
+        for achievement in achieved:
+            main.add_widget(UnlockDisplay(achievement=achievement,
+                    reward=deck.get_special(achievement.reward)))
         main.add_widget(Label(text="Play Again?"))
         buttons = BoxLayout()
         play_again = Button(text='YES')
@@ -246,9 +270,11 @@ class RendezVousWidget(ScreenManager):
         app = kwargs["app"]
 
         # Prepare internal storage
-        self.game = RendezVousGame(deck=app.loaded_deck)
+        self.game = RendezVousGame(deck=app.loaded_deck,
+                                   achievements=app.achievements)
         self.game.new_game()
         self._cards_played = []
+        self.achieved = []
 
         # Prepare the screens
         self.main = GameScreen(game=self.game, name='main')
@@ -260,6 +286,7 @@ class RendezVousWidget(ScreenManager):
             return
         loc = card_display.parent
         if loc is self.main.hand_display:
+            if self.game.board.is_full(PLAYER): return  # not during scoring!
             self._place_on_board(card_display)
             if self.game.board.is_full(PLAYER):
                 if not self._validate():
@@ -267,7 +294,8 @@ class RendezVousWidget(ScreenManager):
                 self._complete_play()
                     
         elif loc.parent is self.main.gameboard:
-            self._return_to_hand(card_display)
+            if not self.game.board.is_full(PLAYER): # not during scoring!
+                self._return_to_hand(card_display)
 
     def _return_to_hand(self, card_display):
         """Return a touched board card to the hand."""
@@ -366,7 +394,9 @@ class RendezVousWidget(ScreenManager):
         """Clear the board for the next round."""
         game_over = self.game.next_round()
         if game_over:
-            self._winner = WinnerScreen(self.game, name='winner')
+            self.achieved = App.get_running_app().record_score(self.game.score)
+            self._winner = WinnerScreen(self.game.score, self.achieved,
+                                        name='winner')
             self.switch_to(self._winner)
             return
         self.main.round_counter.round_number = self.game.round
@@ -378,6 +408,7 @@ class RendezVousWidget(ScreenManager):
 
     def play_again(self):
         self.game.new_game()
+        self.achieved = []
         self.main.gameboard.highlight(None)
         self.main.gameboard.update()
         self.main.hand_display.update()
@@ -401,11 +432,18 @@ class RendezVousApp(App):
     def build(self):
         """Load the deck image and create the RendezVousWidget."""
         self.icon = os.path.join("data", "RVlogo.ico")
+        self.statistics = Statistics()
+        self.achievements = AchievementList()
         self.loaded_deck = DeckDefinition()
         loader = Loader.image(self.loaded_deck.img_file)
         loader.bind(on_load=self._image_loaded)
         self.deck_texture = Image(self.loaded_deck.img_file).texture
         return RendezVousWidget(app=self)
+        
+    def record_score(self, score):
+        """Update meta-data at the end of each game."""
+        self.statistics.record_game(score, PLAYER)
+        return self.achievements.check(score, PLAYER, self.statistics)
 
     def get_texture(self, card):
         """Return the appropriate texture to display."""
@@ -423,6 +461,9 @@ class RendezVousApp(App):
             return self.deck_texture.get_region(*region)
         else:
             return Image(os.path.join("data", "RVlogo.png")).texture
+            
+    def get_achievement_texture(self, achievement):
+        return Texture.create()
 
 
 if __name__ == '__main__':

@@ -102,7 +102,10 @@ class Gameboard:
         """Place the player's card(s) onto the board where available."""
         indices = []
         for card in cards:
-            first_available = self.board[player].index(None)
+            try:
+                first_available = self.board[player].index(None)
+            except ValueError:
+                break
             self.board[player][first_available] = card
             indices.append(first_available)
         return indices
@@ -122,9 +125,11 @@ class Gameboard:
                      for i in range(GameSettings.NUM_PLAYERS)]
         for (p, side) in enumerate(self._wait):
             for (c, hold) in enumerate(side):
+                try:
+                    self.board[p][c].reset()
+                except: pass  # on first clear, or if None
                 if hold:
                     new_board[p][c] = self.board[p][c]
-                    new_board[p][c].reset()
         self.board = new_board
 
     def next_round(self):
@@ -252,10 +257,11 @@ class RendezVousGame:
 
     """
 
-    def __init__(self, deck=DeckDefinition()):
+    def __init__(self, deck=DeckDefinition(), achievements=None):
         """Create the elements of the game."""
         self.deck = deck
-        self.players = [Hand(Deck(self.deck))
+        self.achievements = achievements
+        self.players = [Hand(Deck(self.deck, achievements=achievements))
                         for i in range(GameSettings.NUM_PLAYERS)]
         self.board = Gameboard()
         self.score = Scoreboard(self.deck)

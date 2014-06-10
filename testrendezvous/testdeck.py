@@ -1,6 +1,7 @@
 import unittest
 
 from rendezvous import SpecialSuit, SpecialValue
+from rendezvous.achievements import AchievementList
 from rendezvous.deck import *
 
 
@@ -273,6 +274,11 @@ class TestDeckDefinition(unittest.TestCase):
                 expected.append(Card(suit, value))
         self.assertEqual(list(self.dd.cards())[:50], expected)
         self.assertEqual(len(list(self.dd.cards())), 67)
+        
+    def test_unlocks(self):
+        """Verify the generator removes locked SpecialCards."""
+        a = AchievementList()
+        self.assertTrue(len(list(self.dd.cards(a))) < 67)
 
     def test_parse_requirement(self):
         """Verify requirement parsing from the text file."""
@@ -324,6 +330,7 @@ class TestDeckDefinition(unittest.TestCase):
                          "All matching (friendly) cards become clones of the first")
         self.assertEqual(str(self.dd._parse_effect("flush")),
                          "Flush all cards from the player's hand and redraws")
-
+        
+        
 if __name__ == "__main__":
     unittest.main()
