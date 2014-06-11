@@ -331,7 +331,7 @@ class RendezVousWidget(ScreenManager):
         for ihand in reversed(sorted(self._cards_played)):
             self.game.players[PLAYER].pop(ihand)
         self._cards_played = []
-        dplay = self.game.players[DEALER].AI_play(DEALER,
+        dplay = self.game.players[DEALER].AI_hard(DEALER,
                                                   self.game.board,
                                                   self.game.score)
         self.game.board.play_cards(DEALER, dplay)

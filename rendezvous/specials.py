@@ -59,10 +59,7 @@ def combinable_class(cls):
 
 def combinable_method(f):
 
-    """Decorator for methods within @combinable_class that should be combined.
-
-    These methods should have boolean return values.
-    """
+    """Decorator for boolean methods within @combinable_class to combine."""
 
     def combined(self, *args, **kwargs):
         if self.type == self.AND:
@@ -89,6 +86,40 @@ def combinable_method(f):
             return f(self.items[0], *args, **kwargs)
         
     return combined
+
+
+def combinable_list_method(f):
+
+    """Decorator for list methods within @combinable_class to combine."""
+
+    def combined_list(self, *args, **kwargs):
+        if self.type == self.AND:
+            try:
+                result = f(self.items[0], *args, **kwargs)
+            except AttributeError:
+                result = combined_list(self.items[0], *args, **kwargs)
+            for item in self.items[1:]:
+                try:
+                    result = list(filter(lambda x: x in result,
+                                         f(item, *args, **kwargs)))
+                except AttributeError:
+                    result = list(filter(lambda x: x in result,
+                                         combined_list(item, *args, **kwargs)))
+            return result
+
+        elif self.type == self.OR:
+            result = []
+            for item in self.items:
+                try:
+                    result += f(item, *args, **kwargs)
+                except AttributeError:
+                    result += combined_list(item, *args, **kwargs)
+            return list(set(result))
+
+        else:
+            return f(self.items[0], *args, **kwargs)
+        
+    return combined_list
 
 
 @combinable_class
@@ -137,6 +168,23 @@ class Requirement:
         else:
             return counter == self.count
 
+    @combinable_method
+    def has_operator(self, operator):
+        return self.operator == operator
+
+    @combinable_list_method
+    def filter(self, alignment, cards):
+        if self.style is None:
+            return []
+        return self.style.filter(alignment, cards)
+
+    # lazy man's @combinable_sum_method :o
+    def totalcount(self):
+        if 'items' in dir(self):
+            return sum([i.totalcount() for i in self.items])
+        else:
+            return self.count
+
 
 @combinable_class
 class Application:
@@ -152,6 +200,7 @@ class Application:
 
     Methods:
       match  -- return boolean: is this card affected?
+      filter -- return a subset of the card list that is affected
 
     """
 
@@ -195,8 +244,10 @@ class Application:
         return 1 - alignment
 
     @combinable_method
-    def match(self, alignment, card, opposite):
+    def match(self, alignment, card, opposite=None):
         """Return boolean indicating if card matches this Application."""
+        if card is None:
+            return False
         if card.suit == SpecialSuit.SPECIAL:
             return False
         if self.alignment is not None:
@@ -211,10 +262,23 @@ class Application:
         if self.max_value is not None:
             if card.value > self.max_value:
                 return False
-        if self.opposite is not None:
+        if self.opposite is not None and opposite is not None:
             return self.opposite.match(self._reverse_alignment(alignment),
                                        opposite, card)
         return True
+
+    @combinable_method
+    def has_alignment(self, alignment):
+        return self.alignment == alignment or self.alignment == Alignment.ALL
+
+    # NOT @combinable_list_method because it relies on match()
+    def filter(self, alignment, cards):
+        """Return the subset of cards that are affected."""
+        subset = []
+        for card in cards:
+            if self.match(alignment, card, None):
+                subset.append(card)
+        return subset
 
 
 class Effect:

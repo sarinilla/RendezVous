@@ -42,11 +42,6 @@ class TestHand(unittest.TestCase):
         self.assertNotIn(first, self.hand)
         self.assertNotIn(last, self.hand)
 
-    @unittest.skip("need to be more intelligent anyway")
-    def test_AI_play(self):
-        """Test the (temporary) simple AI play."""
-        self.assertEqual(self.hand[:4], self.hand.AI_play(None, None))
-
 
 class TestGameBoard(unittest.TestCase):
 

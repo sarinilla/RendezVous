@@ -1,6 +1,7 @@
 import os
 import re
 import random
+import copy
 import warnings
 
 from rendezvous import DeckSyntaxWarning, Alignment, EffectType, Operator, SpecialSuit, SpecialValue, MissingDeckError
@@ -41,6 +42,10 @@ class Card:
     def __repr__(self):
         """Return the initialization statement for this Card."""
         return self.__class__.__name__ + repr((self.suit, self.value))
+
+    def __hash__(self):
+        """Hash it up for standard and special."""
+        return hash("%s %s" % (self.name, self.description))
     
     def __eq__(self, other):
         """Equality rests on both suit and value."""
@@ -423,13 +428,13 @@ class DeckDefinition:
                 yield Card(suit, value)
         for special in self.specials:
             if achievements is None or achievements.unlocked(special):
-                yield special
+                yield copy.copy(special)
                 
     def get_special(self, name):
         """Return the named SpecialCard, or None."""
         for special in self.specials:
             if special.name == name:
-                return special
+                return copy.copy(special)
         return None
 
     def get_card_texture(self, card):

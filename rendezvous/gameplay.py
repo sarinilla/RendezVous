@@ -1,6 +1,7 @@
 
 from rendezvous import GameSettings, SpecialSuit, SpecialValue, EffectType
 from rendezvous.deck import Deck, DeckDefinition
+from rendezvous.dealer import ArtificialIntelligence
 
 class Hand:
 
@@ -41,6 +42,12 @@ class Hand:
     def remove(self, card):
         self.cards.remove(card)
 
+    def extend(self, cards):
+        self.cards.extend(cards)
+
+    def sort(self, *args, **kwargs):
+        self.cards.sort(*args, **kwargs)
+
     # Additional methods
     
     def refill(self):
@@ -48,7 +55,7 @@ class Hand:
         while len(self.cards) < GameSettings.CARDS_IN_HAND:
             self.cards.append(self.deck.draw())
 
-    def AI_play(self, player_index, gameboard, score):
+    def AI_easy(self, player_index, gameboard, score):
         """Select cards to play (by brute force)."""
         needed = gameboard[player_index].count(None)
         play = self.cards[:needed]
@@ -57,6 +64,17 @@ class Hand:
             self.refill()
             play = self.cards[:needed]
         return play
+
+    def AI_hard(self, player_index, gameboard, score):
+        """Intelligently select cards to play."""
+        while True:
+            ai = ArtificialIntelligence(player_index, self, gameboard, score)
+            try:
+                return ai.get_best_play()
+            except IndexError:  # no valid plays
+                self.flush()
+                for i in range(len(score[player_index])):
+                    score[player_index][i] -= 10
 
     def flush(self):
         """Empty hand and refill from deck."""
