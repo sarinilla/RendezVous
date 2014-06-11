@@ -6,12 +6,17 @@ from rendezvous.specials import *
 @combinable_class
 class DummyClass:
 
-    def __init__(self, value=True):
+    def __init__(self, value=True, num=5):
         self.value = value
+        self.num = num
 
     @combinable_method
     def check(self):
         return self.value
+
+    @combinable_list_method
+    def greater(self, nums):
+        return list(filter(lambda x: x > self.num, nums))
 
     def __str__(self):
         return "Dummy"
@@ -29,6 +34,10 @@ class TestCombinations(unittest.TestCase):
     def test_single_string(self):
         r = DummyClass()
         self.assertEqual(str(r), "Dummy")
+
+    def test_single_greater(self):
+        r = DummyClass(num=5)
+        self.assertEqual(sorted(r.greater([3, 7, 4, 8])), [7, 8])
 
     def test_AND_both_true(self):
         r1 = DummyClass(value=True)
@@ -58,7 +67,13 @@ class TestCombinations(unittest.TestCase):
         r1 = DummyClass()
         r2 = DummyClass()
         r = r1 & r2
-        self.assertEqual(str(r), "(Dummy AND Dummy)")        
+        self.assertEqual(str(r), "(Dummy AND Dummy)")
+
+    def test_AND_list(self):
+        r1 = DummyClass(num=3)
+        r2 = DummyClass(num=7)
+        r = r1 & r2
+        self.assertEqual(sorted(r.greater([2, 4, 8])), [8])
 
     def test_OR_both_true(self):
         r1 = DummyClass(value=True)
@@ -89,6 +104,12 @@ class TestCombinations(unittest.TestCase):
         r2 = DummyClass()
         r = r1 | r2
         self.assertEqual(str(r), "(Dummy OR Dummy)") 
+
+    def test_OR_list(self):
+        r1 = DummyClass(num=3)
+        r2 = DummyClass(num=7)
+        r = r1 | r2
+        self.assertEqual(sorted(r.greater([2, 4, 8])), [4, 8])
 
     def test_autostack_and(self):
         r1 = DummyClass(value=True)
@@ -201,6 +222,13 @@ class TestCombinations(unittest.TestCase):
         self.assertIs(r2, r.items[1].items[0])
         self.assertIs(r3, r.items[1].items[1])
         self.assertTrue(r.check())
+
+    def test_stacked_list(self):
+        r1 = DummyClass(num=5)
+        r2 = DummyClass(num=3)
+        r3 = DummyClass(num=8)
+        r = r1 & (r2 | r3)
+        self.assertEqual(sorted(r.greater([2, 4, 6, 9])), [6, 9])
         
         
 class TestRequirement(unittest.TestCase):
@@ -292,6 +320,13 @@ class TestRequirement(unittest.TestCase):
         self.assertEqual(str(Requirement(operator=Operator.NO_MORE_THAN,
                                          count=1, style=Application())),
                          "No more than 1 cards")
+
+    def test_totalcount(self):
+        """Test counts are summed properly."""
+        r1 = Requirement(count=2)
+        r2 = Requirement(count=3)
+        r = r1 & r2
+        self.assertEqual(r.totalcount(), 5)
 
 
 class TestApplication(unittest.TestCase):

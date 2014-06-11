@@ -57,7 +57,7 @@ class SpecialValue:
     WIN = 100         #: automatically win the match
     LOSE = -100       #: automatically lose the match
     KISS = 555        #: both sides treated as "winning"
-    SPECIAL = 999     #: SpecialCard (ignore value)
+    SPECIAL = -999    #: SpecialCard (ignore value)
     # Note: WIN and LOSE as opposites is counted upon by Card.apply()
 
     @staticmethod
@@ -80,7 +80,7 @@ class EffectType:
                  #      VALUE: new suit
     KISS = 5     #: the card's match is kissed (both treated as a win)
                  #      VALUE: N/A
-    CLONE = 6    #: the card is replaced by the specified suit, value
+    CLONE = 6    #: the card is replaced by the first matching suit, value
                  #      VALUE: new Card (substituted dynamically)
     FLUSH = 7    #: the player's hand is flushed and refilled
                  #      VALUE: N/A
