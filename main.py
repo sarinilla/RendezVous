@@ -21,7 +21,7 @@ from rendezvous.statistics import Statistics
 from rendezvous.achievements import AchievementList, Achievement
 
 
-__version__ = '0.3.1'
+__version__ = '0.3.3'
 
 
 # Readability constants for the two players
@@ -217,7 +217,7 @@ class UnlockDisplay(BoxLayout):
     DUMMY_CARD.description = " "
     
     achievement = ObjectProperty(Achievement(' '))
-    reward = ObjectProperty(DUMMY_CARD)
+    reward = ObjectProperty(DUMMY_CARD, allownone=True)
 
 
 class WinnerScreen(Screen):
@@ -432,8 +432,11 @@ class RendezVousApp(App):
     def build(self):
         """Load the deck image and create the RendezVousWidget."""
         self.icon = os.path.join("data", "RVlogo.ico")
-        self.statistics = Statistics()
-        self.achievements = AchievementList()
+        user_dir = self.user_data_dir
+        if not os.path.isdir(user_dir):
+            user_dir = "player"
+        self.statistics = Statistics(os.path.join(user_dir, "stats.txt"))
+        self.achievements = AchievementList(os.path.join(user_dir, "unlocked.txt"))
         self.loaded_deck = DeckDefinition()
         loader = Loader.image(self.loaded_deck.img_file)
         loader.bind(on_load=self._image_loaded)

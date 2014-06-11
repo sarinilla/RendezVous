@@ -69,8 +69,8 @@
     BoxLayout:
         orientation: "vertical"
         Label:
-            text: "[b]%s[/b]" % root.reward.name
+            text: "[b]%s[/b]" % root.reward.name if root.reward is not None else ""
             markup: True
         Label:
-            text: root.reward.description
+            text: root.reward.description if root.reward is not None else ""
 
