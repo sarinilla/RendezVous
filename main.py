@@ -21,7 +21,7 @@ from rendezvous.statistics import Statistics
 from rendezvous.achievements import AchievementList, Achievement
 
 
-__version__ = '0.2.0'
+__version__ = '0.3.1'
 
 
 # Readability constants for the two players
@@ -464,6 +464,11 @@ class RendezVousApp(App):
             
     def get_achievement_texture(self, achievement):
         return Texture.create()
+        
+    def on_pause(self):
+        return True
+    def on_resume(self):
+        pass
 
 
 if __name__ == '__main__':
