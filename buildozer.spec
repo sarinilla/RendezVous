@@ -19,7 +19,7 @@ source.include_exts = py,png,jpg,ico,kv,atlas,txt
 #source.exclude_exts = spec
 
 # (list) List of directory to exclude (let empty to not exclude anything)
-source.exclude_dirs = testrendezvous
+source.exclude_dirs = testrendezvous,player
 
 # (list) List of exclusions using pattern matching
 source.exclude_patterns = test
