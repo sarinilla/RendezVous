@@ -21,7 +21,7 @@ from rendezvous.statistics import Statistics
 from rendezvous.achievements import AchievementList, Achievement
 
 
-__version__ = '0.3.4'
+__version__ = '0.3.5'
 
 
 # Readability constants for the two players
@@ -117,6 +117,7 @@ class HandDisplay(BoxLayout):
 
     def update(self):
         for i, card in enumerate(self.hand):
+            self.slots[i].card = None  # always force update
             self.slots[i].card = card
 
 
@@ -254,11 +255,15 @@ class RendezVousWidget(ScreenManager):
     def _return_to_hand(self, card_display):
         """Return a touched board card to the hand."""
         try:
-            iboard = self.game.board[PLAYER].index(card_display.card)
-            ihand = self.game.players[PLAYER].index(card_display.card)
-            while self.game.players[PLAYER][ihand] is not card_display.card:
-                ihand += 1 + self.game.players[PLAYER][ihand+1:].index(card_display.card)
+            iboard = self.main.gameboard.slots[PLAYER].index(card_display)
         except ValueError:
+            return
+        ihand = 0
+        for i in self._cards_played:
+            if self.game.players[PLAYER][i] == card_display.card:
+                ihand = i
+                break
+        else:
             return
         self._cards_played.remove(ihand)
         self.game.board[PLAYER][iboard] = None
@@ -268,7 +273,7 @@ class RendezVousWidget(ScreenManager):
     def _place_on_board(self, card_display):
         """Place the touched hand card onto the board."""
         iboard = self.game.board.play_cards(PLAYER, [card_display.card])[0]
-        ihand = self.game.players[PLAYER].index(card_display.card)
+        ihand = self.main.hand_display.slots.index(card_display)
         self._cards_played.append(ihand)
         self.main.gameboard.slots[PLAYER][iboard].card = card_display.card
         card_display.card = None
