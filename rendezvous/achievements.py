@@ -216,13 +216,15 @@ class AchievementList:
     """List of available and accomplished Achievements.
     
     Attributes:
-      available -- list of all Achievements
-      achieved  -- list of those the player has earned
+      available  -- list of all Achievements
+      achieved   -- list of those the player has earned
+      image_file -- grid of Achievement icons
       
     Methods:
       unlocked  -- return whether the given SpecialCard has been unlocked
       achieve   -- mark the Achievement earned and return it
       check     -- return list of Achievements newly reached (or [])
+      get_achievement_texture -- return (L, B, W, H) for the Achievement
       
     Available Achievements File Format:  Achievements.txt
     
@@ -269,6 +271,7 @@ class AchievementList:
     
     def __init__(self, player_file=None):
         self._available_file = os.path.join("data", "Achievements.txt")
+        self.image_file = os.path.join("data", "Achievements.png")
         self._read_available()
         if player_file is None:
             self._unlocked_file = os.path.join("player", "unlocked.txt")
@@ -313,6 +316,11 @@ class AchievementList:
                 if achievement.check(score, player_index, stats):
                     reached.append(self.achieve(achievement))
         return reached
+
+    def get_achievement_texture(self, achievement):
+        """Return (L, B, W, H) rectangle for the given Achievement."""
+        index = self.available.index(achievement)
+        return (128 * int(index / 8), 1024 - 128 * (index % 8 + 1), 128, 128)
         
     def _reader(self, filename):
         """Read a file and yield (tag, value) pairs."""

@@ -10,6 +10,7 @@ from kivy.graphics.texture import Texture
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.uix.button import Button
+from kivy.uix.carousel import Carousel
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.loader import Loader
@@ -230,6 +231,7 @@ class RendezVousWidget(ScreenManager):
         self.game.new_game()
         self._cards_played = []
         self.achieved = []
+        self.dealer_play = None
 
         # Prepare the screens
         self.main = GameScreen(game=self.game, name='main')
@@ -239,6 +241,9 @@ class RendezVousWidget(ScreenManager):
         """Handle a touch to a displayed card."""
         if card_display.card is None:
             return
+        if self.dealer_play is None:
+            self.dealer_play = self.game.players[DEALER].AI_hard(
+                                    DEALER, self.game.board, self.game.score)
         loc = card_display.parent
         if loc is self.main.hand_display:
             if self.game.board.is_full(PLAYER): return  # not during scoring!
@@ -292,12 +297,10 @@ class RendezVousWidget(ScreenManager):
         for ihand in reversed(sorted(self._cards_played)):
             self.game.players[PLAYER].pop(ihand)
         self._cards_played = []
-        dplay = self.game.players[DEALER].AI_hard(DEALER,
-                                                  self.game.board,
-                                                  self.game.score)
-        self.game.board.play_cards(DEALER, dplay)
-        for card in dplay:
+        self.game.board.play_cards(DEALER, self.dealer_play)
+        for card in self.dealer_play:
             self.game.players[DEALER].remove(card)
+        self.dealer_play = None
         Clock.schedule_once(self._play_dealer)
 
     def _play_dealer(self, dt, i=None):
@@ -346,7 +349,8 @@ class RendezVousWidget(ScreenManager):
         self.game._apply(p, i)
         self.main.gameboard.update()
         if self.main.gameboard.slots[p][i].card.effect.effect == EffectType.FLUSH:
-            self.main.hand_display.update()
+            if p == PLAYER:
+                self.main.hand_display.update()
         Clock.schedule_once(partial(self._apply_specials, i=i, p=p), 1.0)
 
     def _score_round(self, dt, i=None):
@@ -396,15 +400,40 @@ class RendezVousWidget(ScreenManager):
 
 ## Win/Lose Screen ##
 
-class UnlockDisplay(BoxLayout):
+class AchievementDisplay(BoxLayout):
 
     """Show an Achievement earned this game."""
+
+    achievement = ObjectProperty(Achievement(' '))
+
+
+class UnlockDisplay(BoxLayout):
+
+    """Show an Achievement with an unlocked SpecialCard."""
+    
     DUMMY_CARD = Card(" ", 0)
     DUMMY_CARD.name = " "
     DUMMY_CARD.description = " "
-    
+
     achievement = ObjectProperty(Achievement(' '))
     reward = ObjectProperty(DUMMY_CARD, allownone=True)
+
+
+class FinalScoreDisplay(BoxLayout):
+
+    """Display the winner/loser announcement and final score."""
+
+    score = ObjectProperty()
+
+    def get_win_text(self):
+        pscore = self.score.total(PLAYER)
+        dscore = self.score.total(DEALER)
+        if pscore > dscore:
+            return "YOU WIN!" 
+        elif pscore == dscore:
+            return "It's a draw!"
+        else:
+            return "Dealer won."
 
 
 class WinnerScreen(Screen):
@@ -413,38 +442,19 @@ class WinnerScreen(Screen):
 
     def __init__(self, score, achieved=None, **kwargs):
         Screen.__init__(self, **kwargs)
-        pscore = score.total(PLAYER)
-        dscore = score.total(DEALER)
-
-        main = BoxLayout(orientation="vertical")
-        text = Label()
-        if pscore > dscore:
-            text.text = "YOU WIN!" 
-        elif pscore == dscore:
-            text.text = "It's a draw!"
-        else:
-            text.text = "Dealer won."
-        main.add_widget(text)
-        main.add_widget(SuitDisplay(pscore=pscore,
-                                    dscore=dscore))
+    
+        self.ids.carousel.add_widget(FinalScoreDisplay(score=score))
         deck = App.get_running_app().loaded_deck
         for achievement in achieved:
-            main.add_widget(UnlockDisplay(achievement=achievement,
-                    reward=deck.get_special(achievement.reward)))
-        main.add_widget(Label(text="Play Again?"))
-        buttons = BoxLayout()
-        play_again = Button(text='YES')
-        play_again.bind(on_press=self.replay)
-        buttons.add_widget(play_again)
-        end = Button(text="no")
-        end.bind(on_press=App.get_running_app().stop)
-        buttons.add_widget(end)
-        main.add_widget(buttons)
-        self.add_widget(main)
-
-    def replay(self, *args):
-        """Convenience function to play again."""
-        self.manager.play_again()
+            if achievement.reward is None:
+                ach = AchievementDisplay(achievement=achievement)
+                self.ids.carousel.add_widget(ach)
+                continue
+            unlock = UnlockDisplay(achievement=achievement,
+                                   reward=deck.get_special(achievement.reward))
+            self.ids.carousel.add_widget(unlock)
+        if achieved:
+            self.ids.carousel.index = 1
 
 
 ## Meta Data and App Info ##
@@ -460,6 +470,10 @@ class RendezVousApp(App):
         if loader.image.texture:
             self.deck_texture = loader.image.texture
 
+    def _achievements_loaded(self, loader):
+        if loader.image.texture:
+            self.achievement_texture = loader.image.texture
+
     def build(self):
         """Load the deck image and create the RendezVousWidget."""
         self.icon = os.path.join("data", "RVlogo.ico")
@@ -468,6 +482,9 @@ class RendezVousApp(App):
             user_dir = "player"
         self.statistics = Statistics(os.path.join(user_dir, "stats.txt"))
         self.achievements = AchievementList(os.path.join(user_dir, "unlocked.txt"))
+        #self.achievement_texture = Image(self.achievements.image_file).texture
+        loader = Loader.image(self.achievements.image_file)
+        loader.bind(on_load=self._achievements_loaded)
         self.loaded_deck = DeckDefinition()
         loader = Loader.image(self.loaded_deck.img_file)
         loader.bind(on_load=self._image_loaded)
@@ -497,7 +514,9 @@ class RendezVousApp(App):
             return Image(os.path.join("data", "RVlogo.png")).texture
             
     def get_achievement_texture(self, achievement):
-        return Texture.create()
+        """Return the appropriate texture to display."""
+        region = self.achievements.get_achievement_texture(achievement)
+        return self.achievement_texture.get_region(*region)
         
     def on_pause(self):
         return True
