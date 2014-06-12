@@ -145,6 +145,7 @@ class BoardDisplay(BoxLayout):
         """Update the visual display."""
         for i in range(len(self.board)):
             for j, card in enumerate(self.board[i]):
+                self.slots[i][j].card = None  # force update
                 self.slots[i][j].card = card
 
     def highlight(self, color):

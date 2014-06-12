@@ -448,38 +448,32 @@ class DeckDefinition:
     def get_suit_texture(self, suit):
         """Return texture details for the given suit's icon."""
         index = self.suits.index(suit)
-        if index < 3:
-            loc = (7, 7 + index)
-        else:
-            loc = (8, 8 + index - 3)
-        rect = self._get_rect(*loc)
-        return (rect[0], rect[1] + rect[3] - rect[2], rect[2], rect[2])  # square
+        return (130 * index, 0, 130, 130)
 
     def _get_card_loc(self, card):
         """Return the grid (col, row) for this card."""
         if card.value == SpecialValue.KISS:
-            return (7, 0)
-        elif card.value == SpecialValue.WIN:
             return (7, 1)
+        elif card.value == SpecialValue.WIN:
+            return (7, 2)
         elif card.value == SpecialValue.LOSE:
             return (8, 1)
         elif card.value == SpecialValue.SPECIAL:
             index = self.specials.index(card)
-            if index < 10:
+            if index < 11:
                 return (5, index)
             else:
-                return (6, index - 10)
+                return (6, index - 11)
         elif card.value > 10:
-            return (7, 2 + card.value - 11)
+            return (7, 3 + card.value - 11)
         elif card.value < 1:
             return (8, 2 - card.value)
         else:
             return (self.suits.index(card.suit), card.value - 1)
         
-    def _get_rect(self, col, row, width=2048, height=2048):
+    def _get_rect(self, col, row):
         """Return (left, bottom, width, height) of the given card."""
-        grid_w, grid_h = width / 28, height / 10
-        return (grid_w + col * 3 * grid_w, (9-row) * grid_h, 2 * grid_w, grid_h)
+        return (130 * col, 2048 - 182 * (row + 1), 130, 182)
 
 
 class Deck:
