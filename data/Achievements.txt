@@ -54,22 +54,6 @@
 [ACH-CODE]Streak 1000
 [ACH-REWARD]
 
-[ACH-NAME]Secret RendezVous
-[ACH-DESC]Unlock all of the special cards in a custom deck.
-[ACH-REWARD]
-
-[ACH-NAME]Perfect Vision
-[ACH-DESC]Make all of the Dealer's cards WAIT for one turn.
-[ACH-REWARD]
-
-[ACH-NAME]Dealer Down!
-[ACH-CODE]Enemy Each < 0
-[ACH-REWARD]
-
-[ACH-NAME]#RVFail
-[ACH-CODE]Each < 0
-[ACH-REWARD]
-
 [ACH-NAME]High Scorer
 [ACH-CODE]800
 [ACH-REWARD]
@@ -86,10 +70,26 @@
 [ACH-CODE]1600
 [ACH-REWARD]
 
+[ACH-NAME]Specializer
+[ACH-CODE]One Win
+[ACH-REWARD]
+
+[ACH-NAME]Dealer Down!
+[ACH-CODE]Enemy Each < 0
+[ACH-REWARD]
+
+[ACH-NAME]#RVFail
+[ACH-CODE]Each < 0
+[ACH-REWARD]
+
 [ACH-NAME]Jack of All Trades
 [ACH-DESC]Finish a game with equal scores in all suits.
 [ACH-REWARD]
 
-[ACH-NAME]Specializer
-[ACH-CODE]One Win
+[ACH-NAME]Perfect Vision
+[ACH-DESC]Make all of the Dealer's cards WAIT for one turn.
+[ACH-REWARD]
+
+[ACH-NAME]Secret RendezVous
+[ACH-DESC]Unlock all of the special cards in a custom deck.
 [ACH-REWARD]
