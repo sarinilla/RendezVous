@@ -103,7 +103,15 @@ class RoundCounter(Label):
 
 class HandDisplay(BoxLayout):
 
-    """Display a hand of cards."""
+    """Display a hand of cards.
+
+    Methods:
+      update      -- refresh the full display
+      get         -- remove and return the card from the given display
+      return_card -- return the played card to the hand display
+      confirm     -- pull the selected cards out of the Hand
+
+    """
     
     hand = ObjectProperty()
     slots = ListProperty()
@@ -147,7 +155,20 @@ class HandDisplay(BoxLayout):
 
 class BoardDisplay(BoxLayout):
 
-    """Show the 4x2 Gameboard."""
+    """Show the 4x2 Gameboard.
+
+    Methods:
+      update         -- refresh the full display
+      highlight      -- highlight every card on the board
+      place_card     -- place and display the card on the board
+      remove_card    -- remove card from the display and return it
+      validate       -- remove and return a list of invalid cards
+      pop            -- remove card at the given index and return it
+      play_dealer    -- play all dealer cards with timing
+      apply_specials -- apply all specials with timing and highlights
+      score_round    -- score each match with timing and highlights
+
+    """
     
     board = ObjectProperty()
     slots = []
@@ -203,6 +224,9 @@ class BoardDisplay(BoxLayout):
         self.board[PLAYER][i] = None
         self.slots[PLAYER][i].card = None
         return card
+
+
+    ## Auto-scoring (with breaks)
 
     def play_dealer(self, cards, callback=None, timer=1.0):
         """Automatically lay out the dealer's cards one by one."""
@@ -410,15 +434,19 @@ class RendezVousWidget(ScreenManager):
                 if self.main.gameboard.validate() == []:
 
                     self.main.hand_display.confirm()
-                    self.main.gameboard.play_dealer(self.dealer_play,
-                                                    callback=self._specials)
-                    for card in self.dealer_play:
-                        self.game.players[DEALER].remove(card)
-                    self.dealer_play = None
+                    self._play_dealer()
                     
         elif loc.parent is self.main.gameboard:
             card = self.main.gameboard.remove_card(card_display)
             self.main.hand_display.return_card(card)
+
+    def _play_dealer(self):
+        """Place the dealer's selected cards on the board."""
+        self.main.gameboard.play_dealer(self.dealer_play,
+                                        callback=self._specials)
+        for card in self.dealer_play:
+            self.game.players[DEALER].remove(card)
+        self.dealer_play = None
 
     def _specials(self):
         """Apply all specials."""
@@ -434,15 +462,20 @@ class RendezVousWidget(ScreenManager):
         """Clear the board for the next round."""
         game_over = self.game.next_round()
         if game_over:
-            self.achieved = App.get_running_app().record_score(self.game.score)
+            self.achieved += App.get_running_app().record_score(self.game.score)
             self._winner = WinnerScreen(self.game.score, self.achieved,
                                         name='winner')
             self.switch_to(self._winner)
             return
-        self.main.round_counter.round_number = self.game.round
-        self.main.gameboard.highlight(None)
-        self.main.gameboard.update()
-        self.main.hand_display.update()
+        elif self.game.board.is_full(PLAYER):
+            self.dealer_play = self.game.players[DEALER].AI_hard(
+                                    DEALER, self.game.board, self.game.score)
+            self._play_dealer()
+        else:
+            self.main.round_counter.round_number = self.game.round
+            self.main.gameboard.highlight(None)
+            self.main.gameboard.update()
+            self.main.hand_display.update()
 
     def play_again(self):
         """Start a new game."""
