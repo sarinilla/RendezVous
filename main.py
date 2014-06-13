@@ -115,11 +115,34 @@ class HandDisplay(BoxLayout):
             display = CardDisplay(card=card)
             self.slots.append(display)
             self.add_widget(display)
+        self._played = []
 
     def update(self):
+        """Update each card in the display."""
         for i, card in enumerate(self.hand):
             self.slots[i].card = None  # always force update
             self.slots[i].card = card
+
+    def get(self, card_display):
+        """Take and return the card from the given display."""
+        self._played.append(self.slots.index(card_display))
+        card = card_display.card
+        card_display.card = None
+        return card
+
+    def return_card(self, card):
+        """Return the played card to the hand display."""
+        for index in self._played:
+            if self.hand[index] is card:
+                self.slots[index].card = card
+                self._played.remove(index)
+                return
+
+    def confirm(self):
+        """Confirm the played cards and update the hand."""
+        for index in sorted(self._played, reverse=True):
+            self.hand.pop(index)
+        self._played = []
 
 
 class BoardDisplay(BoxLayout):
@@ -156,6 +179,123 @@ class BoardDisplay(BoxLayout):
             for display in side:
                 display.highlight(color)
 
+    def place_card(self, card, index=None, player=PLAYER):
+        """Place the card on the board, including visually."""
+        if index is None:
+            index = self.board.play_cards(player, [card])[0]
+        else:
+            self.board[player][index] = card
+        self.slots[player][index].card = card
+
+    def remove_card(self, card_display):
+        """Remove the card from the display and return it."""
+        card = card_display.card
+        card_display.card = None
+        return card
+
+    def validate(self):
+        """Remove and return a list of any invalid cards."""
+        return [self.pop(i) for i in self.board.validate(self.board[PLAYER])]
+
+    def pop(self, i):
+        """Remove and return the specified card."""
+        card = self.board[PLAYER][i]
+        self.board[PLAYER][i] = None
+        self.slots[PLAYER][i].card = None
+        return card
+
+    def play_dealer(self, cards, callback=None, timer=1.0):
+        """Automatically lay out the dealer's cards one by one."""
+        self.board.play_cards(DEALER, cards)
+        Clock.schedule_once(lambda t: self._play_next_dealer(callback=callback,
+                                                             timer=timer))
+
+    def _play_next_dealer(self, index=None, callback=None, timer=1.0):
+        """Place the next dealer card on the board."""
+        if index is None:
+            index = 0
+        else:
+            index += 1
+            if index >= len(self.board[0]):
+                if callback is not None:
+                    Clock.schedule_once(lambda dt:callback())
+                return
+        self.slots[DEALER][index].card = self.board[DEALER][index]
+        Clock.schedule_once(lambda t: self._play_next_dealer(index=index,
+                                                             callback=callback),
+                            timer)
+
+    def apply_specials(self, game, hand_display, callback=None, timer=1.0):
+        """Apply all special cards in play, one-by-one with highlighting."""
+        self.highlight(DARKEN)
+        Clock.schedule_once(lambda t: self._apply_special(game, hand_display,
+                                                          callback=callback,
+                                                          timer=timer), timer)
+
+    def _apply_special(self, game, hand_display, player=None, index=None,
+                       callback=None, timer=1.0):
+        """Apply the next special card, column by column."""
+        if index is None:
+            player, index = 0, 0
+        else:
+            self.slots[player][index].highlight(DARKEN)
+            player += 1
+            if player >= len(self.board):
+                player = 0
+                index += 1
+                if index >= len(self.board[0]):
+                    Clock.schedule_once(lambda t: callback())
+                    return
+        next_slot = lambda t: self._apply_special(game, hand_display,
+                                                  player=player, index=index,
+                                                  callback=callback,
+                                                  timer=timer)
+        if self.board[player][index].suit != SpecialSuit.SPECIAL:
+            Clock.schedule_once(next_slot)
+            return
+            
+        self.slots[player][index].highlight(BLUE)
+        game._apply(player, index)
+        self.update()
+        if (player == PLAYER and
+            self.slots[player][index].card.effect.effect == EffectType.FLUSH):
+            hand_display.update()
+        Clock.schedule_once(next_slot, timer)
+
+    def score_round(self, score_display, index=None, callback=None, timer=1.0):
+        """Score the given match, or all of them, with highlighting."""
+        if index is not None:
+            self._score_match(score_display, score_display.scoreboard, index)
+            Clock.schedule_once(lambda t: callback(), timer)
+        Clock.schedule_once(lambda t: self._score_next_match(score_display,
+                                                             callback=callback,
+                                                             timer=timer))
+
+    def _score_next_match(self, score_display, index=None,
+                          callback=None, timer=1.0):
+        """Highlight and score the next match of the round."""
+        if index is None:
+            index = 0
+        else:
+            index += 1
+            if index >= len(self.board[0]):
+                Clock.schedule_once(lambda t: callback())
+                return
+        self._score_match(score_display, score_display.scoreboard, index)
+        Clock.schedule_once(lambda t: self._score_next_match(score_display,
+                                                             index=index,
+                                                             callback=callback,
+                                                             timer=timer),
+                            timer)
+
+    def _score_match(self, score_display, score, index):
+        """Highlight and score the given match."""
+        for player in range(len(self.board)):
+            result = score._score_match(player, self.board[player][index],
+                                        player-1, self.board[player-1][index])
+            self.slots[player][index].highlight([WHITE, GREEN, RED][result])
+        score_display.update()
+        
 
 class ScoreDisplay(BoxLayout):
 
@@ -184,7 +324,16 @@ class ScoreDisplay(BoxLayout):
 
 class GameScreen(Screen):
     
-    """Displays the game in progress."""
+    """Displays the game in progress.
+
+    Attributes:
+      gameboard     -- displays the Gameboard
+      round_counter -- displays the current round
+      scoreboard    -- displays the Scoreboard
+      hand_display  -- displays the player's Hand
+      tooltip       -- displays the details on one card
+
+    """
 
     def __init__(self, **kwargs):
         Screen.__init__(self, **kwargs)
@@ -218,7 +367,15 @@ class GameScreen(Screen):
 
 class RendezVousWidget(ScreenManager):
 
-    """Arrange the screen - hand at the bottom, gameboard, score, etc."""
+    """Arrange the screen - hand at the bottom, gameboard, score, etc.
+
+    Attributes:
+      game        -- behind-the-scenes RendezVousGame
+      achieved    -- Achievements earned during the game
+      dealer_play -- cards picked out for the dealer
+      main        -- primary screen for gameplay
+
+    """
 
     def __init__(self, **kwargs):
         """Arrange the widgets."""
@@ -229,7 +386,7 @@ class RendezVousWidget(ScreenManager):
         self.game = RendezVousGame(deck=app.loaded_deck,
                                    achievements=app.achievements)
         self.game.new_game()
-        self._cards_played = []
+        self._cards_played = []  # hand indices played so far
         self.achieved = []
         self.dealer_play = None
 
@@ -239,138 +396,41 @@ class RendezVousWidget(ScreenManager):
 
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
-        if card_display.card is None:
-            return
+        if card_display.card is None: return
         if self.dealer_play is None:
             self.dealer_play = self.game.players[DEALER].AI_hard(
                                     DEALER, self.game.board, self.game.score)
+        if self.game.board.is_full(PLAYER): return  # not during scoring!
+        
         loc = card_display.parent
         if loc is self.main.hand_display:
-            if self.game.board.is_full(PLAYER): return  # not during scoring!
-            self._place_on_board(card_display)
+            card = self.main.hand_display.get(card_display)
+            self.main.gameboard.place_card(card)
             if self.game.board.is_full(PLAYER):
-                if not self._validate():
-                    return
-                self._dealer_play()
+                if self.main.gameboard.validate() == []:
+
+                    self.main.hand_display.confirm()
+                    self.main.gameboard.play_dealer(self.dealer_play,
+                                                    callback=self._specials)
+                    for card in self.dealer_play:
+                        self.game.players[DEALER].remove(card)
+                    self.dealer_play = None
                     
         elif loc.parent is self.main.gameboard:
-            if not self.game.board.is_full(PLAYER): # not during scoring!
-                self._return_to_hand(card_display)
+            card = self.main.gameboard.remove_card(card_display)
+            self.main.hand_display.return_card(card)
 
-    def _return_to_hand(self, card_display):
-        """Return a touched board card to the hand."""
-        try:
-            iboard = self.main.gameboard.slots[PLAYER].index(card_display)
-        except ValueError:
-            return
-        ihand = 0
-        for i in self._cards_played:
-            if self.game.players[PLAYER][i] == card_display.card:
-                ihand = i
-                break
-        else:
-            return
-        self._cards_played.remove(ihand)
-        self.game.board[PLAYER][iboard] = None
-        self.main.hand_display.slots[ihand].card = card_display.card
-        card_display.card = None
+    def _specials(self):
+        """Apply all specials."""
+        self.main.gameboard.apply_specials(self.game, self.main.hand_display,
+                                           self._score)
 
-    def _place_on_board(self, card_display):
-        """Place the touched hand card onto the board."""
-        iboard = self.game.board.play_cards(PLAYER, [card_display.card])[0]
-        ihand = self.main.hand_display.slots.index(card_display)
-        self._cards_played.append(ihand)
-        self.main.gameboard.slots[PLAYER][iboard].card = card_display.card
-        card_display.card = None
-
-    def _validate(self):
-        """Return True if requirements met; else return to hand and False."""
-        failures = self.game.validate(PLAYER)
-        if not failures:
-            return True
-        for iboard in failures:
-            self._return_to_hand(self.main.gameboard.slots[PLAYER][iboard])
-        return False
-
-    def _dealer_play(self):
-        """Finalize the move and let the dealer play."""
-        for ihand in reversed(sorted(self._cards_played)):
-            self.game.players[PLAYER].pop(ihand)
-        self._cards_played = []
-        self.game.board.play_cards(DEALER, self.dealer_play)
-        for card in self.dealer_play:
-            self.game.players[DEALER].remove(card)
-        self.dealer_play = None
-        Clock.schedule_once(self._play_dealer)
-
-    def _play_dealer(self, dt, i=None):
-        """Place the next dealer card on the board."""
-        if i is None:
-            i = 0
-        else:
-            i += 1
-            if i >= len(self.game.board[0]):
-                Clock.schedule_once(self._complete_play)
-                return
-        self.main.gameboard.slots[DEALER][i].card = self.game.board[DEALER][i]
-        Clock.schedule_once(lambda dt: self._play_dealer(dt, i), 1.0)
-
-    def _complete_play(self, *args):
-        """Finish the move and prepare for scoring."""
-        self.main.gameboard.update()
-        self.main.gameboard.highlight(DARKEN)
-        Clock.schedule_once(self._apply_specials, 1.0)
-
-    def _apply_specials(self, dt, i=None, p=None):
-        """Apply specials one-by-one with highlighting."""
-
-        def increment(i, p):
-            p += 1
-            if p >= len(self.game.board):
-                p = 0
-                i += 1
-                if i >= len(self.game.board[0]):
-                    Clock.schedule_once(self._score_round)
-                    return None, None
-            return i, p
-
-        if i is None:
-            i, p = 0, 0
-        else:
-            self.main.gameboard.slots[p][i].highlight(DARKEN)
-            i, p = increment(i, p)
-            if i is None: return
-            
-        while self.game.board[p][i].suit != SpecialSuit.SPECIAL:
-            i, p = increment(i, p)
-            if i is None: return
-
-        self.main.gameboard.slots[p][i].highlight(BLUE)
-        self.game._apply(p, i)
-        self.main.gameboard.update()
-        if self.main.gameboard.slots[p][i].card.effect.effect == EffectType.FLUSH:
-            if p == PLAYER:
-                self.main.hand_display.update()
-        Clock.schedule_once(partial(self._apply_specials, i=i, p=p), 1.0)
-
-    def _score_round(self, dt, i=None):
+    def _score(self):
         """Score the round."""
-        if i is None:
-            i = 0
-        else:
-            i += 1
-            if i >= len(self.game.board[0]):
-                Clock.schedule_once(self._next_round)
-                return
-        for p in range(len(self.game.board)):
-            result = self.game.score._score_match(p, self.game.board[p][i],
-                                                  p-1, self.game.board[p-1][i])
-            color = [WHITE, GREEN, RED][result]
-            self.main.gameboard.slots[p][i].highlight(color)
-        self.main.scoreboard.update()
-        Clock.schedule_once(lambda dt: self._score_round(dt, i), 1.0)
+        self.main.gameboard.score_round(self.main.scoreboard,
+                                        callback=self._next_round)
 
-    def _next_round(self, dt):
+    def _next_round(self):
         """Clear the board for the next round."""
         game_over = self.game.next_round()
         if game_over:
@@ -380,13 +440,12 @@ class RendezVousWidget(ScreenManager):
             self.switch_to(self._winner)
             return
         self.main.round_counter.round_number = self.game.round
-        for side in self.main.gameboard.slots:
-            for slot in side:
-                slot.highlight(None)
+        self.main.gameboard.highlight(None)
         self.main.gameboard.update()
         self.main.hand_display.update()
 
     def play_again(self):
+        """Start a new game."""
         self.game.new_game()
         self.achieved = []
         self.main.gameboard.highlight(None)
