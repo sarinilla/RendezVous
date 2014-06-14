@@ -174,26 +174,29 @@ class DeckDefinition:
 
     Deck Image Format:  DeckName.png
     
-      The deck image file consists of 10 rows and 9 columns, with a half-
-      card space between each column.  Thus, on a 28x10 grid, the first
-      card is in (1, 0) and (2, 0), and the card to the right of that is
-      in (4, 0) and (5, 0).
+      The deck image file is 2048x2048 and is built on a 130x182 grid.
 
       The first five columns are filled with regular suit cards, with
       values from 1 to 10 vertically, top to bottom.  The suits are presented
-      in the same order as they are introduced in the Deck Definition File.
+      in the same order as they are introduced in the Deck Definition File. At
+      the very bottom of each column, off of the grid rows, is a 130x130 suit
+      icon.
 
-      The next two columns are filled with SpecialCards, in the order they
-      are presented in the Deck Definition File.  Note that the special cards
-      will also be unlocked in this order.
+      The next two columns are filled with up to 22 SpecialCards, in the order
+      they are presented in the Deck Definition File.
 
-      The next column contains KISS, WIN, and then the numbers greater than 10
-      (from 11 to 15 vertically).  The remaining three grid spaces contain the
-      icons for the first three suits (square, top-aligned).
+      The next column contains the back of the card, KISS, WIN, and then the
+      numbers greater than 10 (from 11 to 15 vertically).  The remaining grid
+      spaces are currently empty.
 
-      The final column contains the back of the card, LOSE, then the numbers
-      from 0 to -5 vertically.  The remaining two grid spaces contain the icons
-      for the last two suits (square, top-aligned).
+      The next column contains the locked / unknown card, LOSE, then the
+      numbers from 0 to -5 vertically.  The remaining spaces in this column are
+      currently empty.
+
+      The first row in each remaining column is currently empty.  Below that,
+      the grid is sectioned into 2x2 blocks containing dealer images: the first
+      row of this block contains the first suit's WIN, LOSE, and DRAW images,
+      left to right.  Additional rows contain adidtional suit's dealers.
 
 
     Deck Definition File Format:  DeckName.txt
