@@ -14,7 +14,10 @@ from rendezvous.statistics import Statistics
 from rendezvous.achievements import AchievementList
 
 from gui import DEALER, PLAYER
+from gui.components import BLANK, DARKEN
 from gui.screens.game import GameScreen, WinnerScreen
+from gui.screens.tutorial import HandIntro, BoardIntro, ScoreIntro
+from gui.screens.tutorial import PostScoringIntro, TooltipIntro
 
 
 __version__ = '0.3.6'
@@ -51,8 +54,7 @@ class RendezVousWidget(ScreenManager):
 
         # Prepare the tutorial (if needed)
         if app.achievements.achieved == []:
-            self.switch_to(HandIntroTutorial(game=self.game,
-                                             name='tutorial-hand'))
+            self.switch_to(HandIntro(game=self.game, name='tutorial-hand'))
             
 
     def card_touched(self, card_display):
@@ -62,59 +64,108 @@ class RendezVousWidget(ScreenManager):
             self.dealer_play = self.game.players[DEALER].AI_hard(
                                     DEALER, self.game.board, self.game.score)
         if self.game.board.is_full(PLAYER): return  # not during scoring!
+
+        if self.current == 'tutorial-tooltip':
+            for slot in self.current_screen.hand_display.slots:
+                slot.highlight(BLANK)
         
         loc = card_display.parent
-        if loc is self.main.hand_display:
-            card = self.main.hand_display.get(card_display)
-            self.main.gameboard.place_card(card)
+        if loc is self.current_screen.hand_display:
+            board_shown = self.current not in ('tutorial-hand',
+                                               'tutorial-tooltip')
+            card = self.current_screen.hand_display.get(card_display)
+            if board_shown:
+                self.current_screen.gameboard.place_card(card)
+            else:
+                self.game.board.play_cards(PLAYER, [card])
             if self.game.board.is_full(PLAYER):
-                failures = self.main.gameboard.validate()
+                if board_shown:
+                    failures = self.current_screen.gameboard.validate()
+                else:
+                    failures = self.game.board.validate(self.game.board[PLAYER])
+                    failures = [self.game.board[PLAYER][i] for i in failures]
                 for card in failures:
-                    self.main.hand_display.return_card(card)
+                    self.current_screen.hand_display.return_card(card)
                 if failures == []:
-                    self.main.hand_display.confirm()
+                    self.current_screen.hand_display.confirm()
                     self._play_dealer()
                     
-        elif loc.parent is self.main.gameboard:
-            card = self.main.gameboard.remove_card(card_display)
-            self.main.hand_display.return_card(card)
+        elif loc.parent is self.current_screen.gameboard:
+            card = self.current_screen.gameboard.remove_card(card_display)
+            self.current_screen.hand_display.return_card(card)
 
     def _play_dealer(self):
         """Place the dealer's selected cards on the board."""
-        self.main.gameboard.play_dealer(self.dealer_play,
-                                        callback=self._specials)
+        if self.current == 'tutorial-hand':
+            self.switch_to(BoardIntro(game=self.game, name='tutorial-board'))
+        elif self.current == 'tutorial-tooltip':
+            self.current = 'main'
+            self.current_screen.gameboard.update()
+        self.current_screen.gameboard.play_dealer(self.dealer_play,
+                                                  callback=self._specials)
         for card in self.dealer_play:
             self.game.players[DEALER].remove(card)
         self.dealer_play = None
 
     def _specials(self):
         """Apply all specials."""
-        self.main.gameboard.apply_specials(self.game, self.main.hand_display,
-                                           self._score)
+        if self.current == 'tutorial-board':
+            return  # until continue is pressed
+        self.current_screen.gameboard.apply_specials(self.game,
+                    self.current_screen.hand_display, self._score)
+
+    def score_tutorial(self):
+        """Continue with scoring from tutorial-board."""
+        self.switch_to(ScoreIntro(game=self.game, name='tutorial-score'))
+        self._score()
 
     def _score(self):
         """Score the round."""
-        self.main.gameboard.score_round(self.main.scoreboard,
-                                        callback=self._next_round)
+        self.current_screen.gameboard.score_round(self.current_screen.scoreboard,
+                                                  callback=self._next_round)
+
+    def tutorial_scored(self):
+        self.switch_to(PostScoringIntro(game=self.game,
+                                        name='tutorial-continue'))
+        self._next_round()
 
     def _next_round(self):
         """Clear the board for the next round."""
+        if self.current == 'tutorial-score':
+            return  # until continue is pressed
+        app = App.get_running_app()
         game_over = self.game.next_round()
         if game_over:
-            self.achieved += App.get_running_app().record_score(self.game.score)
-            self._winner = WinnerScreen(self.game.score, self.achieved,
-                                        name='winner')
+            self.achieved += app.record_score(self.game.score)
+            if self.current != 'main':
+                self._winner = WinIntroScreen(game=self.game,
+                                              name='winner')
+                self._winner.index = 1
+            else:
+                self._winner = WinnerScreen(self.game.score, self.achieved,
+                                            name='winner')
             self.switch_to(self._winner)
             return
         elif self.game.board.is_full(PLAYER):
             self.dealer_play = self.game.players[DEALER].AI_hard(
                                     DEALER, self.game.board, self.game.score)
             self._play_dealer()
+            return
+
+        if self.current == 'tutorial-continue' and self.game.round >= 10:
+            special = app.loaded_deck.get_special('Perfume')
+            self.game.players[PLAYER].cards[8] = special
+            app.achievements.achieved.append("Tutorial")
+            self.game.players[PLAYER].deck.shuffle()
+            self.switch_to(TooltipIntro(game=self.game, name='tutorial-tooltip'))
+            for slot in self.current_screen.hand_display.slots:
+                slot.highlight(DARKEN)
+            self.current_screen.hand_display.slots[8].highlight(BLANK)
         else:
-            self.main.round_counter.round_number = self.game.round
-            self.main.gameboard.highlight(None)
-            self.main.gameboard.update()
-            self.main.hand_display.update()
+            self.current_screen.gameboard.highlight(None)
+            self.current_screen.gameboard.update()
+        self.current_screen.round_counter.round_number = self.game.round
+        self.current_screen.hand_display.update()
 
     def play_again(self):
         """Start a new game."""

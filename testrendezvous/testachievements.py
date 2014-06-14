@@ -301,8 +301,15 @@ class TestAchievementList(unittest.TestCase):
         self.a.achieve("RendezVous Student")
         self.assertTrue(self.a.unlocked(sc))
         
+    def test_unlocked_tutorial(self):
+        """Verify SpecialCards not unlocked until the first Achievement."""
+        self.assertFalse(self.a.unlocked("Flowers"))
+        self.a.achieve("RendezVous Student")
+        self.assertTrue(self.a.unlocked("Flowers"))
+        
     def test_unlocked_invalid(self):
         """Verify unlocked SpecialCards not associated with an Achievement."""
+        self.a.achieve("RendezVous Student")
         self.assertTrue(self.a.unlocked("Invalid SpecialCard"))
 
 

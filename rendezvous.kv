@@ -148,3 +148,102 @@
             Button:
                 text: "no"
                 on_press: app.stop()
+
+
+<WinIntroScreen@Screen>:
+    Carousel:
+        BoxLayout:
+            orientation: "vertical"
+            FinalScoreDisplay:
+                score: root.game and root.game.scoreboard
+            ProgressBar:
+                max: 0
+            BoxLayout:
+                Widget:
+                Button:
+                    text: "CONTINUE"
+                Widget:
+        BoxLayout:
+            orientation: "vertical"
+            UnlockDisplay:
+                achievement: root.achievement
+                reward: root.achievement.reward
+            ProgressBar:
+                max: 0
+            Label:
+                text: "swipe left"
+
+
+<HandIntroDisplay@BoxLayout>:
+    orientation: "vertical"
+    Label:
+        text: "[b]Welcome to RendezVous![/b]"
+        markup: True
+        text_size: self.size
+    Label:
+        text: "Your hand is displayed below. Each round, you will pick 4 cards to play, then your hand will be refilled to 10 again.  Go ahead and pick your first four cards now."
+        text_size: self.size
+    Label:
+        text: "[b]SELECT 4 CARDS BELOW[/b]"
+        markup: True
+        text_size: self.size
+
+
+<BoardIntroDisplay@BoxLayout>:
+    orientation: "vertical"
+    Label:
+        text: "[b]Now it's the dealer's turn![/b]"
+        markup: True
+        text_size: self.size
+        size_hint: (1, .25)
+    Label:
+        text: "The dealer has a hand of 10 cards, just like you, and will select four cards to play against yours each round."
+        text_size: self.size
+    Button:
+        id: continue_btn
+        text: "Continue"
+        on_press: root.parent.parent.parent.parent.manager.score_tutorial()
+        size_hint: (1, .125)
+
+
+<ScoreIntroDisplay@BoxLayout>:
+    orientation: "vertical"
+    Label:
+        text: "[b]Scoring[/b]"
+        markup: True
+        text_size: self.size
+        size_hint: (1, .125)
+    Label:
+        text: "There are five separate suits in the deck, and you will earn a score in each suit.  You have four opportunities to score in each round - once per card you play.  The cards you play are compared to the ones played right across from them, and the highest card wins!\n\nWhen your card is the higher one, you earn 10 points in the suit you played, and 10 points in the suit of the dealer's card in that match-up.  When your card is lower, you lose 10 points in the suit you played.\n\nAs the round is scored, the highlighting will help you see who won each match."
+        text_size: self.size
+        font_size: dp(12)
+    Button:
+        id: continue_btn
+        text: "Continue"
+        on_press: root.parent.parent.parent.parent.manager.tutorial_scored()
+        size_hint: (1, .125)
+
+
+<PostScoringDisplay@BoxLayout>:
+    orientation: "vertical"
+    Label:
+        text: "Your score in each suit is shown above, to the left. The dealer's score is to the right."
+        text_size: self.size
+    Label:
+        text: "[b]Play a few rounds![/b]"
+        markup: True
+        text_size: self.size
+        size_hint: (1, .125)
+
+
+<TooltipIntroDisplay@BoxLayout>:
+    orientation: "vertical"
+    Label:
+        text: "[b]Introducing Special Cards[/b]"
+        markup: True
+        text_size: self.size
+        size_hint: (1, .125)
+    Label:
+        text: "In addition to the five normal suits, you will sometimes get special cards in your hand.  These can only be played when certain conditions are met, but they have the power to affect the other cards you play, or even the dealer's cards.  Drag a card onto the tooltip display below the scoreboard to read about what it does and how to use it.\n\n[b]When you are ready to continue, select your 4 cards for this round.[/b]"
+        markup: True
+        text_size: self.size

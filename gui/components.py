@@ -106,6 +106,10 @@ class HandDisplay(BoxLayout):
             display = CardDisplay(card=card)
             self.slots.append(display)
             self.add_widget(display)
+        for i in range(len(self.hand) - len(self.slots)): # not full now?
+            display = CardDisplay(card=None)
+            self.slots.append(display)
+            self.add_widget(display)
         self._played = []
 
     def update(self):
@@ -261,7 +265,8 @@ class BoardDisplay(BoxLayout):
                                                   player=player, index=index,
                                                   callback=callback,
                                                   timer=timer)
-        if self.board[player][index].suit != SpecialSuit.SPECIAL:
+        if (self.board[player][index] is None or
+            self.board[player][index].suit != SpecialSuit.SPECIAL):
             Clock.schedule_once(next_slot)
             return
             

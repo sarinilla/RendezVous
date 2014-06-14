@@ -290,7 +290,13 @@ class AchievementList:
         return iter(self.available)
         
     def unlocked(self, reward):
-        """Return whether the given (or named) SpecialCard is unlocked."""
+        """Return whether the given (or named) SpecialCard is unlocked.
+
+        No rewards are unlocked until the first Achievement has been earned.
+
+        """
+        if self.achieved == []:
+            return False  # beginner mode; no Specials
         for achievement in self.available:
             if achievement.reward == str(reward):  # str is name of SpecialCard
                 return achievement in self.achieved
