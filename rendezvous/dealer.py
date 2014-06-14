@@ -269,6 +269,11 @@ class ArtificialIntelligence:
         """
         self.possible_plays = []
         self._consider_holds()
+        if self._cards_needed == 0:
+            self.possible_plays.append(PossiblePlay([], self.board,
+                                                        self.score, self.hand,
+                                                        self.player))
+            return
         self._consider_specials()
         self._consider_values()
         self._meet_targets()

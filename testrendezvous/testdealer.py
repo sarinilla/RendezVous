@@ -553,6 +553,13 @@ class TestAI(unittest.TestCase):
         self.ai.analyze()
         self.assertRaises(IndexError, self.ai.get_best_play)
 
+    def test_none_needed(self):
+        """Handle full dealer hold."""
+        self.ai.board[0] = [Card("Suit", 1), Card("Suit", 2),
+                            Card("Suit", 3), Card("Suit", 4)]
+        self.ai.analyze()
+        self.assertEqual(self.ai.get_best_play(), [])
+
     def test_complex_cards(self):
         """Verify that complex cards can be played at allaccurately."""
         r1 = Requirement(count=1, style=Application(suits=["Suit"]))
