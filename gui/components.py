@@ -275,7 +275,8 @@ class BoardDisplay(BoxLayout):
                 return
         self.slots[DEALER][index].card = self.board[DEALER][index]
         Clock.schedule_once(lambda t: self._play_next_dealer(index=index,
-                                                             callback=callback),
+                                                             callback=callback,
+                                                             timer=timer),
                             timer)
 
     def apply_specials(self, game, hand_display, callback=None, timer=1.0):
