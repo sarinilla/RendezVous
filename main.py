@@ -170,7 +170,7 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.gameboard.highlight(BLANK)
         self.current_screen.gameboard.update()
         self.current_screen.scoreboard.update()
-        Clock.schedule_once(lambda dt: self._specials(), 1.0)
+        Clock.schedule_once(lambda dt: self._specials(), GameSettings.SPEED)
 
     def next_round(self):
         """Clear the board for the next round."""

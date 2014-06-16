@@ -7,7 +7,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 
-from rendezvous import SpecialSuit, EffectType
+from rendezvous import GameSettings, SpecialSuit, EffectType
 from rendezvous.deck import Card
 
 from gui import PLAYER, DEALER
@@ -281,13 +281,14 @@ class BoardDisplay(BoxLayout):
 
     ## Auto-scoring (with breaks)
 
-    def play_dealer(self, cards, callback=None, timer=1.0):
+    def play_dealer(self, cards, callback=None, timer=GameSettings.SPEED):
         """Automatically lay out the dealer's cards one by one."""
         self.board.play_cards(DEALER, cards)
         Clock.schedule_once(lambda t: self._play_next_dealer(callback=callback,
                                                              timer=timer))
 
-    def _play_next_dealer(self, index=None, callback=None, timer=1.0):
+    def _play_next_dealer(self, index=None,
+                          callback=None, timer=GameSettings.SPEED):
         """Place the next dealer card on the board."""
         if index is None:
             index = 0
@@ -303,7 +304,8 @@ class BoardDisplay(BoxLayout):
                                                              timer=timer),
                             timer)
 
-    def apply_specials(self, game, hand_display, callback=None, timer=1.0):
+    def apply_specials(self, game, hand_display,
+                       callback=None, timer=GameSettings.SPEED):
         """Apply all special cards in play, one-by-one with highlighting."""
         self.highlight(DARKEN)
         Clock.schedule_once(lambda t: self._apply_special(game, hand_display,
@@ -311,7 +313,7 @@ class BoardDisplay(BoxLayout):
                                                           timer=timer), timer)
 
     def _apply_special(self, game, hand_display, player=None, index=None,
-                       callback=None, timer=1.0):
+                       callback=None, timer=GameSettings.SPEED):
         """Apply the next special card, column by column."""
         if index is None:
             player, index = 0, 0
@@ -341,7 +343,8 @@ class BoardDisplay(BoxLayout):
             hand_display.update()
         Clock.schedule_once(next_slot, timer)
 
-    def score_round(self, score_display, index=None, callback=None, timer=1.0):
+    def score_round(self, score_display, index=None,
+                    callback=None, timer=GameSettings.SPEED):
         """Score the given match, or all of them, with highlighting."""
         if index is not None:
             self._score_match(score_display, score_display.scoreboard, index)
@@ -351,7 +354,7 @@ class BoardDisplay(BoxLayout):
                                                              timer=timer))
 
     def _score_next_match(self, score_display, index=None,
-                          callback=None, timer=1.0):
+                          callback=None, timer=GameSettings.SPEED):
         """Highlight and score the next match of the round."""
         if index is None:
             index = 0
