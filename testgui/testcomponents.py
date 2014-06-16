@@ -73,6 +73,15 @@ class TestHandDisplay(unittest.TestCase):
     def test_udpate(self):
         self.hd.update()
 
+    def test_swap(self):
+        one = self.hd.slots[3].card
+        two = self.hd.slots[4].card
+        self.hd.swap(one, two)
+        self.assertIs(self.hd.slots[3].card, two)
+        self.assertIs(self.hd.slots[4].card, one)
+        self.assertIs(self.hd.hand[3], two)
+        self.assertIs(self.hd.hand[4], one)
+
     def test_get(self):
         expected = self.hd.slots[3].card
         card = self.hd.get(self.hd.slots[3])

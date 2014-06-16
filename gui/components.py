@@ -36,7 +36,11 @@ class CardDisplay(Widget):
             touch.push(attrs=["card"])
 
     def on_touch_up(self, touch):
-        if self.collide_point(*touch.pos):
+        if not self.collide_point(*touch.pos):
+            return
+        if 'card' in dir(touch) and touch.card != self.card:
+            App.get_running_app().root.card_dropped(self, touch.card)
+        else:
             App.get_running_app().root.card_touched(self)
 
     def highlight(self, color):
@@ -125,8 +129,35 @@ class HandDisplay(BoxLayout):
             self.slots[i].card = None  # always force update
             self.slots[i].card = card
 
+    def _find_display(self, card):
+        """Return the slot holding this card."""
+        if isinstance(card, CardDisplay):
+            return card
+        for slot in self.slots:
+            if slot.card is card:
+                return slot
+        return None
+
+    def swap(self, card1, card2):
+        """Swap the two cards in the hand."""
+        def index(c):
+            t = self._find_display(c)
+            if t is None: return c
+            return self.slots.index(t)
+        c, d = index(card1), index(card2)
+        if not (isinstance(c, int) and isinstance(d, int)): return
+        if c >= len(self.hand.cards) or d >= len(self.hand.cards): return
+        
+        self.hand.cards[c], self.hand.cards[d] = self.hand.cards[d], self.hand.cards[c]
+        self.slots[c].card , self.slots[d].card = self.slots[d].card , self.slots[c].card
+        if c in self._played:
+            self._played[self._played.index(c)] = d
+        if d in self._played:
+            self._played[self._played.index(d)] = c
+
     def get(self, card_display):
         """Take and return the card from the given display."""
+        card_display = self._find_display(card_display)
         self._played.append(self.slots.index(card_display))
         card = card_display.card
         card_display.card = None

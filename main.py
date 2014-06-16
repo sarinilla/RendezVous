@@ -45,9 +45,10 @@ class RendezVousWidget(ScreenManager):
         self.game = RendezVousGame(deck=app.loaded_deck,
                                    achievements=app.achievements)
         self.game.new_game()
-        self._cards_played = []  # hand indices played so far
-        self.achieved = []
-        self.dealer_play = None
+        self._cards_played = []    #: hand indices played so far
+        self.achieved = []         #: Achievements earned this game
+        self.dealer_play = None    #: cards the dealer will play
+        self._in_progress = False  #: currently scoring a round?
 
         # Prepare the screens
         self.main = GameScreen(game=self.game, name='main')
@@ -64,31 +65,57 @@ class RendezVousWidget(ScreenManager):
 
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
+        if self._in_progress: return
         if card_display.card is None: return
         if self.dealer_play is None:
             self.dealer_play = self.game.players[DEALER].AI_hard(
                                     DEALER, self.game.board, self.game.score)
-        if self.game.board.is_full(PLAYER): return  # not during scoring!
-
         if self.current == 'tutorial-tooltip':
             for slot in self.current_screen.hand_display.slots:
                 slot.highlight(BLANK)
         
         loc = card_display.parent
         if loc is self.current_screen.hand_display:
-            card = self.current_screen.hand_display.get(card_display)
-            self.current_screen.gameboard.place_card(card)
-            if self.game.board.is_full(PLAYER):
+            self._place_on_board(card_display)
+                    
+        elif loc.parent is self.current_screen.gameboard:
+            self._remove_from_board(card_display)
+
+    def card_dropped(self, card_display, card):
+        """Allow dropping cards onto EMPTY board slots, or arranging hand."""
+        if self._in_progress: return
+        loc = card_display.parent
+        if loc.parent is self.current_screen.gameboard:
+            if card is None: return
+            if card_display.card is not None:
+                self._remove_from_board(card_display)
+                if card_display.card is not None: return
+            elif card_display not in self.current_screen.gameboard.slots[PLAYER]:
+                return
+            self._place_on_board(card, self.current_screen.gameboard.slots[PLAYER].index(card_display))
+        elif loc is self.current_screen.hand_display:
+            loc.swap(card_display, card)
+
+    def _place_on_board(self, card_or_display, index=None):
+        """Place a card on the board from the hand."""
+        card = self.current_screen.hand_display.get(card_or_display)
+        self.current_screen.gameboard.place_card(card, index)
+        if self.game.board.is_full(PLAYER):
+                self._in_progress = True
                 failures = self.current_screen.gameboard.validate()
-                for card in failures:
-                    self.current_screen.hand_display.return_card(card)
+                for fcard in failures:
+                    self.current_screen.hand_display.return_card(fcard)
                 if failures == []:
                     self.current_screen.hand_display.confirm()
                     self._play_dealer()
-                    
-        elif loc.parent is self.current_screen.gameboard:
-            card = self.current_screen.gameboard.remove_card(card_display)
-            self.current_screen.hand_display.return_card(card)
+
+    def _remove_from_board(self, card_display):
+        """Return a card from the board to the hand."""
+        if card_display not in self.slots[PLAYER]: return
+        index = self.slots[PLAYER].index(card_display)
+        if self.board.wait[PLAYER][index]: return
+        card = self.current_screen.gameboard.remove_card(card_display)
+        self.current_screen.hand_display.return_card(card)
 
     def _play_dealer(self):
         """Place the dealer's selected cards on the board."""
@@ -111,12 +138,15 @@ class RendezVousWidget(ScreenManager):
     def _specials(self):
         """Apply all specials."""
         if self.current == 'tutorial-board':
+            self._in_progress = False
             return  # until continue is pressed
         self.current_screen.gameboard.apply_specials(self.game,
                     self.current_screen.hand_display, self._score)
 
     def score_tutorial(self, *args):
         """Continue with scoring from tutorial-board."""
+        if self._in_progress: return
+        self._in_progress = True
         self.switch_to(SidebarTutorial(game=self.game, name='tutorial-score'))
         self.current_screen.tutorial.title = "Scoring"
         self.current_screen.tutorial.text = "There are five suits in the deck, and you are scored in each suit.\n\nA win earns you 10 points in the suit you played, and 10 points in the dealer's suit. A loss costs you 10 points in your suit only.\n\nAs the round is scored, the highlighting will help you see who won each match-up."
@@ -130,6 +160,8 @@ class RendezVousWidget(ScreenManager):
                                                   callback=self._next_round)
 
     def tutorial_scored(self, *args):
+        if self._in_progress: return
+        self._in_progress = True
         self.switch_to(TooltipTutorial(game=self.game,
                                        name='tutorial-continue'))
         self.current_screen.tutorial.title = "The Scoreboard"
@@ -140,6 +172,7 @@ class RendezVousWidget(ScreenManager):
     def _next_round(self):
         """Clear the board for the next round."""
         if self.current == 'tutorial-score':
+            self._in_progress = False
             return  # until continue is pressed
         app = App.get_running_app()
         game_over = self.game.next_round()
@@ -173,6 +206,7 @@ class RendezVousWidget(ScreenManager):
             self.current_screen.gameboard.update()
         self.current_screen.round_counter.round_number = self.game.round
         self.current_screen.hand_display.update()
+        self._in_progress = False
 
     def play_again(self):
         """Start a new game."""
@@ -185,6 +219,7 @@ class RendezVousWidget(ScreenManager):
         self.main.round_counter.round_number = 1
         self.current = 'main'
         self.remove_widget(self._winner)
+        self._in_progress = False
 
 
 class RendezVousApp(App):
