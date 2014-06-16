@@ -151,7 +151,12 @@ class Requirement:
             txt = "Exactly"
         elif self.operator == Operator.NO_MORE_THAN:
             txt = "No more than"
-        return "%s %s %s" % (txt, self.count, self.style)
+        style_str = str(self.style)
+        if style_str == "ALL cards":
+            style_str = "cards"
+        if self.count == 1:
+            style_str = style_str.replace("cards", "card")
+        return "%s %s %s" % (txt, self.count, style_str)
     
     @combinable_method
     def verify(self, friendly_cards):
@@ -235,6 +240,8 @@ class Application:
             txt += " with a value of %s or less" % self.max_value
         if self.opposite is not None:
             txt += " placed VS %s" % self.opposite
+        if txt == "cards":
+            return "ALL cards"
         return txt
 
     def _reverse_alignment(self, alignment):

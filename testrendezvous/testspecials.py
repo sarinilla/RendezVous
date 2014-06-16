@@ -319,7 +319,7 @@ class TestRequirement(unittest.TestCase):
                          "Exactly 3 cards")
         self.assertEqual(str(Requirement(operator=Operator.NO_MORE_THAN,
                                          count=1, style=Application())),
-                         "No more than 1 cards")
+                         "No more than 1 card")
 
     def test_totalcount(self):
         """Test counts are summed properly."""
@@ -407,13 +407,13 @@ class TestApplication(unittest.TestCase):
     def test_string_(self):
         """Verify string output."""
         self.assertEqual(str(Application()),
-                         "cards")
+                         "ALL cards")
         self.assertEqual(str(Application(alignment=Alignment.FRIENDLY)),
                          "Friendly cards")
         self.assertEqual(str(Application(alignment=Alignment.ENEMY)),
                          "Enemy cards")
         self.assertEqual(str(Application(alignment=Alignment.ALL)),
-                         "cards")
+                         "ALL cards")
         self.assertEqual(str(Application(suits=["Suit 1", "Suit 2"])),
                          "Suit 1 or Suit 2 cards")
         self.assertEqual(str(Application(min_value=3)),
