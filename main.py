@@ -1,5 +1,7 @@
 import os
+import copy
 
+from kivy.clock import Clock
 from kivy.app import App
 from kivy.core.image import Image
 from kivy.graphics.texture import Texture
@@ -21,7 +23,7 @@ from gui.screens.game import GameScreen, WinnerScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 
 
-__version__ = '0.3.6'
+__version__ = '0.4.0'
 
 
 class RendezVousWidget(ScreenManager):
@@ -151,30 +153,33 @@ class RendezVousWidget(ScreenManager):
         self.switch_to(SidebarTutorial(game=self.game, name='tutorial-score'))
         self.current_screen.tutorial.title = "Scoring"
         self.current_screen.tutorial.text = "There are five suits in the deck, and you are scored in each suit.\n\nA win earns you 10 points in the suit you played, and 10 points in the dealer's suit. A loss costs you 10 points in your suit only.\n\nAs the round is scored, the highlighting will help you see who won each match-up."
-        self.current_screen.button = Button(text="Continue")
-        self.current_screen.button.bind(on_press=self.tutorial_scored)
         self._score()
 
     def _score(self):
         """Score the round."""
-        self.current_screen.gameboard.score_round(self.current_screen.scoreboard,
-                                                  callback=self._next_round)
+        self._backup_score = copy.deepcopy(self.game.score.scores)
+        self.current_screen.gameboard.score_round(
+                self.current_screen.scoreboard,
+                callback=self.current_screen.gameboard.prompt_for_next_round)
 
-    def tutorial_scored(self, *args):
-        if self._in_progress: return
-        self._in_progress = True
-        self.switch_to(TooltipTutorial(game=self.game,
-                                       name='tutorial-continue'))
-        self.current_screen.tutorial.title = "The Scoreboard"
-        self.current_screen.tutorial.text= "Your score in each suit is shown above, to the left. The dealer's score is to the right.\n\nAfter %s rounds, the winner is the one leading in the most suits." % GameSettings.NUM_ROUNDS
-        self.current_screen.tutorial.footer = "Play a few rounds!"
-        self._next_round()
+    def replay_scoring(self):
+        """Replay the scoring sequence at the user's request."""
+        self.game.score.scores = self._backup_score
+        for card in self.game.board:
+            card.reset()
+        self.current_screen.gameboard.highlight(BLANK)
+        self.current_screen.gameboard.update()
+        self.current_screen.scoreboard.update()
+        Clock.schedule_once(lambda dt: self._specials(), 1.0)
 
-    def _next_round(self):
+    def next_round(self):
         """Clear the board for the next round."""
         if self.current == 'tutorial-score':
-            self._in_progress = False
-            return  # until continue is pressed
+            self.switch_to(TooltipTutorial(game=self.game,
+                                           name='tutorial-continue'))
+            self.current_screen.tutorial.title = "The Scoreboard"
+            self.current_screen.tutorial.text= "Your score in each suit is shown above, to the left. The dealer's score is to the right.\n\nAfter %s rounds, the winner is the one leading in the most suits." % GameSettings.NUM_ROUNDS
+            self.current_screen.tutorial.footer = "Play a few rounds!"
         app = App.get_running_app()
         game_over = self.game.next_round()
         if game_over:

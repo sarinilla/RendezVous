@@ -4,6 +4,7 @@ from kivy.properties import ObjectProperty, ListProperty
 from kivy.properties import StringProperty, NumericProperty
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
+from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 
 from rendezvous import SpecialSuit, EffectType
@@ -211,6 +212,28 @@ class BoardDisplay(BoxLayout):
                 layout.add_widget(display)
             self.slots.append(side_slots)
             self.add_widget(layout)
+
+        # Prep the next round prompt widget for later
+        self._next_round_prompt = BoxLayout(size_hint=(1, .125))
+        self._next_round_prompt.add_widget(Button(text="Replay",
+                                            on_press=self._rescore_prompted))
+        self._next_round_prompt.add_widget(Widget())  # spacer
+        self._next_round_prompt.add_widget(Button(text="Continue",
+                                            on_press=self._next_round_prompted))
+
+    def prompt_for_next_round(self):
+        """Prompt the user to continue, or replay the scoring sequence."""
+        self.add_widget(self._next_round_prompt)
+
+    def _next_round_prompted(self, *args):
+        """Continue to the next round on the user's command."""
+        self.remove_widget(self._next_round_prompt)
+        App.get_running_app().root.next_round()
+
+    def _rescore_prompted(self, *args):
+        """Replay the scoring animation on the user's command."""
+        self.remove_widget(self._next_round_prompt)
+        App.get_running_app().root.replay_scoring()
 
     def update(self):
         """Update the visual display."""
