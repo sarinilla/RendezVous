@@ -138,7 +138,7 @@ class TestScoreboard(unittest.TestCase):
         """Verify shortcut method of leaving out duplicate .score."""
         self.assertEqual(len(self.score), 2)
         self.assertEqual(len(self.score[0]), 5)
-        self.assertEqual(sum([1 for spot in self.score]), 10)
+        self.assertEqual(sum([len(spot) for spot in self.score]), 10)
 
     def test_total(self):
         """Verify the total is calculated correctly."""
@@ -146,6 +146,30 @@ class TestScoreboard(unittest.TestCase):
         self.score[1][3] = 20
         self.assertEqual(self.score.total(0), 10)
         self.assertEqual(self.score.total(1), 20)
+
+    def test_wins(self):
+        """Verify the winner suits are counted correctly."""
+        self.score[0][0] = 10
+        self.score[0][1] = -10
+        self.score[1][3] = 20
+        self.assertEqual(self.score.wins(0), ["Boyfriend"])
+        self.assertEqual(self.score.wins(1), ["Girlfriend", "Counterspy"])
+
+    def test_winner(self):
+        """Verify the winner(s) of a suit is determined correctly."""
+        self.score[0][0] = 10
+        self.score[1][3] = 20
+        self.assertEqual(self.score.winner(0), [0])
+        self.assertEqual(self.score.winner("Counterspy"), [1])
+        self.assertEqual(self.score.winner(1), [0, 1])
+
+    def test_by_suit(self):
+        """Verify zipped scores by suit."""
+        self.score[0][0] = 10
+        self.score[1][3] = 20
+        self.assertEqual(self.score.by_suit(0), (10, 0))
+        self.assertEqual(self.score.by_suit("Counterspy"), (0, 20))
+        self.assertEqual(self.score.by_suit(1), (0, 0))
 
     def test_win(self):
         """Verify a win."""

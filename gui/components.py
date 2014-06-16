@@ -47,7 +47,14 @@ class CardDisplay(Widget):
         self.canvas.ask_update()
 
 
-class SuitDisplay(BoxLayout):
+class SuitDisplay(Widget):
+
+    """Display a suit icon."""
+
+    suit = StringProperty()
+
+
+class SuitScoreDisplay(BoxLayout):
 
     """Display the 2-player score in one suit."""
 
@@ -323,9 +330,9 @@ class ScoreDisplay(BoxLayout):
         BoxLayout.__init__(self, orientation="vertical", **kwargs)
         self.rows = []
         for i, suit in enumerate(self.scoreboard.suits):
-            display = SuitDisplay(suit=suit,
-                                  pscore=self.scoreboard[PLAYER][i],
-                                  dscore=self.scoreboard[DEALER][i])
+            display = SuitScoreDisplay(suit=suit,
+                                       pscore=self.scoreboard[PLAYER][i],
+                                       dscore=self.scoreboard[DEALER][i])
             self.rows.append(display)
             self.add_widget(display)
 

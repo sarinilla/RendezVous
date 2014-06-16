@@ -11,12 +11,16 @@
 
 
 <SuitDisplay>:
-    Widget:
-        canvas:
-            Rectangle:
-                texture: app.deck_texture and app.get_suit_texture(root.suit)
-                pos: self.pos[0], self.pos[1] + (self.size[1] - min(self.size[0], self.size[1])) / 2
-                size: min(self.size[0], self.size[1]), min(self.size[0], self.size[1])
+    canvas:
+        Rectangle:
+            texture: app.deck_texture and app.get_suit_texture(root.suit)
+            pos: self.pos[0], self.pos[1] + (self.size[1] - min(self.size[0], self.size[1])) / 2
+            size: min(self.size[0], self.size[1]), min(self.size[0], self.size[1])
+
+
+<SuitScoreDisplay>:
+    SuitDisplay:
+        suit: root.suit
     Label:
         text: str(root.pscore)
     ProgressBar:
@@ -50,15 +54,6 @@
             text_size: self.parent.size[0], self.text_size[1]
             font_size: dp(12)
             size_hint: 1, None
-
-
-<FinalScoreDisplay>:
-    orientation: "vertical"
-    Label:
-        text: root.get_win_text()
-    SuitDisplay:
-        pscore: root.score.total(1)
-        dscore: root.score.total(0)
             
 
 <AchievementDisplay>:

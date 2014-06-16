@@ -1,16 +1,18 @@
 from kivy.app import App
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, ListProperty
 from kivy.uix.screenmanager import Screen
+from kivy.uix.progressbar import ProgressBar
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
 
 from rendezvous import GameSettings
 from rendezvous.deck import Card
 from rendezvous.achievements import Achievement
 
-from gui import PLAYER
+from gui import PLAYER, DEALER
 from gui.components import BoardDisplay, ScoreDisplay, HandDisplay
 from gui.components import RoundCounter, ToolTipDisplay
-from gui.screens import FinalScoreDisplay
+from gui.components import SuitDisplay, SuitScoreDisplay
 
 
 ## Classic Game Screen ##
@@ -77,6 +79,56 @@ class UnlockDisplay(BoxLayout):
 
     achievement = ObjectProperty(Achievement(' '))
     reward = ObjectProperty(DUMMY_CARD, allownone=True)
+
+
+class ScoreSurround(BoxLayout):
+
+    center_widget = ObjectProperty()
+    scores = ListProperty()
+
+    def __init__(self, **kwargs):
+        BoxLayout.__init__(self, orientation="vertical", **kwargs)
+        self.add_widget(Label(text=str(self.scores[0])))
+        self.add_widget(self.center_widget)
+        self.add_widget(Label(text=str(self.scores[1])))
+
+
+class FinalScoreDisplay(BoxLayout):
+
+    """Display the winner/loser announcement and suit wins."""
+
+    score = ObjectProperty()
+
+    def __init__(self, **kwargs):
+        """Add suit win details below the total score display (kvlang)."""
+        BoxLayout.__init__(self, orientation="vertical", **kwargs)
+        self.add_widget(Label(text=self.get_win_text()))
+        pwins = self.score.wins(PLAYER)
+        dwins = self.score.wins(DEALER)
+        wins = BoxLayout()
+        for suit in pwins:
+            wins.add_widget(ScoreSurround(scores=self.score.by_suit(suit),
+                                          center_widget=SuitDisplay(suit=suit)))
+        main_bar = ProgressBar(max=len(pwins + dwins), value=len(pwins))
+        wins.add_widget(ScoreSurround(scores=(self.score.total(PLAYER),
+                                              self.score.total(DEALER)),
+                                      center_widget=main_bar,
+                                      size_hint=(7, 1)))
+        for suit in dwins:
+            wins.add_widget(ScoreSurround(scores=self.score.by_suit(suit),
+                                          center_widget=SuitDisplay(suit=suit)))
+        self.add_widget(wins)
+        
+    def get_win_text(self):
+        """Return the win/lose/draw text to display."""
+        pscore = len(self.score.wins(PLAYER))
+        dscore = len(self.score.wins(DEALER))
+        if pscore > dscore:
+            return "YOU WIN!" 
+        elif pscore == dscore:
+            return "It's a draw!"
+        else:
+            return "Dealer won."
 
 
 class WinnerScreen(Screen):

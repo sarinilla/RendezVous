@@ -196,7 +196,7 @@ class Scoreboard:
         return self.scores[key]
 
     def __iter__(self):
-        return iter(self.scores[0] + self.scores[1])
+        return iter(zip(*self.scores))
 
     def zero(self):
         """Zero the score for all players and suits."""
@@ -206,6 +206,25 @@ class Scoreboard:
     def total(self, player):
         """Return player's total score."""
         return sum(self.scores[player])
+
+    def wins(self, player):
+        """Return the suits this player has won."""
+        return [suit for i, suit in enumerate(self.suits)
+                if self[player][i] > self[player-1][i]]
+
+    def winner(self, suit):
+        """Return the winner(s) of the given suit."""
+        if suit in self.suits:
+            suit = self.suits.index(suit)
+        suit_scores = list(zip(*self.scores))[suit]
+        high_score = max(suit_scores)
+        return [i for i, score in enumerate(suit_scores) if score == high_score]
+
+    def by_suit(self, suit):
+        """Return a tuple of the scores in the given suit."""
+        if suit in self.suits:
+            suit = self.suits.index(suit)
+        return list(zip(*self.scores))[suit]
 
     def score(self, board):
         """Score the board, adjusting each player's totals."""
