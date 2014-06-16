@@ -4,10 +4,12 @@ from kivy.app import App
 from kivy.core.image import Image
 from kivy.graphics.texture import Texture
 from kivy.properties import ObjectProperty
+from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager, FadeTransition
 from kivy.loader import Loader
 
+from rendezvous import GameSettings
 from rendezvous.deck import DeckDefinition, Card
 from rendezvous.gameplay import RendezVousGame
 from rendezvous.statistics import Statistics
@@ -16,8 +18,7 @@ from rendezvous.achievements import AchievementList
 from gui import DEALER, PLAYER
 from gui.components import BLANK, DARKEN
 from gui.screens.game import GameScreen, WinnerScreen
-from gui.screens.tutorial import HandIntro, BoardIntro, ScoreIntro
-from gui.screens.tutorial import PostScoringIntro, TooltipIntro
+from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 
 
 __version__ = '0.3.6'
@@ -54,7 +55,11 @@ class RendezVousWidget(ScreenManager):
 
         # Prepare the tutorial (if needed)
         if app.achievements.achieved == []:
-            self.switch_to(HandIntro(game=self.game, name='tutorial-hand'))
+            self.switch_to(MainBoardTutorial(game=self.game,
+                                             name='tutorial-hand'))
+            self.current_screen.tutorial.title = "Welcome to RendezVous!"
+            self.current_screen.tutorial.text = "This tutorial will walk you through your first game, introducing key concepts along the way. RendezVous is easy to play, but you will find the strategies to be endless!\n\nYour hand is displayed below. Each round, you will pick 4 cards to play, then your hand will be refilled to 10 again. Go ahead and pick your first four cards now.\n\n(Higher values are better!)"
+            self.current_screen.tutorial.footer = "SELECT 4 CARDS BELOW"
             
 
     def card_touched(self, card_display):
@@ -71,19 +76,10 @@ class RendezVousWidget(ScreenManager):
         
         loc = card_display.parent
         if loc is self.current_screen.hand_display:
-            board_shown = self.current not in ('tutorial-hand',
-                                               'tutorial-tooltip')
             card = self.current_screen.hand_display.get(card_display)
-            if board_shown:
-                self.current_screen.gameboard.place_card(card)
-            else:
-                self.game.board.play_cards(PLAYER, [card])
+            self.current_screen.gameboard.place_card(card)
             if self.game.board.is_full(PLAYER):
-                if board_shown:
-                    failures = self.current_screen.gameboard.validate()
-                else:
-                    failures = self.game.board.validate(self.game.board[PLAYER])
-                    failures = [self.game.board[PLAYER][i] for i in failures]
+                failures = self.current_screen.gameboard.validate()
                 for card in failures:
                     self.current_screen.hand_display.return_card(card)
                 if failures == []:
@@ -97,16 +93,21 @@ class RendezVousWidget(ScreenManager):
     def _play_dealer(self):
         """Place the dealer's selected cards on the board."""
         if self.current == 'tutorial-hand':
-            self.switch_to(BoardIntro(game=self.game, name='tutorial-board'))
+            self.switch_to(SidebarTutorial(game=self.game,
+                                           name='tutorial-board'))
+            self.current_screen.tutorial.title = "Now it's the\ndealer's turn!"
+            self.current_screen.tutorial.text = "The dealer has a hand of 10 cards, just like you, and will select four cards to play against yours each round.\n\nEach card you play is compared against the card directly above it to determine your score."
+            self.current_screen.button = Button(text="Continue")
+            self.current_screen.button.bind(on_press=self.score_tutorial)
         elif self.current == 'tutorial-tooltip':
-            self.current = 'main'
-            self.current_screen.gameboard.update()
+            self.switch_to(GameScreen(game=self.game,
+                                      name='tutorial-done'))
         self.current_screen.gameboard.play_dealer(self.dealer_play,
                                                   callback=self._specials)
         for card in self.dealer_play:
             self.game.players[DEALER].remove(card)
         self.dealer_play = None
-
+        
     def _specials(self):
         """Apply all specials."""
         if self.current == 'tutorial-board':
@@ -114,9 +115,13 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.gameboard.apply_specials(self.game,
                     self.current_screen.hand_display, self._score)
 
-    def score_tutorial(self):
+    def score_tutorial(self, *args):
         """Continue with scoring from tutorial-board."""
-        self.switch_to(ScoreIntro(game=self.game, name='tutorial-score'))
+        self.switch_to(SidebarTutorial(game=self.game, name='tutorial-score'))
+        self.current_screen.tutorial.title = "Scoring"
+        self.current_screen.tutorial.text = "There are five suits in the deck, and you are scored in each suit.\n\nA win earns you 10 points in the suit you played, and 10 points in the dealer's suit. A loss costs you 10 points in your suit only.\n\nAs the round is scored, the highlighting will help you see who won each match-up."
+        self.current_screen.button = Button(text="Continue")
+        self.current_screen.button.bind(on_press=self.tutorial_scored)
         self._score()
 
     def _score(self):
@@ -124,9 +129,12 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.gameboard.score_round(self.current_screen.scoreboard,
                                                   callback=self._next_round)
 
-    def tutorial_scored(self):
-        self.switch_to(PostScoringIntro(game=self.game,
-                                        name='tutorial-continue'))
+    def tutorial_scored(self, *args):
+        self.switch_to(TooltipTutorial(game=self.game,
+                                       name='tutorial-continue'))
+        self.current_screen.tutorial.title = "The Scoreboard"
+        self.current_screen.tutorial.text= "Your score in each suit is shown above, to the left. The dealer's score is to the right.\n\nAfter %s rounds, the winner is the one leading in the most suits." % GameSettings.NUM_ROUNDS
+        self.current_screen.tutorial.footer = "Play a few rounds!"
         self._next_round()
 
     def _next_round(self):
@@ -137,13 +145,8 @@ class RendezVousWidget(ScreenManager):
         game_over = self.game.next_round()
         if game_over:
             self.achieved += app.record_score(self.game.score)
-            if self.current != 'main':
-                self._winner = WinIntroScreen(game=self.game,
-                                              name='winner')
-                self._winner.index = 1
-            else:
-                self._winner = WinnerScreen(self.game.score, self.achieved,
-                                            name='winner')
+            self._winner = WinnerScreen(self.game.score, self.achieved,
+                                        name='winner')
             self.switch_to(self._winner)
             return
         elif self.game.board.is_full(PLAYER):
@@ -157,7 +160,11 @@ class RendezVousWidget(ScreenManager):
             self.game.players[PLAYER].cards[8] = special
             app.achievements.achieved.append("Tutorial")
             self.game.players[PLAYER].deck.shuffle()
-            self.switch_to(TooltipIntro(game=self.game, name='tutorial-tooltip'))
+            self.switch_to(MainBoardTutorial(game=self.game,
+                                             name='tutorial-tooltip'))
+            self.current_screen.tutorial.title = "Introducing Special Cards"
+            self.current_screen.tutorial.text = "In addition to the five normal suits, you will sometimes get special cards in your hand. These can only be played when certain conditions are met, but they have the power to affect the other cards you play, or even the dealer's cards.\n\nYou drew a PERFUME card! This will raise the value of any Girlfriends you play alongside it. Drag your Perfume card onto the tooltip display below the scoreboard to read about what it does and how to use it.\n\nThere are many different types of special cards. The best cards are unlocked by completing RendezVous Achievements - and when you download a custom deck, it will come with its own unique Special Cards!"
+            self.current_screen.tutorial.footer = "When you are ready to continue, select your 4 cards for this round."
             for slot in self.current_screen.hand_display.slots:
                 slot.highlight(DARKEN)
             self.current_screen.hand_display.slots[8].highlight(BLANK)
