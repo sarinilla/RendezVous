@@ -101,19 +101,20 @@ class RendezVousWidget(ScreenManager):
         card = self.current_screen.hand_display.get(card_or_display)
         self.current_screen.gameboard.place_card(card, index)
         if self.game.board.is_full(PLAYER):
-                self._in_progress = True
                 failures = self.current_screen.gameboard.validate()
                 for fcard in failures:
                     self.current_screen.hand_display.return_card(fcard)
                 if failures == []:
+                    self._in_progress = True
                     self.current_screen.hand_display.confirm()
                     self._play_dealer()
 
     def _remove_from_board(self, card_display):
         """Return a card from the board to the hand."""
-        if card_display not in self.slots[PLAYER]: return
-        index = self.slots[PLAYER].index(card_display)
-        if self.board.wait[PLAYER][index]: return
+        if card_display not in self.current_screen.gameboard.slots[PLAYER]:
+            return
+        index = self.current_screen.gameboard.slots[PLAYER].index(card_display)
+        if self.game.board._wait[PLAYER][index]: return
         card = self.current_screen.gameboard.remove_card(card_display)
         self.current_screen.hand_display.return_card(card)
 
@@ -262,8 +263,8 @@ class RendezVousApp(App):
     def get_texture(self, card):
         """Return the appropriate texture to display."""
         if card is None or card.name is " ":
-            #return Texture.create()
-            region = self.loaded_deck.get_back_texture()
+            return Texture.create()
+            #region = self.loaded_deck.get_back_texture()
         else:
             region = self.loaded_deck.get_card_texture(card)
         return self.deck_texture.get_region(*region)
@@ -275,6 +276,11 @@ class RendezVousApp(App):
             return self.deck_texture.get_region(*region)
         else:
             return Image(os.path.join("data", "RVlogo.png")).texture
+
+    def get_dealer_texture(self, *args):
+        """Return the appropriate dealer texture to display."""
+        region = self.loaded_deck.get_dealer_texture(*args)
+        return self.deck_texture.get_region(*region)
             
     def get_achievement_texture(self, achievement):
         """Return the appropriate texture to display."""

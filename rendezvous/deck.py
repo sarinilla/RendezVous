@@ -441,17 +441,31 @@ class DeckDefinition:
         return None
 
     def get_card_texture(self, card):
-        """Return (L, B, W, H) rectangle for the given card."""
+        """Return texture details for the given card."""
         return self._get_rect(*self._get_card_loc(card))
 
     def get_back_texture(self):
         """Return texture details for the deck back image."""
-        return self._get_rect(8, 0)
+        return self._get_rect(7, 0)
 
     def get_suit_texture(self, suit):
         """Return texture details for the given suit's icon."""
-        index = self.suits.index(suit)
-        return (130 * index, 0, 130, 130)
+        if suit in self.suits:
+            suit = self.suits.index(suit)
+        return (130 * suit, 0, 130, 130)
+
+    def get_dealer_texture(self, suit, win_lose):
+        """Return texture details for the dealer image.
+
+        Arguments:
+          suit -- name or index of the suit to show
+          win_lose -- 1 for player won, 0 for a tie, -1 for dealer won
+        """
+        win_lose = [0, 2, 1][win_lose]
+        if suit in self.suits:
+            suit = self.suits.index(suit)
+        rect = self._get_rect(9 + 2 * win_lose, 1 + 2 * suit + 1)
+        return (rect[0], rect[1], rect[2] * 2, rect[3] * 2)
 
     def _get_card_loc(self, card):
         """Return the grid (col, row) for this card."""
@@ -475,7 +489,7 @@ class DeckDefinition:
             return (self.suits.index(card.suit), card.value - 1)
         
     def _get_rect(self, col, row):
-        """Return (left, bottom, width, height) of the given card."""
+        """Return (left, bottom (inverted), width, height) of the given card."""
         return (130 * col, 2048 - 182 * (row + 1), 130, 182)
 
 

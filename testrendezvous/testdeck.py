@@ -330,6 +330,56 @@ class TestDeckDefinition(unittest.TestCase):
                          "All matching (friendly) cards become clones of the first")
         self.assertEqual(str(self.dd._parse_effect("flush")),
                          "Flush all cards from the player's hand and redraws")
+
+    def test_get_special(self):
+        card = self.dd.specials[0]
+        result = self.dd.get_special(card.name)
+        self.assertEqual(card, result)
+        self.assertIsNot(card, result)
+
+    def test_get_card_texture(self):
+        self.assertEqual(self.dd.get_card_texture(Card("Boyfriend", 1)),
+                         (0, 2048 - 182, 130, 182))
+        self.assertEqual(self.dd.get_card_texture(Card("Time", 10)),
+                         (4 * 130, 2048 - 1820, 130, 182))
+        self.assertEqual(self.dd.get_card_texture(self.dd.specials[0]),
+                         (5 * 130, 2048 - 182, 130, 182))
+        self.assertEqual(self.dd.get_card_texture(self.dd.specials[10]),
+                         (5 * 130, 2048 - 11 * 182, 130, 182))
+        self.assertEqual(self.dd.get_card_texture(self.dd.specials[11]),
+                         (6 * 130, 2048 - 182, 130, 182))
+        self.assertEqual(self.dd.get_card_texture(Card("Boyfriend",
+                                                       SpecialValue.KISS)),
+                         (7 * 130, 2048 - 2 * 182, 130, 182))
+        self.assertEqual(self.dd.get_card_texture(Card("Boyfriend",
+                                                       SpecialValue.WIN)),
+                         (7 * 130, 2048 - 3 * 182, 130, 182))
+        self.assertEqual(self.dd.get_card_texture(Card("Boyfriend",
+                                                       SpecialValue.LOSE)),
+                         (8 * 130, 2048 - 2 * 182, 130, 182))
+        self.assertEqual(self.dd.get_card_texture(Card("Boyfriend", 11)),
+                         (7 * 130, 2048 - 4 * 182, 130, 182))
+        self.assertEqual(self.dd.get_card_texture(Card("Boyfriend", 0)),
+                         (8 * 130, 2048 - 3 * 182, 130, 182))
+
+    def test_get_back_texture(self):
+        self.assertEqual(self.dd.get_back_texture(),
+                         (7 * 130, 2048 - 182, 130, 182))
+
+    def test_get_suit_texture(self):
+        self.assertEqual(self.dd.get_suit_texture(self.dd.suits[0]),
+                         (0, 0, 130, 130))
+        self.assertEqual(self.dd.get_suit_texture(4),
+                         (4 * 130, 0, 130, 130))
+
+    def test_get_dealer_texture(self):
+        self.assertEqual(self.dd.get_dealer_texture("Boyfriend", 1),
+                         (13 * 130, 2048 - 3 * 182, 260, 364))
+        self.assertEqual(self.dd.get_dealer_texture(4, 0),
+                         (9 * 130, 2048 - 11 * 182, 260, 364))
+        self.assertEqual(self.dd.get_dealer_texture("Spy", -1),
+                         (11 * 130, 2048 - 7 * 182, 260, 364))
+        
         
         
 if __name__ == "__main__":

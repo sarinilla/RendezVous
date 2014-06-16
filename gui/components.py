@@ -101,6 +101,7 @@ class HandDisplay(BoxLayout):
 
     Methods:
       update      -- refresh the full display
+      swap        -- switch the two cards in the hand and display
       get         -- remove and return the card from the given display
       return_card -- return the played card to the hand display
       confirm     -- pull the selected cards out of the Hand
@@ -136,7 +137,7 @@ class HandDisplay(BoxLayout):
         for slot in self.slots:
             if slot.card is card:
                 return slot
-        return None
+        raise ValueError
 
     def swap(self, card1, card2):
         """Swap the two cards in the hand."""
