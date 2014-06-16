@@ -131,12 +131,16 @@ class HandDisplay(BoxLayout):
 
     def _find_display(self, card):
         """Return the slot holding this card."""
+        print("... ... seeking display for %s" % card)
         if isinstance(card, CardDisplay):
+            print("... ... -> CardDisplay already")
             return card
         for slot in self.slots:
             if slot.card is card:
+                print("... ... -> found in slot", self.slots.index(slot))
                 return slot
-        return None
+        print("... ... -> not found!!")
+        raise ValueError(str(card))
 
     def swap(self, card1, card2):
         """Swap the two cards in the hand."""

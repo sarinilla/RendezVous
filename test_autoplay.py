@@ -102,8 +102,11 @@ class RendezVousWidget(ScreenManager):
     def _place_on_board(self, card_or_display, index=None):
         """Place a card on the board from the hand."""
         card = self.current_screen.hand_display.get(card_or_display)
+        print("... hand confirmed %s" % card)
         self.current_screen.gameboard.place_card(card, index)
         if self.game.board.is_full(PLAYER):
+                print("... board full:", [[str(c) for c in self.game.board[0]],
+                                          [str(c) for c in self.game.board[1]]])
                 self._in_progress = True
                 failures = self.current_screen.gameboard.validate()
                 for fcard in failures:
@@ -131,6 +134,7 @@ class RendezVousWidget(ScreenManager):
                                                         self.game.score)
         print("player picked", [str(c) for c in player_play])
         for card in player_play:
+            print("... placing %s" % card)
             self._place_on_board(card)
 
     def _play_dealer(self):
