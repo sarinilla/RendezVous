@@ -30,20 +30,21 @@ class GameScreen(Screen):
 
     """
 
+    game = ObjectProperty()
+
     def __init__(self, **kwargs):
         Screen.__init__(self, **kwargs)
 
         # Prepare the display areas
-        game = kwargs["game"]
-        self.gameboard = BoardDisplay(board=game.board,
+        self.gameboard = BoardDisplay(board=self.game.board,
                                       size_hint=(4, 1))
-        self.round_counter = RoundCounter(round_number=1,
+        self.round_counter = RoundCounter(round_number=self.game.round,
                                           max_round=GameSettings.NUM_ROUNDS,
                                           size_hint=(1, .075))
-        self.scoreboard = ScoreDisplay(scoreboard=game.score,
+        self.scoreboard = ScoreDisplay(scoreboard=self.game.score,
                                        size_hint=(1, .4))
         self.tooltip = ToolTipDisplay(size_hint=(1, .5))
-        self.hand_display = HandDisplay(hand=game.players[PLAYER],
+        self.hand_display = HandDisplay(hand=self.game.players[PLAYER],
                                         size_hint=(1, .3))
 
         # Lay out the display
