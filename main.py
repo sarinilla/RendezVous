@@ -242,7 +242,8 @@ class RendezVousWidget(ScreenManager):
         self._backup_score = copy.deepcopy(self.game.score.scores)
         self.current_screen.gameboard.score_round(
                 self.current_screen.scoreboard,
-                callback=self.next_round)
+                callback=self.next_round,
+                timer=0.1)
 
     def replay_scoring(self):
         """Replay the scoring sequence at the user's request."""
