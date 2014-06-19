@@ -4,9 +4,10 @@ from kivy.properties import ObjectProperty, ListProperty
 from kivy.properties import StringProperty, NumericProperty
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
+from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 
-from rendezvous import SpecialSuit, EffectType
+from rendezvous import GameSettings, SpecialSuit, EffectType
 from rendezvous.deck import Card
 
 from gui import PLAYER, DEALER
@@ -101,6 +102,7 @@ class HandDisplay(BoxLayout):
 
     Methods:
       update      -- refresh the full display
+      swap        -- switch the two cards in the hand and display
       get         -- remove and return the card from the given display
       return_card -- return the played card to the hand display
       confirm     -- pull the selected cards out of the Hand
@@ -145,8 +147,10 @@ class HandDisplay(BoxLayout):
     def swap(self, card1, card2):
         """Swap the two cards in the hand."""
         def index(c):
-            t = self._find_display(c)
-            if t is None: return c
+            try:
+                t = self._find_display(c)
+            except ValueError:
+                return c
             return self.slots.index(t)
         c, d = index(card1), index(card2)
         if not (isinstance(c, int) and isinstance(d, int)): return
@@ -154,9 +158,11 @@ class HandDisplay(BoxLayout):
         
         self.hand.cards[c], self.hand.cards[d] = self.hand.cards[d], self.hand.cards[c]
         self.slots[c].card , self.slots[d].card = self.slots[d].card , self.slots[c].card
-        if c in self._played:
+        if c in self._played and d in self._played:
+            pass
+        elif c in self._played:
             self._played[self._played.index(c)] = d
-        if d in self._played:
+        elif d in self._played:
             self._played[self._played.index(d)] = c
 
     def get(self, card_display):
@@ -174,6 +180,13 @@ class HandDisplay(BoxLayout):
                 self.slots[index].card = card
                 self._played.remove(index)
                 return
+
+    def is_played(self, card):
+        """Return whether this card has been played."""
+        for index in self._played:
+            if self.hand[index] is card:
+                return True
+        return False
 
     def confirm(self):
         """Confirm the played cards and update the hand."""
@@ -214,6 +227,28 @@ class BoardDisplay(BoxLayout):
                 layout.add_widget(display)
             self.slots.append(side_slots)
             self.add_widget(layout)
+
+        # Prep the next round prompt widget for later
+        self._next_round_prompt = BoxLayout(size_hint=(1, .125))
+        self._next_round_prompt.add_widget(Button(text="Replay",
+                                            on_press=self._rescore_prompted))
+        self._next_round_prompt.add_widget(Widget())  # spacer
+        self._next_round_prompt.add_widget(Button(text="Continue",
+                                            on_press=self._next_round_prompted))
+
+    def prompt_for_next_round(self):
+        """Prompt the user to continue, or replay the scoring sequence."""
+        self.add_widget(self._next_round_prompt)
+
+    def _next_round_prompted(self, *args):
+        """Continue to the next round on the user's command."""
+        self.remove_widget(self._next_round_prompt)
+        App.get_running_app().root.next_round()
+
+    def _rescore_prompted(self, *args):
+        """Replay the scoring animation on the user's command."""
+        self.remove_widget(self._next_round_prompt)
+        App.get_running_app().root.replay_scoring()
 
     def update(self):
         """Update the visual display."""
@@ -258,16 +293,40 @@ class BoardDisplay(BoxLayout):
         self.slots[PLAYER][i].card = None
         return card
 
+    def _find_display(self, card):
+        """Return the slot holding this card."""
+        if isinstance(card, CardDisplay):
+            return card
+        for slot in self.slots[PLAYER]:
+            if slot.card is card:
+                return slot
+        raise ValueError
+
+    def swap(self, card1, card2):
+        """Swap the two cards on the player's board."""
+        def index(c):
+            try:
+                t = self._find_display(c)
+            except ValueError:
+                return c
+            return self.slots[PLAYER].index(t)
+        c, d = index(card1), index(card2)
+        if not (isinstance(c, int) and isinstance(d, int)): return
+
+        self.board[PLAYER][c], self.board[PLAYER][d] = self.board[PLAYER][d], self.board[PLAYER][c]
+        self.slots[PLAYER][c].card, self.slots[PLAYER][d].card = self.slots[PLAYER][d].card, self.slots[PLAYER][c].card
+
 
     ## Auto-scoring (with breaks)
 
-    def play_dealer(self, cards, callback=None, timer=1.0):
+    def play_dealer(self, cards, callback=None, timer=GameSettings.SPEED):
         """Automatically lay out the dealer's cards one by one."""
         self.board.play_cards(DEALER, cards)
         Clock.schedule_once(lambda t: self._play_next_dealer(callback=callback,
                                                              timer=timer))
 
-    def _play_next_dealer(self, index=None, callback=None, timer=1.0):
+    def _play_next_dealer(self, index=None,
+                          callback=None, timer=GameSettings.SPEED):
         """Place the next dealer card on the board."""
         if index is None:
             index = 0
@@ -283,7 +342,8 @@ class BoardDisplay(BoxLayout):
                                                              timer=timer),
                             timer)
 
-    def apply_specials(self, game, hand_display, callback=None, timer=1.0):
+    def apply_specials(self, game, hand_display,
+                       callback=None, timer=GameSettings.SPEED):
         """Apply all special cards in play, one-by-one with highlighting."""
         self.highlight(DARKEN)
         Clock.schedule_once(lambda t: self._apply_special(game, hand_display,
@@ -291,7 +351,7 @@ class BoardDisplay(BoxLayout):
                                                           timer=timer), timer)
 
     def _apply_special(self, game, hand_display, player=None, index=None,
-                       callback=None, timer=1.0):
+                       callback=None, timer=GameSettings.SPEED):
         """Apply the next special card, column by column."""
         if index is None:
             player, index = 0, 0
@@ -321,7 +381,8 @@ class BoardDisplay(BoxLayout):
             hand_display.update()
         Clock.schedule_once(next_slot, timer)
 
-    def score_round(self, score_display, index=None, callback=None, timer=1.0):
+    def score_round(self, score_display, index=None,
+                    callback=None, timer=GameSettings.SPEED):
         """Score the given match, or all of them, with highlighting."""
         if index is not None:
             self._score_match(score_display, score_display.scoreboard, index)
@@ -331,7 +392,7 @@ class BoardDisplay(BoxLayout):
                                                              timer=timer))
 
     def _score_next_match(self, score_display, index=None,
-                          callback=None, timer=1.0):
+                          callback=None, timer=GameSettings.SPEED):
         """Highlight and score the next match of the round."""
         if index is None:
             index = 0

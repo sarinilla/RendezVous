@@ -226,6 +226,12 @@ class Scoreboard:
             suit = self.suits.index(suit)
         return list(zip(*self.scores))[suit]
 
+    def best_suit(self, player):
+        """Return the suit where the player has the biggest lead."""
+        deltas = list(map(lambda x: x[player] - x[player-1], zip(*self.scores)))
+        best_lead = max(deltas)
+        return self.suits[deltas.index(best_lead)]
+
     def score(self, board):
         """Score the board, adjusting each player's totals."""
         for i in range(GameSettings.CARDS_ON_BOARD):

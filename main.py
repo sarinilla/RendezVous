@@ -1,5 +1,7 @@
 import os
+import copy
 
+from kivy.clock import Clock
 from kivy.app import App
 from kivy.core.image import Image
 from kivy.graphics.texture import Texture
@@ -21,7 +23,7 @@ from gui.screens.game import GameScreen, WinnerScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 
 
-__version__ = '0.3.6'
+__version__ = '0.4.1'
 
 
 class RendezVousWidget(ScreenManager):
@@ -39,7 +41,10 @@ class RendezVousWidget(ScreenManager):
     def __init__(self, **kwargs):
         """Arrange the widgets."""
         ScreenManager.__init__(self, transition=FadeTransition(), **kwargs)
-        app = App.get_running_app()
+        try:
+            app = kwargs['app']
+        except KeyError:
+            app = App.get_running_app()
 
         # Prepare internal storage
         self.game = RendezVousGame(deck=app.loaded_deck,
@@ -82,38 +87,98 @@ class RendezVousWidget(ScreenManager):
             self._remove_from_board(card_display)
 
     def card_dropped(self, card_display, card):
-        """Allow dropping cards onto EMPTY board slots, or arranging hand."""
+        """Allow dropping cards onto EMPTY board slots, or arranging hand.
+
+        Arguments:
+          card_display -- CardDisplay receiving the dropped card
+          card -- Card in the display that was dragged originally
+
+        """
+        # No dragging during scoring (except to tooltip; handled separately)
         if self._in_progress: return
+        
+        # Only drag actual cards (no empty slots)
+        if card is None: return
+
+        # Dropping onto the gameboard?
         loc = card_display.parent
         if loc.parent is self.current_screen.gameboard:
-            if card is None: return
-            if card_display.card is not None:
-                self._remove_from_board(card_display)
-                if card_display.card is not None: return
-            elif card_display not in self.current_screen.gameboard.slots[PLAYER]:
+
+            # Never drop onto enemy slots (or held slots)
+            if card_display not in self.current_screen.gameboard.slots[PLAYER]:
                 return
-            self._place_on_board(card, self.current_screen.gameboard.slots[PLAYER].index(card_display))
+            board_index = self.current_screen.gameboard.slots[PLAYER].index(card_display)
+            if self.game.board._wait[PLAYER][board_index]:
+                return
+
+            # See if it's coming from the board as well (and not held)
+            from_index = None
+            for i, slot in enumerate(self.current_screen.gameboard.slots[PLAYER]):
+                if slot.card is card:
+                    from_index = i
+                    if self.game.board._wait[PLAYER][from_index]:
+                        return
+                    break
+
+            # Dropping onto a filled slot?
+            if card_display.card is not None:
+
+                # Allow swapping played cards
+                if from_index is not None:
+                    self.current_screen.gameboard.swap(from_index, board_index)
+                    return
+
+                # Or remove it
+                self._remove_from_board(card_display)
+
+            # Relocate on the board
+            if from_index is not None:
+                from_display = self.current_screen.gameboard.slots[PLAYER][from_index]
+                self.current_screen.gameboard.remove_card(from_display)
+                self.current_screen.gameboard.place_card(card, board_index)
+
+            # Place into slot from hand
+            elif card in self.game.players[PLAYER].cards:
+                try:  # might still be a duplicate...
+                    self._place_on_board(card, board_index)
+                except ValueError:
+                    return
+
+        # Dropping onto player's hand?
         elif loc is self.current_screen.hand_display:
-            loc.swap(card_display, card)
+            hand_index = self.current_screen.hand_display.slots.index(card_display)
+
+            # From the board (not held)
+            if loc.is_played(card):
+                for slot in self.current_screen.gameboard.slots[PLAYER]:
+                    if slot.card is card:
+                        self._remove_from_board(slot)
+                if card_display.card is not card:
+                    self.current_screen.hand_display.swap(card, card_display)
+
+            # Or swap cards in hand
+            elif card in self.game.players[PLAYER]:
+                loc.swap(card_display, card)
 
     def _place_on_board(self, card_or_display, index=None):
         """Place a card on the board from the hand."""
         card = self.current_screen.hand_display.get(card_or_display)
         self.current_screen.gameboard.place_card(card, index)
         if self.game.board.is_full(PLAYER):
-                self._in_progress = True
                 failures = self.current_screen.gameboard.validate()
                 for fcard in failures:
                     self.current_screen.hand_display.return_card(fcard)
                 if failures == []:
+                    self._in_progress = True
                     self.current_screen.hand_display.confirm()
                     self._play_dealer()
 
     def _remove_from_board(self, card_display):
         """Return a card from the board to the hand."""
-        if card_display not in self.slots[PLAYER]: return
-        index = self.slots[PLAYER].index(card_display)
-        if self.board.wait[PLAYER][index]: return
+        if card_display not in self.current_screen.gameboard.slots[PLAYER]:
+            return
+        index = self.current_screen.gameboard.slots[PLAYER].index(card_display)
+        if self.game.board._wait[PLAYER][index]: return
         card = self.current_screen.gameboard.remove_card(card_display)
         self.current_screen.hand_display.return_card(card)
 
@@ -150,30 +215,33 @@ class RendezVousWidget(ScreenManager):
         self.switch_to(SidebarTutorial(game=self.game, name='tutorial-score'))
         self.current_screen.tutorial.title = "Scoring"
         self.current_screen.tutorial.text = "There are five suits in the deck, and you are scored in each suit.\n\nA win earns you 10 points in the suit you played, and 10 points in the dealer's suit. A loss costs you 10 points in your suit only.\n\nAs the round is scored, the highlighting will help you see who won each match-up."
-        self.current_screen.button = Button(text="Continue")
-        self.current_screen.button.bind(on_press=self.tutorial_scored)
         self._score()
 
     def _score(self):
         """Score the round."""
-        self.current_screen.gameboard.score_round(self.current_screen.scoreboard,
-                                                  callback=self._next_round)
+        self._backup_score = copy.deepcopy(self.game.score.scores)
+        self.current_screen.gameboard.score_round(
+                self.current_screen.scoreboard,
+                callback=self.current_screen.gameboard.prompt_for_next_round)
 
-    def tutorial_scored(self, *args):
-        if self._in_progress: return
-        self._in_progress = True
-        self.switch_to(TooltipTutorial(game=self.game,
-                                       name='tutorial-continue'))
-        self.current_screen.tutorial.title = "The Scoreboard"
-        self.current_screen.tutorial.text= "Your score in each suit is shown above, to the left. The dealer's score is to the right.\n\nAfter %s rounds, the winner is the one leading in the most suits." % GameSettings.NUM_ROUNDS
-        self.current_screen.tutorial.footer = "Play a few rounds!"
-        self._next_round()
+    def replay_scoring(self):
+        """Replay the scoring sequence at the user's request."""
+        self.game.score.scores = self._backup_score
+        for card in self.game.board:
+            card.reset()
+        self.current_screen.gameboard.highlight(BLANK)
+        self.current_screen.gameboard.update()
+        self.current_screen.scoreboard.update()
+        Clock.schedule_once(lambda dt: self._specials(), GameSettings.SPEED)
 
-    def _next_round(self):
+    def next_round(self):
         """Clear the board for the next round."""
         if self.current == 'tutorial-score':
-            self._in_progress = False
-            return  # until continue is pressed
+            self.switch_to(TooltipTutorial(game=self.game,
+                                           name='tutorial-continue'))
+            self.current_screen.tutorial.title = "The Scoreboard"
+            self.current_screen.tutorial.text= "Your score in each suit is shown above, to the left. The dealer's score is to the right.\n\nAfter %s rounds, the winner is the one leading in the most suits." % GameSettings.NUM_ROUNDS
+            self.current_screen.tutorial.footer = "Play a few rounds!"
         app = App.get_running_app()
         game_over = self.game.next_round()
         if game_over:
@@ -228,17 +296,9 @@ class RendezVousApp(App):
     
     deck_texture = ObjectProperty()
 
-    def _image_loaded(self, loader):
-        """Update the deck image when it's finished loading."""
-        if loader.image.texture:
-            self.deck_texture = loader.image.texture
-
-    def _achievements_loaded(self, loader):
-        if loader.image.texture:
-            self.achievement_texture = loader.image.texture
-
-    def build(self):
+    def __init__(self, **kwargs):
         """Load the deck image and create the RendezVousWidget."""
+        App.__init__(self, **kwargs)
         self.icon = os.path.join("data", "RVlogo.ico")
         user_dir = self.user_data_dir
         if not os.path.isdir(user_dir):
@@ -252,6 +312,17 @@ class RendezVousApp(App):
         loader = Loader.image(self.loaded_deck.img_file)
         loader.bind(on_load=self._image_loaded)
         self.deck_texture = Image(self.loaded_deck.img_file).texture
+
+    def _image_loaded(self, loader):
+        """Update the deck image when it's finished loading."""
+        if loader.image.texture:
+            self.deck_texture = loader.image.texture
+
+    def _achievements_loaded(self, loader):
+        if loader.image.texture:
+            self.achievement_texture = loader.image.texture
+
+    def build(self):
         return RendezVousWidget(app=self)
         
     def record_score(self, score):
@@ -262,8 +333,8 @@ class RendezVousApp(App):
     def get_texture(self, card):
         """Return the appropriate texture to display."""
         if card is None or card.name is " ":
-            #return Texture.create()
-            region = self.loaded_deck.get_back_texture()
+            return Texture.create()
+            #region = self.loaded_deck.get_back_texture()
         else:
             region = self.loaded_deck.get_card_texture(card)
         return self.deck_texture.get_region(*region)
@@ -275,6 +346,11 @@ class RendezVousApp(App):
             return self.deck_texture.get_region(*region)
         else:
             return Image(os.path.join("data", "RVlogo.png")).texture
+
+    def get_dealer_texture(self, *args):
+        """Return the appropriate dealer texture to display."""
+        region = self.loaded_deck.get_dealer_texture(*args)
+        return self.deck_texture.get_region(*region)
             
     def get_achievement_texture(self, achievement):
         """Return the appropriate texture to display."""

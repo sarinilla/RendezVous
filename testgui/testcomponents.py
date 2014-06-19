@@ -95,6 +95,11 @@ class TestHandDisplay(unittest.TestCase):
         self.assertIs(self.hd.slots[3].card, card)
         self.assertEqual(self.hd._played, [])
 
+    def test_is_played(self):
+        self.assertFalse(self.hd.is_played(self.hd.hand[3]))
+        self.hd.get(self.hd.slots[3])
+        self.assertTrue(self.hd.is_played(self.hd.hand[3]))
+
     def test_confirm(self):
         card = self.hd.get(self.hd.slots[3])
         self.hd.confirm()
@@ -181,6 +186,17 @@ class TestBoardDisplay(unittest.TestCase):
         result = self.bd.pop(0)
         self.assertIs(result, card)
         self.assertIs(self.bd.slots[1][0].card, None)
+
+    def test_swap(self):
+        card1 = Card("Boyfriend", 1)
+        card2 = Card("Boyfriend", 2)
+        self.bd.place_card(card1)
+        self.bd.place_card(card2)
+        self.bd.swap(card1, card2)
+        self.assertEqual(self.bd.slots[PLAYER][0].card, card2)
+        self.assertEqual(self.bd.slots[PLAYER][1].card, card1)
+        self.assertEqual(self.bd.board[PLAYER][0], card2)
+        self.assertEqual(self.bd.board[PLAYER][1], card1)
 
     def test_play_dealer(self):
         cards = [Card("Girlfriend", 1), Card("Girlfriend", 2),

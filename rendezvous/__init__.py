@@ -31,6 +31,7 @@ class GameSettings:
     CARDS_ON_BOARD = 4  #: the number of cards each players plays per turn
     CARDS_IN_HAND = 10  #: the number of cards held in a player's Hand
     NUM_ROUNDS = 20     #: the number of rounds in a single game
+    SPEED = 1.0         #: speed multiplier for special effects
 
 
 

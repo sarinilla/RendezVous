@@ -171,6 +171,13 @@ class TestScoreboard(unittest.TestCase):
         self.assertEqual(self.score.by_suit("Counterspy"), (0, 20))
         self.assertEqual(self.score.by_suit(1), (0, 0))
 
+    def test_best_suit(self):
+        """Verify best delta suit is returned."""
+        self.score[0][0] = 20
+        self.score[0][1] = 10
+        self.score[1][1] = -30
+        self.assertEqual(self.score.best_suit(0), self.score.suits[1])
+
     def test_win(self):
         """Verify a win."""
         self.score._win(1, "Boyfriend")
