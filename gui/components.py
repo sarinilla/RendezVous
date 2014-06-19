@@ -143,8 +143,10 @@ class HandDisplay(BoxLayout):
     def swap(self, card1, card2):
         """Swap the two cards in the hand."""
         def index(c):
-            t = self._find_display(c)
-            if t is None: return c
+            try:
+                t = self._find_display(c)
+            except ValueError:
+                return c
             return self.slots.index(t)
         c, d = index(card1), index(card2)
         if not (isinstance(c, int) and isinstance(d, int)): return
@@ -152,9 +154,11 @@ class HandDisplay(BoxLayout):
         
         self.hand.cards[c], self.hand.cards[d] = self.hand.cards[d], self.hand.cards[c]
         self.slots[c].card , self.slots[d].card = self.slots[d].card , self.slots[c].card
-        if c in self._played:
+        if c in self._played and d in self._played:
+            pass
+        elif c in self._played:
             self._played[self._played.index(c)] = d
-        if d in self._played:
+        elif d in self._played:
             self._played[self._played.index(d)] = c
 
     def get(self, card_display):
@@ -172,6 +176,13 @@ class HandDisplay(BoxLayout):
                 self.slots[index].card = card
                 self._played.remove(index)
                 return
+
+    def is_played(self, card):
+        """Return whether this card has been played."""
+        for index in self._played:
+            if self.hand[index] is card:
+                return True
+        return False
 
     def confirm(self):
         """Confirm the played cards and update the hand."""
@@ -277,6 +288,29 @@ class BoardDisplay(BoxLayout):
         self.board[PLAYER][i] = None
         self.slots[PLAYER][i].card = None
         return card
+
+    def _find_display(self, card):
+        """Return the slot holding this card."""
+        if isinstance(card, CardDisplay):
+            return card
+        for slot in self.slots[PLAYER]:
+            if slot.card is card:
+                return slot
+        raise ValueError
+
+    def swap(self, card1, card2):
+        """Swap the two cards on the player's board."""
+        def index(c):
+            try:
+                t = self._find_display(c)
+            except ValueError:
+                return c
+            return self.slots[PLAYER].index(t)
+        c, d = index(card1), index(card2)
+        if not (isinstance(c, int) and isinstance(d, int)): return
+
+        self.board[PLAYER][c], self.board[PLAYER][d] = self.board[PLAYER][d], self.board[PLAYER][c]
+        self.slots[PLAYER][c].card, self.slots[PLAYER][d].card = self.slots[PLAYER][d].card, self.slots[PLAYER][c].card
 
 
     ## Auto-scoring (with breaks)
