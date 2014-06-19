@@ -214,8 +214,7 @@ class RendezVousWidget(ScreenManager):
             self.switch_to(GameScreen(game=self.game,
                                       name='tutorial-done'))
         self.current_screen.gameboard.play_dealer(self.dealer_play,
-                                                  callback=self._specials,
-                                                  timer=0.1)
+                                                  callback=self._specials)
         for card in self.dealer_play:
             self.game.players[DEALER].remove(card)
         self.dealer_play = None
@@ -226,7 +225,7 @@ class RendezVousWidget(ScreenManager):
         #    self._in_progress = False
         #    return  # until continue is pressed
         self.current_screen.gameboard.apply_specials(self.game,
-                    self.current_screen.hand_display, self._score, 0.1)
+                    self.current_screen.hand_display, self._score)
 
     def score_tutorial(self, *args):
         """Continue with scoring from tutorial-board."""
@@ -242,8 +241,7 @@ class RendezVousWidget(ScreenManager):
         self._backup_score = copy.deepcopy(self.game.score.scores)
         self.current_screen.gameboard.score_round(
                 self.current_screen.scoreboard,
-                callback=self.next_round,
-                timer=0.1)
+                callback=self.next_round)
 
     def replay_scoring(self):
         """Replay the scoring sequence at the user's request."""
@@ -272,7 +270,7 @@ class RendezVousWidget(ScreenManager):
                                         name='winner')
             self.switch_to(self._winner)
             print("GAME OVER", self.game.score.scores)
-            Clock.schedule_once(lambda dt: self.play_again(), 0.1)
+            Clock.schedule_once(lambda dt: self.play_again(), GameSettings.SPEED)
             return
         elif self.game.board.is_full(PLAYER):
             print("(already full) dealer hand:", [str(c) for c in self.game.players[DEALER].cards])
