@@ -1,7 +1,4 @@
 [
-    { "type": "title",
-      "title": "RendezVous" },
-
     { "type": "slider",
       "title": "Animation Speed",
       "desc": "Delay during an animation sequence, in seconds.",
