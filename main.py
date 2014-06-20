@@ -21,9 +21,10 @@ from gui import DEALER, PLAYER
 from gui.components import BLANK, DARKEN
 from gui.screens.game import GameScreen, WinnerScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
+from gui.settings import SettingSlider
 
 
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 
 
 class RendezVousWidget(ScreenManager):
@@ -78,7 +79,9 @@ class RendezVousWidget(ScreenManager):
                 slot.highlight(BLANK)
                 
         if self._end_of_round:
-            self.current_screen.gameboard.next_round_prompted()
+            cont = self.current_screen.gameboard.next_round_prompted()
+            if not cont:
+                return
         
         loc = card_display.parent
         if loc is self.current_screen.hand_display:
@@ -103,7 +106,9 @@ class RendezVousWidget(ScreenManager):
 
         # Auto-continue on the first play after scoring
         if self._end_of_round:
-            self.current_screen.gameboard.next_round_prompted()
+            cont = self.current_screen.gameboard.next_round_prompted()
+            if not cont:
+                return
 
         # Dropping onto the gameboard?
         loc = card_display.parent
@@ -204,7 +209,8 @@ class RendezVousWidget(ScreenManager):
             self.switch_to(GameScreen(game=self.game,
                                       name='tutorial-done'))
         self.current_screen.gameboard.play_dealer(self.dealer_play,
-                                                  callback=self._specials)
+                                                  callback=self._specials,
+                                                  timer=GameSettings.SPEED)
         for card in self.dealer_play:
             self.game.players[DEALER].remove(card)
         self.dealer_play = None
@@ -215,7 +221,8 @@ class RendezVousWidget(ScreenManager):
             self._in_progress = False
             return  # until continue is pressed
         self.current_screen.gameboard.apply_specials(self.game,
-                    self.current_screen.hand_display, self._score)
+                    self.current_screen.hand_display, self._score,
+                    GameSettings.SPEED)
 
     def score_tutorial(self, *args):
         """Continue with scoring from tutorial-board."""
@@ -231,7 +238,8 @@ class RendezVousWidget(ScreenManager):
         self._backup_score = copy.deepcopy(self.game.score.scores)
         self.current_screen.gameboard.score_round(
                 self.current_screen.scoreboard,
-                callback=self.prompt_for_next_round)
+                callback=self.prompt_for_next_round,
+                timer=GameSettings.SPEED)
 
     def replay_scoring(self):
         """Replay the scoring sequence at the user's request."""
@@ -252,7 +260,7 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.gameboard.prompt_for_next_round()
 
     def next_round(self):
-        """Clear the board for the next round."""
+        """Clear the board for the next round. Return whether to continue."""
         if self.current == 'tutorial-score':
             self.switch_to(TooltipTutorial(game=self.game,
                                            name='tutorial-continue'))
@@ -266,12 +274,12 @@ class RendezVousWidget(ScreenManager):
             self._winner = WinnerScreen(self.game.score, self.achieved,
                                         name='winner')
             self.switch_to(self._winner)
-            return
+            return False
         elif self.game.board.is_full(PLAYER):
             self.dealer_play = self.game.players[DEALER].AI_hard(
                                     DEALER, self.game.board, self.game.score)
             self._play_dealer()
-            return
+            return False
 
         if self.current == 'tutorial-continue' and self.game.round >= 10:
             special = app.loaded_deck.get_special('Perfume')
@@ -293,6 +301,7 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.hand_display.update()
         self._in_progress = False
         self._end_of_round = False
+        return True
 
     def play_again(self):
         """Start a new game."""
@@ -318,6 +327,7 @@ class RendezVousApp(App):
         """Load the deck image and create the RendezVousWidget."""
         App.__init__(self, **kwargs)
         self.icon = os.path.join("data", "RVlogo.ico")
+        self.use_kivy_settings = False
         user_dir = self.user_data_dir
         if not os.path.isdir(user_dir):
             user_dir = "player"
@@ -379,6 +389,30 @@ class RendezVousApp(App):
         return True
     def on_resume(self):
         pass
+
+    def get_application_config(self):
+        """Share a config file with GameSettings."""
+        return GameSettings.filename
+
+    def build_config(self, config):
+        """Automatically read the config file."""
+        config.read(self.get_application_config())
+
+    def on_config_change(self, config, section, key, value):
+        """Handle special config cases."""
+        if key.upper() == 'NUM_ROUNDS':
+            self.root.current_screen.round_counter.max_round = int(value)
+
+    def build_settings(self, settings):
+        """Load the JSON file with settings details."""
+        settings_file = os.path.join("gui", "settings.json")
+        fp = open(settings_file, "r")
+        try:
+            settings.register_type('slider', SettingSlider)
+            settings.add_json_panel('RendezVous', self.config,
+                                    data="\n".join(fp.readlines()))
+        finally:
+            fp.close()
 
 
 if __name__ == '__main__':

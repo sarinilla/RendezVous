@@ -227,10 +227,10 @@ class BoardDisplay(BoxLayout):
         # Prep the next round prompt widget for later
         self._next_round_prompt = BoxLayout(size_hint=(1, .125))
         self._next_round_prompt.add_widget(Button(text="Replay",
-                                            on_press=self.rescore_prompted))
+                                            on_release=self.rescore_prompted))
         self._next_round_prompt.add_widget(Widget())  # spacer
         self._next_round_prompt.add_widget(Button(text="Continue",
-                                            on_press=self.next_round_prompted))
+                                            on_release=self.next_round_prompted))
 
     def prompt_for_next_round(self):
         """Prompt the user to continue, or replay the scoring sequence."""
@@ -239,7 +239,7 @@ class BoardDisplay(BoxLayout):
     def next_round_prompted(self, *args):
         """Continue to the next round on the user's command."""
         self.remove_widget(self._next_round_prompt)
-        App.get_running_app().root.next_round()
+        return App.get_running_app().root.next_round()
 
     def rescore_prompted(self, *args):
         """Replay the scoring animation on the user's command."""

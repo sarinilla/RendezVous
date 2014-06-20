@@ -81,7 +81,10 @@ class GameSettings:
 
     def update(self):
         """Read the .ini file and update settings if it has changed."""
-        if self.mtime == os.path.getmtime(self.filename):
+        try:
+            if self.mtime == os.path.getmtime(self.filename):
+                return
+        except FileNotFoundError:
             return
         self.config.read(self.filename)
         for (name, value) in self.config.items(self.section):

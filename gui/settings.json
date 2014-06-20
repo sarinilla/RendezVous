@@ -1,0 +1,17 @@
+[
+    { "type": "title",
+      "title": "RendezVous" },
+
+    { "type": "slider",
+      "title": "Animation Speed",
+      "desc": "Delay during an animation sequence, in seconds.",
+      "section": "DEFAULT",
+      "key": "SPEED" },
+
+    { "type": "options",
+      "title": "Number of Rounds",
+      "desc": "Number of rounds in a single game of RendezVous.",
+      "section": "DEFAULT",
+      "key": "NUM_ROUNDS",
+      "options": ["1", "5", "10", "15", "20"] }
+]

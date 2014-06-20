@@ -200,3 +200,33 @@
         markup: True
         text_size: self.size
         size_hint: (1, .08)
+
+
+<SliderPopup>:
+    size_hint: (None, None)
+    BoxLayout:
+        orientation: "vertical"
+        spacing: dp(5) 
+        Widget:
+        BoxLayout:
+            Slider:
+                id: slider
+                min: 0.001
+                max: 3.0
+                value: root.value
+                size_hint_y: None
+                height: '42sp'
+            Label:
+                text: str(round(slider.value, 2))
+        Widget:
+        SettingSpacer:
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(5)
+            Button:
+                text: "Ok"
+                on_release: root.setting._validate()
+            Button:
+                text: "Cancel"
+                on_release: root.setting._dismiss()
