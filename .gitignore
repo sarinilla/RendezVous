@@ -1,5 +1,6 @@
 .buildozer/
 player/
+*.ini
 
 #################
 ## Eclipse

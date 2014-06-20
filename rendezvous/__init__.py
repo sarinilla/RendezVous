@@ -1,4 +1,5 @@
-
+from rendezvous import settings
+GameSettings = settings.GameSettings()
 
 
 class RendezVousError(Exception):
@@ -24,15 +25,6 @@ class DeckSyntaxWarning(SyntaxWarning):
 class AchievementSyntaxWarning(SyntaxWarning):
     """There is a non-fatal error in the achievement definition file."""
     pass
-
-
-class GameSettings:
-    NUM_PLAYERS = 2     #: the number of players in the game (including AI)
-    CARDS_ON_BOARD = 4  #: the number of cards each players plays per turn
-    CARDS_IN_HAND = 10  #: the number of cards held in a player's Hand
-    NUM_ROUNDS = 20     #: the number of rounds in a single game
-    SPEED = 1.0         #: speed multiplier for special effects
-
 
 
 ## Enumerations:  Enum base class added in Python 3.4  ;)
