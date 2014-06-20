@@ -164,7 +164,15 @@ class RendezVousWidget(ScreenManager):
 
     def _place_on_board(self, card_or_display, index=None):
         """Place a card on the board from the hand."""
-        card = self.current_screen.hand_display.get(card_or_display)
+        try:
+            card = self.current_screen.hand_display.get(card_or_display)
+        except ValueError:
+            print("... no valid plays; flushed hand.")
+            self.current_screen.hand_display.update()
+            print("player hand:", [str(c) for c in self.game.players[PLAYER].cards])
+            print("(player picked", [str(c) for c in player_play], ")")
+            card = self.current_screen.hand_display.get(card_or_display)
+            
         print("... hand confirmed %s" % card)
         self.current_screen.gameboard.place_card(card, index)
         if self.game.board.is_full(PLAYER):
