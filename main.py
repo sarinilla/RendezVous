@@ -23,7 +23,7 @@ from gui.screens.game import GameScreen, WinnerScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 
 
 class RendezVousWidget(ScreenManager):
@@ -54,6 +54,7 @@ class RendezVousWidget(ScreenManager):
         self.achieved = []         #: Achievements earned this game
         self.dealer_play = None    #: cards the dealer will play
         self._in_progress = False  #: currently scoring a round?
+        self._end_of_round = False #: currently paused after scoring?
 
         # Prepare the screens
         self.main = GameScreen(game=self.game, name='main')
@@ -72,12 +73,12 @@ class RendezVousWidget(ScreenManager):
         """Handle a touch to a displayed card."""
         if self._in_progress: return
         if card_display.card is None: return
-        if self.dealer_play is None:
-            self.dealer_play = self.game.players[DEALER].AI_hard(
-                                    DEALER, self.game.board, self.game.score)
         if self.current == 'tutorial-tooltip':
             for slot in self.current_screen.hand_display.slots:
                 slot.highlight(BLANK)
+                
+        if self._end_of_round:
+            self.current_screen.gameboard.next_round_prompted()
         
         loc = card_display.parent
         if loc is self.current_screen.hand_display:
@@ -99,6 +100,10 @@ class RendezVousWidget(ScreenManager):
         
         # Only drag actual cards (no empty slots)
         if card is None: return
+
+        # Auto-continue on the first play after scoring
+        if self._end_of_round:
+            self.current_screen.gameboard.next_round_prompted()
 
         # Dropping onto the gameboard?
         loc = card_display.parent
@@ -162,8 +167,12 @@ class RendezVousWidget(ScreenManager):
 
     def _place_on_board(self, card_or_display, index=None):
         """Place a card on the board from the hand."""
-        card = self.current_screen.hand_display.get(card_or_display)
-        self.current_screen.gameboard.place_card(card, index)
+        if self.dealer_play is None:
+            self.dealer_play = self.game.players[DEALER].AI_hard(
+                                    DEALER, self.game.board, self.game.score)
+        if not self.game.board.is_full(PLAYER):
+            card = self.current_screen.hand_display.get(card_or_display)
+            self.current_screen.gameboard.place_card(card, index)
         if self.game.board.is_full(PLAYER):
                 failures = self.current_screen.gameboard.validate()
                 for fcard in failures:
@@ -222,7 +231,7 @@ class RendezVousWidget(ScreenManager):
         self._backup_score = copy.deepcopy(self.game.score.scores)
         self.current_screen.gameboard.score_round(
                 self.current_screen.scoreboard,
-                callback=self.current_screen.gameboard.prompt_for_next_round)
+                callback=self.prompt_for_next_round)
 
     def replay_scoring(self):
         """Replay the scoring sequence at the user's request."""
@@ -233,6 +242,14 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.gameboard.update()
         self.current_screen.scoreboard.update()
         Clock.schedule_once(lambda dt: self._specials(), GameSettings.SPEED)
+
+    def prompt_for_next_round(self):
+        """Display the Replay and Continue buttons."""
+        self.game.players[PLAYER].refill()
+        self.current_screen.hand_display.update()
+        self._in_progress = False
+        self._end_of_round = True
+        self.current_screen.gameboard.prompt_for_next_round()
 
     def next_round(self):
         """Clear the board for the next round."""
@@ -275,6 +292,7 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.round_counter.round_number = self.game.round
         self.current_screen.hand_display.update()
         self._in_progress = False
+        self._end_of_round = False
 
     def play_again(self):
         """Start a new game."""
