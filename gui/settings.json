@@ -10,5 +10,12 @@
       "desc": "Number of rounds in a single game of RendezVous.",
       "section": "DEFAULT",
       "key": "NUM_ROUNDS",
-      "options": ["1", "5", "10", "15", "20"] }
+      "options": ["1", "5", "10", "15", "20"] },
+
+    { "type": "customAI",
+      "title": "Dealer AI",
+      "desc": "Difficulty of your opponent's strategy.",
+      "section": "DEFAULT",
+      "key": "AI_DIFFICULTY",
+      "options": ["Dumb Luck", "Artificial Intelligence", "Brilliantly Evil"] }
 ]

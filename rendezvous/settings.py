@@ -52,6 +52,8 @@ class GameSettings:
             doc="The number of rounds in a single game")
     SPEED = Setting(1.0, type=float, minvalue=0.001,
             doc="Speed multiplier for special effects; lower == faster")
+    AI_DIFFICULTY = Setting(2, minvalue=1, maxvalue=3,
+            doc="Intelligence of your opponent")
 
     def __init__(self, filename="rendezvous.ini"):
         self.config = configparser.SafeConfigParser()

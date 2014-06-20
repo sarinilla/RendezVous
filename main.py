@@ -21,7 +21,7 @@ from gui import DEALER, PLAYER
 from gui.components import BLANK, DARKEN
 from gui.screens.game import GameScreen, WinnerScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
-from gui.settings import SettingSlider
+from gui.settings import SettingSlider, SettingAIDifficulty
 
 
 __version__ = '0.4.3'
@@ -173,8 +173,7 @@ class RendezVousWidget(ScreenManager):
     def _place_on_board(self, card_or_display, index=None):
         """Place a card on the board from the hand."""
         if self.dealer_play is None:
-            self.dealer_play = self.game.players[DEALER].AI_hard(
-                                    DEALER, self.game.board, self.game.score)
+            self._get_dealer_play()
         if not self.game.board.is_full(PLAYER):
             card = self.current_screen.hand_display.get(card_or_display)
             self.current_screen.gameboard.place_card(card, index)
@@ -196,8 +195,18 @@ class RendezVousWidget(ScreenManager):
         card = self.current_screen.gameboard.remove_card(card_display)
         self.current_screen.hand_display.return_card(card)
 
+    def _get_dealer_play(self):
+        if GameSettings.AI_DIFFICULTY == 1:
+            self.dealer_play = self.game.players[DEALER].AI_easy(
+                                    DEALER, self.game.board, self.game.score)
+        else:
+            self.dealer_play = self.game.players[DEALER].AI_hard(
+                                    DEALER, self.game.board, self.game.score)
+
     def _play_dealer(self):
         """Place the dealer's selected cards on the board."""
+        if GameSettings.AI_DIFFICULTY == 3:
+            self._get_dealer_play()
         if self.current == 'tutorial-hand':
             self.switch_to(SidebarTutorial(game=self.game,
                                            name='tutorial-board'))
@@ -276,8 +285,7 @@ class RendezVousWidget(ScreenManager):
             self.switch_to(self._winner)
             return False
         elif self.game.board.is_full(PLAYER):
-            self.dealer_play = self.game.players[DEALER].AI_hard(
-                                    DEALER, self.game.board, self.game.score)
+            self._get_dealer_play()
             self._play_dealer()
             return False
 
@@ -409,6 +417,7 @@ class RendezVousApp(App):
         fp = open(settings_file, "r")
         try:
             settings.register_type('slider', SettingSlider)
+            settings.register_type('customAI', SettingAIDifficulty)
             settings.add_json_panel('RendezVous', self.config,
                                     data="\n".join(fp.readlines()))
         finally:

@@ -2,7 +2,7 @@ from kivy.metrics import dp
 from kivy.compat import text_type
 from kivy.core.window import Window
 from kivy.properties import ObjectProperty, NumericProperty
-from kivy.uix.settings import SettingNumeric, SettingSpacer
+from kivy.uix.settings import SettingNumeric, SettingSpacer, SettingOptions
 from kivy.uix.slider import Slider
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
@@ -40,3 +40,12 @@ class SettingSlider(SettingNumeric):
                                  value=self.value,
                                  size=(min(0.95 * Window.width, dp(500)), dp(250)))
         self.popup.open()
+
+
+class SettingAIDifficulty(SettingOptions):
+
+    options = ["Dumb Luck", "Artificial Intelligence", "Brilliantly Evil"]
+
+    def _set_option(self, instance):
+        self.value = text_type(self.options.index(instance.text)+1)
+        self.popup.dismiss()
