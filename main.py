@@ -390,7 +390,7 @@ class RendezVousApp(App):
     def get_texture(self, card):
         """Return the appropriate texture to display."""
         if card == "HIDDEN":
-            region = self.loaded.get_locked_texture()
+            region = self.loaded_deck.get_locked_texture()
         elif card is None or str(card) is " ":
             return Texture.create()
             #region = self.loaded_deck.get_back_texture()

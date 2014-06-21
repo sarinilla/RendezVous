@@ -58,6 +58,6 @@ class AchievementsScreen(Screen):
         """Update the earned/unearned status of each displayed Achievement."""
         for display in self.main.children:
             try:
-                display.earned = display.achievement in self.achievements.earned
+                display.earned = display.achievement in self.achievements.achieved
             except AttributeError:
                 continue
