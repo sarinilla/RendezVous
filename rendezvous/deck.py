@@ -448,6 +448,14 @@ class DeckDefinition:
         """Return texture details for the deck back image."""
         return self._get_rect(7, 0)
 
+    def get_wait_texture(self):
+        """Return texture details for the WAIT overlay image."""
+        return self._get_rect(9, 0)
+    
+    def get_locked_texture(self):
+        """Return texture details for the not-yet-unlocked card image."""
+        return self._get_rect(8, 0)
+
     def get_suit_texture(self, suit):
         """Return texture details for the given suit's icon."""
         if suit in self.suits:

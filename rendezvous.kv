@@ -60,7 +60,7 @@
 
 ## Win Screens - gui/screens/game.py ##            
 
-<AchievementDisplay>:
+<AchievementEarnedDisplay>:
     orientation: "vertical"
     Widget:
     BoxLayout:
@@ -257,8 +257,46 @@
                 text: "0 kisses"
             Button:
                 text: "Achievements"
+                on_release: root.manager.switcher('achieve')
             Button:
                 text: "Settings"
                 on_release: root.manager.switcher('settings')
             Button:
                 text: "Help"
+
+
+## Achievement Screen - gui/screens/achievement.py ##            
+
+<AchievementDisplay>:
+    size_hint: (1, None)
+    canvas:
+        Color:
+            rgba: root.get_backdrop(self.earned)
+        Rectangle:
+            size: root.size
+            pos: root.pos
+            
+    Widget:
+        canvas:
+            Color:
+                rgba: root.get_shading(root.earned)
+            Rectangle:
+                texture: app.achievement_texture and app.get_achievement_texture(root.achievement)
+                size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
+                pos: self.pos[0], self.pos[1]
+        size_hint_x: 1.25
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_x: 5
+        Label:
+            text: "[b]%s[/b]" % root.achievement.name
+            text_size: self.size
+            markup: True
+            size_hint: (1, .5)
+        Label:
+            text: root.achievement.description
+            text_size: self.size
+            valign: "top"
+    CardDisplay:
+        card: root.get_card(root.earned)
+        size_hint_x: 1

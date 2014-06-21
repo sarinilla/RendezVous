@@ -64,7 +64,7 @@ class GameScreen(Screen):
 
 ## Win/Lose Screen ##
 
-class AchievementDisplay(BoxLayout):
+class AchievementEarnedDisplay(BoxLayout):
 
     """Show an Achievement earned this game."""
 
@@ -163,7 +163,7 @@ class WinnerScreen(Screen):
         deck = App.get_running_app().loaded_deck
         for achievement in achieved:
             if achievement.reward is None:
-                ach = AchievementDisplay(achievement=achievement)
+                ach = AchievementEarnedDisplay(achievement=achievement)
                 self.ids.carousel.add_widget(ach)
                 continue
             unlock = UnlockDisplay(achievement=achievement,

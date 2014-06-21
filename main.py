@@ -23,6 +23,7 @@ from gui.screens.home import HomeScreen
 from gui.screens.game import GameScreen, WinnerScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 from gui.settings import SettingSlider, SettingAIDifficulty
+from gui.screens.achievements import AchievementsScreen
 
 
 __version__ = '0.4.4'
@@ -63,6 +64,9 @@ class RendezVousWidget(ScreenManager):
         self.add_widget(self.home)
         self.main = GameScreen(game=self.game, name='main')
         self.add_widget(self.main)
+        self.achieve = AchievementsScreen(achievements=self.app.achievements,
+                                          name='achieve')
+        self.add_widget(self.achieve)
 
         # Prepare the tutorial (if needed)
         if self.app.achievements.achieved == []:
@@ -83,6 +87,8 @@ class RendezVousWidget(ScreenManager):
         elif screen == 'settings':
             self.app.open_settings()
             return
+        elif screen == 'achieve':
+            self.achieve.update()
         self.current = screen
 
     def card_touched(self, card_display):
@@ -344,6 +350,7 @@ class RendezVousApp(App):
     """Main RendezVous App, with deck loaded."""
     
     deck_texture = ObjectProperty()
+    achievement_texture = ObjectProperty()
 
     def __init__(self, **kwargs):
         """Load the deck image and create the RendezVousWidget."""
@@ -382,10 +389,14 @@ class RendezVousApp(App):
 
     def get_texture(self, card):
         """Return the appropriate texture to display."""
-        if card is None or card.name is " ":
+        if card == "HIDDEN":
+            region = self.loaded.get_locked_texture()
+        elif card is None or str(card) is " ":
             return Texture.create()
             #region = self.loaded_deck.get_back_texture()
         else:
+            if isinstance(card, str):
+                card = self.loaded_deck.get_special(card)
             region = self.loaded_deck.get_card_texture(card)
         return self.deck_texture.get_region(*region)
 
