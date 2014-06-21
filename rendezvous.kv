@@ -300,3 +300,24 @@
     CardDisplay:
         card: root.get_card(root.earned)
         size_hint_x: 1
+
+
+## Action Bar - no source ##
+
+<ActionBar>:
+    ActionView:
+        use_separator: True
+        ActionPrevious:
+            app_icon: app.icon
+            title: "RendezVous"
+            on_release: app.root.switcher('home')
+        ActionButton:
+            text: "GAME"
+            on_release: app.root.switcher('main')
+        ActionButton:
+            text: "Achievements"
+            on_release: app.root.switcher('achieve')
+        ActionOverflow:
+            ActionButton:
+                text: "Settings"
+                on_release: app.root.switcher('settings')

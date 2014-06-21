@@ -3,6 +3,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.actionbar import ActionBar
 
 
 class AchievementDisplay(BoxLayout):
@@ -45,6 +46,8 @@ class AchievementsScreen(Screen):
         Screen.__init__(self, **kwargs)
         self.achievements = achievements
 
+        layout = BoxLayout(orientation="vertical")
+        layout.add_widget(ActionBar(size_hint=(1, .125)))
         scroller = ScrollView(do_scroll_x=False)
         self.main = main = GridLayout(cols=1, size_hint_y=None)
         main.bind(minimum_height=main.setter('height'))
@@ -52,7 +55,8 @@ class AchievementsScreen(Screen):
             main.add_widget(AchievementDisplay(achievement=achievement,
                                 earned=(achievement in achievements.achieved)))
         scroller.add_widget(main)
-        self.add_widget(scroller)
+        layout.add_widget(scroller)
+        self.add_widget(layout)
 
     def update(self):
         """Update the earned/unearned status of each displayed Achievement."""
