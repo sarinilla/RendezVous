@@ -1,6 +1,6 @@
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import ObjectProperty, ListProperty
+from kivy.properties import ObjectProperty, ListProperty, BooleanProperty
 from kivy.properties import StringProperty, NumericProperty
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
@@ -30,6 +30,7 @@ class CardDisplay(Widget):
     
     card = ObjectProperty(allownone=True)
     color = ListProperty(BLANK)
+    waited = BooleanProperty(False)
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -252,6 +253,7 @@ class BoardDisplay(BoxLayout):
             for j, card in enumerate(self.board[i]):
                 self.slots[i][j].card = None  # force update
                 self.slots[i][j].card = card
+                self.slots[i][j].waited = self.board._wait[i][j]
 
     def highlight(self, color):
         """Update all highlight colors at once."""

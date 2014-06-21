@@ -8,6 +8,10 @@
             texture: app.deck_texture and app.get_texture(root.card)
             size: min(root.size[0], root.size[1] * 5 / 7), min(root.size[1], root.size[0] * 7 / 5)
             pos: root.pos[0] + (root.size[0] - self.size[0]) / 2, root.pos[1]
+        Rectangle:
+            texture: app.deck_texture and app.get_texture("WAIT" if root.waited else None)
+            size: min(root.size[0], root.size[1] * 5 / 7), min(root.size[1], root.size[0] * 7 / 5)
+            pos: root.pos[0] + (root.size[0] - self.size[0]) / 2, root.pos[1]
     on_card: root.canvas.ask_update()
     on_color: root.canvas.ask_update()
 
@@ -298,6 +302,7 @@
             text_size: self.size
             valign: "top"
     CardDisplay:
+        color: root.get_shading(root.earned)
         card: root.get_card(root.earned)
         size_hint_x: 1
 
