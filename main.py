@@ -24,6 +24,7 @@ from gui.screens.game import GameScreen, WinnerScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 from gui.settings import SettingSlider, SettingAIDifficulty
 from gui.screens.achievements import AchievementsScreen
+from gui.screens.settings import SettingsScreen
 
 
 __version__ = '0.4.4'
@@ -67,6 +68,7 @@ class RendezVousWidget(ScreenManager):
         self.achieve = AchievementsScreen(achievements=self.app.achievements,
                                           name='achieve')
         self.add_widget(self.achieve)
+        self.add_widget(SettingsScreen(name='settings'))
 
         # Prepare the tutorial (if needed)
         if self.app.achievements.achieved == []:
@@ -84,9 +86,6 @@ class RendezVousWidget(ScreenManager):
             self.game.round > GameSettings.NUM_ROUNDS):
                 self.play_again()
                 return
-        elif screen == 'settings':
-            self.app.open_settings()
-            return
         elif screen == 'achieve':
             self.achieve.update()
         self.current = screen
@@ -356,13 +355,11 @@ class RendezVousApp(App):
         """Load the deck image and create the RendezVousWidget."""
         App.__init__(self, **kwargs)
         self.icon = os.path.join("data", "RVlogo.ico")
-        self.use_kivy_settings = False
         user_dir = self.user_data_dir
         if not os.path.isdir(user_dir):
             user_dir = "player"
         self.statistics = Statistics(os.path.join(user_dir, "stats.txt"))
         self.achievements = AchievementList(os.path.join(user_dir, "unlocked.txt"))
-        #self.achievement_texture = Image(self.achievements.image_file).texture
         loader = Loader.image(self.achievements.image_file)
         loader.bind(on_load=self._achievements_loaded)
         self.loaded_deck = DeckDefinition()
@@ -417,7 +414,8 @@ class RendezVousApp(App):
         """Return the appropriate texture to display."""
         region = self.achievements.get_achievement_texture(achievement)
         return self.achievement_texture.get_region(*region)
-        
+
+    # Allow automatic pause and resume when switching apps
     def on_pause(self):
         return True
     def on_resume(self):
@@ -443,10 +441,16 @@ class RendezVousApp(App):
         try:
             settings.register_type('slider', SettingSlider)
             settings.register_type('customAI', SettingAIDifficulty)
-            settings.add_json_panel('RendezVous', self.config,
+            settings.add_json_panel('Game Settings', self.config,
                                     data="\n".join(fp.readlines()))
         finally:
             fp.close()
+
+    #ScreenManager handles custom display.
+    def display_settings(self, settings):
+        pass
+    def close_settings(self, *args):
+        pass
 
 
 if __name__ == '__main__':
