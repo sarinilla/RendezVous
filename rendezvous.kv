@@ -1,3 +1,5 @@
+## Components - gui/components.py ##
+
 <CardDisplay>:
     canvas:
         Color: 
@@ -54,7 +56,9 @@
             text_size: self.parent.size[0], self.text_size[1]
             font_size: dp(12)
             size_hint: 1, None
-            
+
+
+## Win Screens - gui/screens/game.py ##            
 
 <AchievementDisplay>:
     orientation: "vertical"
@@ -150,8 +154,10 @@
                 on_press: root.manager.play_again()
             Button:
                 text: "no"
-                on_press: app.stop()
+                on_press: root.manager.switcher('home')
 
+
+## Tutorial Screens - gui/screens/tutorial.py ##
 
 <WinIntroScreen@Screen>:
     Carousel:
@@ -202,6 +208,8 @@
         size_hint: (1, .08)
 
 
+## Settings - gui/settings.py ##
+
 <SliderPopup>:
     size_hint: (None, None)
     BoxLayout:
@@ -230,3 +238,27 @@
             Button:
                 text: "Cancel"
                 on_release: root.setting._dismiss()
+
+
+## Home Screen - gui/screens/home.py ##
+
+<HomeScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        Button:
+            size_hint: 1, 5
+            text: "PLAY"
+            margin: dp(300), dp(500)
+            on_release: root.manager.switcher('main')
+        BoxLayout:
+            Label:
+                text: "0 winks"
+            Label:
+                text: "0 kisses"
+            Button:
+                text: "Achievements"
+            Button:
+                text: "Settings"
+                on_release: root.manager.switcher('settings')
+            Button:
+                text: "Help"

@@ -8,7 +8,7 @@ from kivy.graphics.texture import Texture
 from kivy.properties import ObjectProperty
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.screenmanager import ScreenManager, FadeTransition
+from kivy.uix.screenmanager import ScreenManager, FadeTransition, Screen
 from kivy.loader import Loader
 
 from rendezvous import GameSettings
@@ -19,12 +19,13 @@ from rendezvous.achievements import AchievementList
 
 from gui import DEALER, PLAYER
 from gui.components import BLANK, DARKEN
+from gui.screens.home import HomeScreen
 from gui.screens.game import GameScreen, WinnerScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 from gui.settings import SettingSlider, SettingAIDifficulty
 
 
-__version__ = '0.4.3'
+__version__ = '0.4.4'
 
 
 class RendezVousWidget(ScreenManager):
@@ -43,13 +44,13 @@ class RendezVousWidget(ScreenManager):
         """Arrange the widgets."""
         ScreenManager.__init__(self, transition=FadeTransition(), **kwargs)
         try:
-            app = kwargs['app']
+            self.app = kwargs['app']
         except KeyError:
-            app = App.get_running_app()
+            self.app = App.get_running_app()
 
         # Prepare internal storage
-        self.game = RendezVousGame(deck=app.loaded_deck,
-                                   achievements=app.achievements)
+        self.game = RendezVousGame(deck=self.app.loaded_deck,
+                                   achievements=self.app.achievements)
         self.game.new_game()
         self._cards_played = []    #: hand indices played so far
         self.achieved = []         #: Achievements earned this game
@@ -58,17 +59,31 @@ class RendezVousWidget(ScreenManager):
         self._end_of_round = False #: currently paused after scoring?
 
         # Prepare the screens
+        self.home = HomeScreen(name='home')
+        self.add_widget(self.home)
         self.main = GameScreen(game=self.game, name='main')
         self.add_widget(self.main)
 
         # Prepare the tutorial (if needed)
-        if app.achievements.achieved == []:
+        if self.app.achievements.achieved == []:
             self.switch_to(MainBoardTutorial(game=self.game,
                                              name='tutorial-hand'))
             self.current_screen.tutorial.title = "Welcome to RendezVous!"
             self.current_screen.tutorial.text = "This tutorial will walk you through your first game, introducing key concepts along the way. RendezVous is easy to play, but you will find the strategies to be endless!\n\nYour hand is displayed below. Each round, you will pick 4 cards to play, then your hand will be refilled to 10 again. Go ahead and pick your first four cards now.\n\n(Higher values are better!)"
             self.current_screen.tutorial.footer = "SELECT 4 CARDS BELOW"
-            
+
+    def switcher(self, screen):
+        """Handle a request to switch screens."""
+        if isinstance(screen, Screen):
+            screen = screen.name
+        if (screen == 'main' and
+            self.game.round > GameSettings.NUM_ROUNDS):
+                self.play_again()
+                return
+        elif screen == 'settings':
+            self.app.open_settings()
+            return
+        self.current = screen
 
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
@@ -276,10 +291,9 @@ class RendezVousWidget(ScreenManager):
             self.current_screen.tutorial.title = "The Scoreboard"
             self.current_screen.tutorial.text= "Your score in each suit is shown above, to the left. The dealer's score is to the right.\n\nAfter %s rounds, the winner is the one leading in the most suits." % GameSettings.NUM_ROUNDS
             self.current_screen.tutorial.footer = "Play a few rounds!"
-        app = App.get_running_app()
         game_over = self.game.next_round()
         if game_over:
-            self.achieved += app.record_score(self.game.score)
+            self.achieved += self.app.record_score(self.game.score)
             self._winner = WinnerScreen(self.game.score, self.achieved,
                                         name='winner')
             self.switch_to(self._winner)
@@ -290,9 +304,9 @@ class RendezVousWidget(ScreenManager):
             return False
 
         if self.current == 'tutorial-continue' and self.game.round >= 10:
-            special = app.loaded_deck.get_special('Perfume')
+            special = self.app.loaded_deck.get_special('Perfume')
             self.game.players[PLAYER].cards[8] = special
-            app.achievements.achieved.append("Tutorial")
+            self.app.achievements.achieved.append("Tutorial")
             self.game.players[PLAYER].deck.shuffle()
             self.switch_to(MainBoardTutorial(game=self.game,
                                              name='tutorial-tooltip'))
