@@ -10,6 +10,7 @@ class TestTouch(unittest.TestCase):
     def setUp(self):
         self.app = RendezVousApp()
         self.root = RendezVousWidget(app=self.app)
+        self.root.current = 'main'
 
     def test_touch_hand(self):
         card = self.root.game.players[PLAYER][3]
@@ -94,6 +95,7 @@ class TestDragAndDrop(unittest.TestCase):
     def setUp(self):
         self.app = RendezVousApp()
         self.root = RendezVousWidget(app=self.app)
+        self.root.current = 'main'
 
     def test_drag_hand_to_hand(self):
         card3 = self.root.game.players[PLAYER][3]

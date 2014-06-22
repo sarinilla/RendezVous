@@ -354,9 +354,9 @@ class DeckDefinition:
     def _parse_requirement(self, req_text):
         """[MIN|MAX] # <Application>"""
         req_text = req_text.upper()
-        if req_text == "":
+        if req_text == "" or req_text == "ANY":
             return Requirement()
-        match = re.search('(MIN|MAX)?\s*(\d+)\s*(\S*)', req_text)
+        match = re.search('(MIN|MAX)?\s*(\d+)\s*(.*)', req_text)
         if not match:
             warnings.warn("Invalid requirement: %s" % req_text,
                           DeckSyntaxWarning)
@@ -377,6 +377,8 @@ class DeckDefinition:
         if match:
             opposite=self._parse_application(match.group(2))
             app_text = match.group(1)
+        if app_text == "" or app_text == "ANY" or app_text == "ALL":
+            return Application()
         match = re.search(
             '(FRIENDLY|ENEMY|ALL)?\s*(\w+)?\s*([\<\>=]*)\s*(\d*)', app_text)
         if not match:
@@ -529,12 +531,13 @@ class DeckCatalogEntry:
 
     """One deck available for purchase."""
     
-    def __init__(self, name, description, base_filename):
+    def __init__(self, name, description, directory, base_filename):
         self.name = name
         self.description = description
-        self.definition = base_filename + ".txt"
-        self.image_file = base_filename + ".png"
-        self.icon = base_filename + "Icon.png"
+        self.base_filename = base_filename
+        self.definition = os.path.join(directory, base_filename) + ".txt"
+        self.image_file = os.path.join(directory, base_filename) + ".png"
+        self.icon = os.path.join(directory, base_filename) + "Icon.png"
 
     def __str__(self):
         return self.name
@@ -573,15 +576,17 @@ class DeckCatalog:
                     continue
                 if "Achievements" in file:
                     continue
-                base = os.path.join(dirpath, file[:-4])
+                base = file[:-4]
                 name = desc = ""
-                for (tag, value) in FileReader(base + ".txt"):
+                definition_file = os.path.join(dirpath, base) + ".txt"
+                for (tag, value) in FileReader(definition_file):
                     if tag == "DECK-NAME":
                         name = value
                     elif tag == "DECK-DESC":
                         desc = value
                     else:
-                        self.decks.append(DeckCatalogEntry(name, desc, base))
+                        self.decks.append(DeckCatalogEntry(name, desc,
+                                                           dirpath, base))
                         break
 
     def _read_purchased(self, filename):
@@ -599,14 +604,14 @@ class DeckCatalog:
         f = open(self._purchased_filename, 'w')
         try:
             for deck_name in self._purchased:
-                f.write("[DECK-NAME]%s" % deck_name)
+                f.write("[DECK-NAME]%s\n" % deck_name)
         finally:
             f.close()
 
     def purchased(self, deck_name):
         """Return the DeckCatalogEntry if purchased, or None."""
         try:
-            deck = self.decks[self.decks.index(deck_name)]
+            deck = self[deck_name]
         except:
             return None
         if deck_name in self._purchased:
@@ -614,7 +619,7 @@ class DeckCatalog:
 
     def purchase(self, deck):
         """Mark the deck purchased and return its DeckCatalogEntry."""
-        deck = self.decks[self.decks.index(deck_name)]
+        deck = self[deck]
         self._purchased.append(deck.name)
         self._write()
         return deck

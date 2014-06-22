@@ -324,7 +324,7 @@ class Effect:
         elif self.effect == EffectType.REPLACE:
             return "Replace suit with %s" % self.value
         elif self.effect == EffectType.CLONE:
-            return "All matching (friendly) cards become clones of the first"
+            return "All matching cards become clones of the first requirement found"
         elif self.effect == EffectType.FLUSH:
             return "Flush all cards from the player's hand and redraws"
         else:

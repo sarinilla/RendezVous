@@ -24,7 +24,13 @@ class TestHand(unittest.TestCase):
             self.assertIn(card, self.hand.cards)
         self.assertEqual(3, self.hand.index(self.hand[3]))
         self.assertEqual(self.hand[3], self.hand.pop(3))
+        self.assertEqual(self.hand[-1], self.hand.pop())
+        self.assertEqual(len(self.hand.cards), 8)
+        self.hand.remove(self.hand[1])
+        self.assertEqual(len(self.hand.cards), 7)
+        self.hand.extend((Card("Suit", 1), Card("Suit", 5)))
         self.assertEqual(len(self.hand.cards), 9)
+        self.hand.sort()
 
     def test_refill(self):
         """Verify hand is refilled properly after removal of cards."""
@@ -33,6 +39,11 @@ class TestHand(unittest.TestCase):
         self.hand.refill()
         self.assertEqual(len(self.hand.cards), 10)
 
+    def test_AI(self):
+        """Verify no errors in AI (results tested via testdealer.py)."""
+        self.hand.AI_easy(0, Gameboard(), Scoreboard(self.hand.deck.definition))
+        self.hand.AI_hard(0, Gameboard(), Scoreboard(self.hand.deck.definition))
+        
     def test_flush(self):
         """Verify hand is flushed and refilled in one move."""
         first = self.hand[0]
@@ -51,6 +62,7 @@ class TestGameBoard(unittest.TestCase):
     def test_init(self):
         self.assertEqual(len(self.board.board), 2)
         self.assertEqual(len(self.board.board[0]), 4)
+        self.assertEqual(len(self.board._wait), 2)
 
     def test_container(self):
         """Verify shortcut method of leaving out duplicate .board."""
@@ -122,6 +134,10 @@ class TestGameBoard(unittest.TestCase):
         self.board.clear()
         self.assertIs(self.board[0][3], None)
         self.assertIs(self.board[1][3], None)
+
+    def test_validate(self):
+        """Minimal test to execute the function."""
+        self.board.validate([])
 
 
 class TestScoreboard(unittest.TestCase):
@@ -296,7 +312,45 @@ class TestRendezVousGame(unittest.TestCase):
 
     """Verify game methods."""
 
-    pass
+    def setUp(self):
+        self.game = RendezVousGame()
+
+    def test_init(self):
+        """Verify the initial setup."""
+        self.assertIsInstance(self.game.deck, DeckDefinition)
+        self.assertIs(self.game.achievements, None)
+        self.assertEqual(len(self.game.players), 2)
+        self.assertIsInstance(self.game.board, Gameboard)
+        self.assertIsInstance(self.game.score, Scoreboard)
+        self.assertEqual(self.game.score.suits, self.game.deck.suits)
+
+    def test_load_deck(self):
+        """Verify the deck updates."""
+        new_deck = DeckDefinition()
+        self.game.load_deck(new_deck)
+        self.assertIs(self.game.deck, new_deck)
+        self.assertIs(self.game.score.suits, new_deck.suits)
+        for hand in self.game.players:
+            self.assertIs(hand.deck.definition, new_deck)
+
+    def test_new_game(self):
+        """Minimal test to exercise the code."""
+        self.game.new_game()
+
+    def test_score_round(self):
+        pass
+
+    def test_next_round(self):
+        """Minimal test to exercise the code."""
+        self.game.new_game()
+        self.game.next_round()
+
+    def test_validate(self):
+        pass
+
+
+    def test_specials(self):
+        pass
 
 
 if __name__ == "__main__":

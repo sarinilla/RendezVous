@@ -1,3 +1,4 @@
+import warnings
 import re
 
 
@@ -86,7 +87,7 @@ class EffectType:
                  #      VALUE: new suit
     KISS = 5     #: the card's match is kissed (both treated as a win)
                  #      VALUE: N/A
-    CLONE = 6    #: the card is replaced by the first matching suit, value
+    CLONE = 6    #: the card is replaced by the first REQUIRED suit, value
                  #      VALUE: new Card (substituted dynamically)
     FLUSH = 7    #: the player's hand is flushed and refilled
                  #      VALUE: N/A
@@ -109,7 +110,7 @@ def FileReader(filename):
         for line in file:
             if line == "\n":
                 continue
-            match = re.search('\[(.*)\](.*)\n', line)
+            match = re.search('\[(.*)\](.*)', line)
             if not match:
                 warnings.warn("Unexpected text in %s: %s" 
                                 % (filename, line),

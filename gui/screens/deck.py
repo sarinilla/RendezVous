@@ -1,3 +1,4 @@
+from kivy.app import App
 from kivy.core.image import Image
 from kivy.properties import ObjectProperty, BooleanProperty
 from kivy.uix.screenmanager import Screen
@@ -24,6 +25,15 @@ class DeckDisplay(BoxLayout):
         """Return the color to tint the entire display."""
         if self.purchased: return (1, 1, 1, 1)
         else: return (.5, .5, .5, 1)
+
+    def clicked(self):
+        """Handle a purchase or deck selection."""
+        app = App.get_running_app()
+        if self.purchased:
+            app.load_deck(self.deck.base_filename)
+            app.root.switcher('home')
+        else:
+            app.purchase_deck(self.deck)
 
 
 class DeckCatalogScreen(Screen):

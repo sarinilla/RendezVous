@@ -28,7 +28,7 @@ from gui.screens.settings import SettingsScreen
 from gui.screens.deck import DeckCatalogScreen
 
 
-__version__ = '0.4.5'
+__version__ = '0.4.6'
 
 
 class RendezVousWidget(ScreenManager):
@@ -315,14 +315,15 @@ class RendezVousWidget(ScreenManager):
             return False
 
         if self.current == 'tutorial-continue' and self.game.round >= 10:
-            special = self.app.loaded_deck.get_special('Perfume')
+            special = self.app.loaded_deck.specials[0]
+            special = self.app.loaded_deck.get_special(special.name)  # copy
             self.game.players[PLAYER].cards[8] = special
             self.app.achievements.achieved.append("Tutorial")
             self.game.players[PLAYER].deck.shuffle()
             self.switch_to(MainBoardTutorial(game=self.game,
                                              name='tutorial-tooltip'))
             self.current_screen.tutorial.title = "Introducing Special Cards"
-            self.current_screen.tutorial.text = "In addition to the five normal suits, you will sometimes get special cards in your hand. These can only be played when certain conditions are met, but they have the power to affect the other cards you play, or even the dealer's cards.\n\nYou drew a PERFUME card! This will raise the value of any Girlfriends you play alongside it. Drag your Perfume card onto the tooltip display below the scoreboard to read about what it does and how to use it.\n\nThere are many different types of special cards. The best cards are unlocked by completing RendezVous Achievements - and when you download a custom deck, it will come with its own unique Special Cards!"
+            self.current_screen.tutorial.text = "In addition to the five normal suits, you will sometimes get special cards in your hand. These can only be played when certain conditions are met, but they have the power to affect the other cards you play, or even the dealer's cards.\n\nYou drew a %s card! Drag your new special card onto the tooltip display below the scoreboard to read about what it does and how to use it.\n\nThere are many different types of special cards. The best cards are unlocked by completing RendezVous Achievements - and when you download a custom deck, it will come with its own unique Special Cards!" % special
             self.current_screen.tutorial.footer = "When you are ready to continue, select your 4 cards for this round."
             for slot in self.current_screen.hand_display.slots:
                 slot.highlight(DARKEN)
@@ -353,9 +354,10 @@ class RendezVousWidget(ScreenManager):
 class RendezVousApp(App):
 
     """Main RendezVous App, with deck loaded."""
-    
-    deck_texture = ObjectProperty()
-    achievement_texture = ObjectProperty()
+
+    loaded_deck = ObjectProperty()
+    deck_texture = ObjectProperty(allownone=True)
+    achievement_texture = ObjectProperty(allownone=True)
 
     def __init__(self, **kwargs):
         """Load the deck image and create the RendezVousWidget."""
@@ -371,10 +373,7 @@ class RendezVousApp(App):
         self.deck_catalog = DeckCatalog(os.path.join(user_dir, "decks.txt"))
         if not self.deck_catalog.purchased(GameSettings.CURRENT_DECK):
             GameSettings.CURRENT_DECK = "Standard"
-        self.loaded_deck = DeckDefinition(GameSettings.CURRENT_DECK)
-        loader = Loader.image(self.loaded_deck.img_file)
-        loader.bind(on_load=self._image_loaded)
-        self.deck_texture = Image(self.loaded_deck.img_file).texture
+        self.load_deck(GameSettings.CURRENT_DECK)
 
     def _image_loaded(self, loader):
         """Update the deck image when it's finished loading."""
@@ -387,11 +386,41 @@ class RendezVousApp(App):
 
     def build(self):
         return RendezVousWidget(app=self)
+
+    def load_deck(self, deck_base):
+        """Prepare the given deck for play."""
+        if self.loaded_deck and self.loaded_deck.name == deck_base:
+            return
+        self.loaded_deck = DeckDefinition(deck_base)
+        self.deck_texture = None
+        loader = Loader.image(self.loaded_deck.img_file)
+        loader.bind(on_load=self._image_loaded)
+
+        def update_deck(screen):
+            screen.gameboard.update()
+            screen.hand_display.update()
+            screen.scoreboard.update_suits()
+            screen.tooltip.card = None
+            
+        if self.root:
+            self.root.game.load_deck(self.loaded_deck)
+            update_deck(self.root.main)
+            if self.root.current[:7] == 'tutorial':
+                update_deck(self.root.current_screen)
+
+    def purchase_deck(self, deck_entry):
+        """Purchase and load the given deck."""
+        self.deck_catalog.purchase(deck_entry)
+        self.load_deck(deck_entry.base_filename)
+        self.root.switcher('main')
         
     def record_score(self, score):
         """Update meta-data at the end of each game."""
         self.statistics.record_game(score, PLAYER)
         return self.achievements.check(score, PLAYER, self.statistics)
+
+
+    # Manage deck images
 
     def get_texture(self, card):
         """Return the appropriate texture to display."""
@@ -404,9 +433,9 @@ class RendezVousApp(App):
             #region = self.loaded_deck.get_back_texture()
         elif isinstance(card, DeckCatalogEntry):
             return card.texture
+        elif isinstance(card, str):
+            return self.get_texture(self.loaded_deck.get_special(card))
         else:
-            if isinstance(card, str):
-                card = self.loaded_deck.get_special(card)
             region = self.loaded_deck.get_card_texture(card)
         return self.deck_texture.get_region(*region)
 
@@ -428,11 +457,16 @@ class RendezVousApp(App):
         region = self.achievements.get_achievement_texture(achievement)
         return self.achievement_texture.get_region(*region)
 
+
     # Allow automatic pause and resume when switching apps
+    
     def on_pause(self):
         return True
     def on_resume(self):
         pass
+
+
+    # Manage settings panel
 
     def get_application_config(self):
         """Share a config file with GameSettings."""
@@ -459,7 +493,7 @@ class RendezVousApp(App):
         finally:
             fp.close()
 
-    #ScreenManager handles custom display.
+    # (ScreenManager handles custom display)
     def display_settings(self, settings):
         pass
     def close_settings(self, *args):

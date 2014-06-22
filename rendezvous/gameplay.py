@@ -1,5 +1,6 @@
 
 from rendezvous import GameSettings, SpecialSuit, SpecialValue, EffectType
+from rendezvous import Alignment
 from rendezvous.deck import Deck, DeckDefinition
 from rendezvous.dealer import ArtificialIntelligence
 
@@ -36,7 +37,7 @@ class Hand:
     def index(self, card):
         return self.cards.index(card)
 
-    def pop(self, index):
+    def pop(self, index=-1):
         return self.cards.pop(index)
 
     def remove(self, card):
@@ -308,6 +309,14 @@ class RendezVousGame:
                         for i in range(GameSettings.NUM_PLAYERS)]
         self.board = Gameboard()
         self.score = Scoreboard(self.deck)
+
+    def load_deck(self, deck):
+        """Switch to a new deck."""
+        self.deck = deck
+        self.score.suits = deck.suits
+        for hand in self.players:
+            hand.deck = Deck(deck, achievements=self.achievements)
+            hand.flush()
         
     def new_game(self):
         """Begin a new game."""
@@ -371,16 +380,15 @@ class RendezVousGame:
                         self.board[p-1][c].apply(special.effect)
                         
         elif special.effect.effect == EffectType.CLONE:
+            special.effect.value = special.requirement.filter(
+                        Alignment.FRIENDLY, self.board[player_index])[0]
             for p in range(GameSettings.NUM_PLAYERS):
                 for c in range(GameSettings.CARDS_ON_BOARD):
                     if special.application.match(p == player_index,
                                                  self.board[p][c],
                                                  self.board[p-1][c]):
-                        special.effect.value = self.board[p][c]
-                        for a in range(self.board.MAX_CARDS):
-                            self.board[p][a].apply(special.effect)
-                        return
-                    
+                        self.board[p][c].apply(special.effect)
+                        
         elif special.effect.effect == EffectType.WAIT:
             for p in range(GameSettings.NUM_PLAYERS):
                 for c in range(GameSettings.CARDS_ON_BOARD):

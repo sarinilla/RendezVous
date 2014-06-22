@@ -259,7 +259,7 @@ class TestDeckDefinition(unittest.TestCase):
 
     def test_attributes(self):
         """Verify the simple storage."""
-        self.assertEqual(self.dd.name, "Standard RendezVous Deck")
+        self.assertEqual(self.dd.name, "Lovers & Spies Deck")
         self.assertEqual(self.dd.desc, "A standard deck featuring Lovers & Spies.")
         self.assertEqual(self.dd.suits, ["Boyfriend", "Girlfriend", "Spy",
                                          "Counterspy", "Time"])
@@ -290,6 +290,10 @@ class TestDeckDefinition(unittest.TestCase):
                          "No more than 3 cards")
         self.assertEqual(str(self.dd._parse_requirement("")),
                          "Nothing")
+        self.assertEqual(str(self.dd._parse_requirement("any")),
+                         "Nothing")
+        self.assertEqual(str(self.dd._parse_requirement("min 1 <= 5")),
+                         "At least 1 card with a value of 5 or less")
 
     def test_parse_application(self):
         """Verify application parsing from the text file."""
@@ -305,6 +309,10 @@ class TestDeckDefinition(unittest.TestCase):
                          "Boyfriend cards placed VS cards with a value of 10 or greater")
         self.assertEqual(str(self.dd._parse_application("hand")),
                          "The player's hand")
+        self.assertEqual(str(self.dd._parse_application("any")),
+                         "ALL cards")
+        self.assertEqual(str(self.dd._parse_application("all")),
+                         "ALL cards")
 
     def test_parse_effect(self):
         """Verify effect parsing from the text file."""
@@ -327,7 +335,7 @@ class TestDeckDefinition(unittest.TestCase):
         self.assertEqual(str(self.dd._parse_effect("kiss")),
                          "KISS (both sides WIN)")
         self.assertEqual(str(self.dd._parse_effect("clone")),
-                         "All matching (friendly) cards become clones of the first")
+                         "All matching cards become clones of the first requirement found")
         self.assertEqual(str(self.dd._parse_effect("flush")),
                          "Flush all cards from the player's hand and redraws")
 

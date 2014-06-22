@@ -437,4 +437,9 @@ class ScoreDisplay(BoxLayout):
             display.pscore = self.scoreboard[PLAYER][i]
             display.dscore = self.scoreboard[DEALER][i]
 
+    def update_suits(self):
+        """Update the suit displays."""
+        for i, row in enumerate(self.rows):
+            row.suit = self.scoreboard.suits[i]
+
 

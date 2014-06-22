@@ -464,7 +464,7 @@ class TestEffect(unittest.TestCase):
         self.assertEqual(str(Effect(EffectType.REPLACE, "NewSuit")),
                          "Replace suit with NewSuit")
         self.assertEqual(str(Effect(EffectType.CLONE)),
-                         "All matching (friendly) cards become clones of the first")
+                         "All matching cards become clones of the first requirement found")
         self.assertEqual(str(Effect(EffectType.FLUSH)),
                          "Flush all cards from the player's hand and redraws")
 

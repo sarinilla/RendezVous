@@ -11,6 +11,8 @@ import unittest
 from gui.components import *
 
 
+## GUI Components ##
+
 class TestCardDisplay(unittest.TestCase):
 
     def setUp(self):
@@ -19,23 +21,28 @@ class TestCardDisplay(unittest.TestCase):
     def test_init(self):
         self.assertIs(self.cd.card, None)
         self.assertEqual(self.cd.color, [1, 1, 1, 1])
+        self.assertEqual(self.cd.waited, False)
 
     def test_highlight(self):
         self.cd.highlight([.2, .3, .4, .5])
         self.assertEqual(self.cd.color, [.2, .3, .4, .5])
 
-    @unittest.skip("need to stub touch and app.root.card_touched")
-    def test_touch(self):
-        touch = StubTouch()
-        self.cd.on_touch_down(touch)
-        self.assertIs(touch.card, self.cd.card)
-        self.cd.on_touch_up(touch)
+    # touch events are thoroughly tested via testmain.py
 
 
 class TestSuitDisplay(unittest.TestCase):
 
     def setUp(self):
         self.sd = SuitDisplay()
+
+    def test_init(self):
+        pass
+
+
+class TestSuitScoreDisplay(unittest.TestCase):
+
+    def setUp(self):
+        self.ssd = SuitScoreDisplay()
 
     def test_init(self):
         pass
@@ -49,6 +56,8 @@ class TestToolTipDisplay(unittest.TestCase):
     def test_init(self):
         pass
 
+
+## Game Components ##
 
 class TestRoundCounter(unittest.TestCase):
 
@@ -70,10 +79,18 @@ class TestHandDisplay(unittest.TestCase):
         self.assertEqual(len(self.hd.slots), 10)
         self.assertEqual(self.hd._played, [])
 
-    def test_udpate(self):
-        self.hd.update()
+    def test_init_partial(self):
+        self.hd.hand.pop()
+        self.hd = HandDisplay(hand=self.hd.hand)
+        self.assertEqual(len(self.hd.slots), 10)
 
-    def test_swap(self):
+    def test_update(self):
+        self.hd.hand.cards[3] = Card("Suit", 3)
+        self.hd.update()
+        self.assertIs(self.hd.slots[3].card, self.hd.hand.cards[3])
+        self.assertEqual(self.hd.slots[3].card, Card("Suit", 3))
+
+    def test_swap_by_card(self):
         one = self.hd.slots[3].card
         two = self.hd.slots[4].card
         self.hd.swap(one, two)
@@ -81,6 +98,29 @@ class TestHandDisplay(unittest.TestCase):
         self.assertIs(self.hd.slots[4].card, one)
         self.assertIs(self.hd.hand[3], two)
         self.assertIs(self.hd.hand[4], one)
+
+    def test_swap_by_slot(self):
+        one = self.hd.slots[3].card
+        two = self.hd.slots[4].card
+        self.hd.swap(self.hd.slots[3], self.hd.slots[4])
+        self.assertIs(self.hd.slots[3].card, two)
+        self.assertIs(self.hd.slots[4].card, one)
+        self.assertIs(self.hd.hand[3], two)
+        self.assertIs(self.hd.hand[4], one)
+
+    def test_swap_by_index(self):
+        one = self.hd.slots[3].card
+        two = self.hd.slots[4].card
+        self.hd.swap(3, 4)
+        self.assertIs(self.hd.slots[3].card, two)
+        self.assertIs(self.hd.slots[4].card, one)
+        self.assertIs(self.hd.hand[3], two)
+        self.assertIs(self.hd.hand[4], one)
+
+    def test_swap_played(self):
+        self.hd.get(self.hd.slots[3])
+        self.hd.swap(3, 4)
+        self.assertEqual(self.hd._played, [4])        
 
     def test_get(self):
         expected = self.hd.slots[3].card
@@ -118,9 +158,33 @@ class TestBoardDisplay(unittest.TestCase):
         self.assertEqual(len(self.bd.slots), 2)
         self.assertEqual(len(self.bd.slots[0]), 4)
         self.assertEqual(len(self.bd.slots[1]), 4)
+        self.assertNotIn(self.bd._next_round_prompt, self.bd.children)
+        
+    def test_prompt(self):
+        self.bd.prompt_for_next_round()
+        self.assertIn(self.bd._next_round_prompt, self.bd.children)
+
+    @unittest.skip("No running app!")
+    def test_next_round_prompted(self):
+        self.bd.prompt_for_next_round()
+        self.bd.next_round_prompted()
+        self.assertNotIn(self.bd._next_round_prompt, self.bd.children)
+
+    @unittest.skip("No running app!")
+    def test_replay_prompted(self):
+        self.bd.prompt_for_next_round()
+        self.bd.rescore_prompted()
+        self.assertNotIn(self.bd._next_round_prompt, self.bd.children)
 
     def test_update(self):
+        self.bd.board[0][0] = Card("Suit", 1)
+        self.bd.board[1][1] = Card("Suit", 5)
+        self.bd.board._wait[1][1] = True
         self.bd.update()
+        self.assertEqual(self.bd.slots[0][0].card, Card("Suit", 1))
+        self.assertEqual(self.bd.slots[0][0].waited, False)
+        self.assertEqual(self.bd.slots[1][1].card, Card("Suit", 5))
+        self.assertEqual(self.bd.slots[1][1].waited, True)
 
     def test_highlight(self):
         self.bd.highlight([.2, .3, .4, .5])
@@ -187,12 +251,34 @@ class TestBoardDisplay(unittest.TestCase):
         self.assertIs(result, card)
         self.assertIs(self.bd.slots[1][0].card, None)
 
-    def test_swap(self):
+    def test_swap_by_card(self):
         card1 = Card("Boyfriend", 1)
         card2 = Card("Boyfriend", 2)
         self.bd.place_card(card1)
         self.bd.place_card(card2)
         self.bd.swap(card1, card2)
+        self.assertEqual(self.bd.slots[PLAYER][0].card, card2)
+        self.assertEqual(self.bd.slots[PLAYER][1].card, card1)
+        self.assertEqual(self.bd.board[PLAYER][0], card2)
+        self.assertEqual(self.bd.board[PLAYER][1], card1)
+
+    def test_swap_by_display(self):
+        card1 = Card("Boyfriend", 1)
+        card2 = Card("Boyfriend", 2)
+        self.bd.place_card(card1)
+        self.bd.place_card(card2)
+        self.bd.swap(self.bd.slots[PLAYER][0], self.bd.slots[PLAYER][1])
+        self.assertEqual(self.bd.slots[PLAYER][0].card, card2)
+        self.assertEqual(self.bd.slots[PLAYER][1].card, card1)
+        self.assertEqual(self.bd.board[PLAYER][0], card2)
+        self.assertEqual(self.bd.board[PLAYER][1], card1)
+
+    def test_swap_by_index(self):
+        card1 = Card("Boyfriend", 1)
+        card2 = Card("Boyfriend", 2)
+        self.bd.place_card(card1)
+        self.bd.place_card(card2)
+        self.bd.swap(0, 1)
         self.assertEqual(self.bd.slots[PLAYER][0].card, card2)
         self.assertEqual(self.bd.slots[PLAYER][1].card, card1)
         self.assertEqual(self.bd.board[PLAYER][0], card2)
@@ -270,6 +356,14 @@ class TestScoreDisplay(unittest.TestCase):
         self.assertEqual(len(self.sd.rows), 5)
 
     def test_update(self):
+        self.sd.scoreboard[DEALER][2] = 20
         self.sd.update()
+        self.assertEqual(self.sd.rows[2].dscore, 20)
+
+    def test_update_suits(self):
+        self.sd.scoreboard.suits = ["1", "2", "3", "4", "5"]
+        self.sd.update_suits()
+        for i, suit in enumerate(self.sd.scoreboard.suits):
+            self.assertEqual(self.sd.rows[i].suit, suit)
         
         
