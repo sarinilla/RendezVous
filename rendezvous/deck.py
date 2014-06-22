@@ -4,7 +4,8 @@ import random
 import copy
 import warnings
 
-from rendezvous import DeckSyntaxWarning, Alignment, EffectType, Operator, SpecialSuit, SpecialValue, MissingDeckError
+from rendezvous import DeckSyntaxWarning, MissingDeckError, FileReader
+from rendezvous import Operator, SpecialSuit, SpecialValue, Alignment, EffectType
 from rendezvous.specials import Requirement, Application, Effect
 
 
@@ -260,31 +261,13 @@ class DeckDefinition:
             raise MissingDeckError
         self._read_definition()
 
-    def _read_definition_generator(self):
-        """Read the Deck Definition File and yield (tag, value) pairs."""
-        file = open(self.def_file, 'r')
-        try:
-            for line in file:
-                if line == "\n":
-                    continue
-                match = re.search('\[(.*)\](.*)\n', line)
-                if not match:
-                    warnings.warn("Unexpected text in deck definition file: %s" % line,
-                                  DeckSyntaxWarning)
-                    continue
-
-                yield(match.group(1).upper(), match.group(2))
-        finally:
-            file.close()
-
     def _read_definition(self):
         """Read details from the Deck Definition File."""
         self.suits = []
         self.values = list(range(1, 11))
         self.specials = []
-        gen = self._read_definition_generator()
         special_detail = {}
-        for (tag, value) in gen:
+        for (tag, value) in FileReader(self.def_file):
             if tag == "DECK-NAME":
                 self.name = value
 

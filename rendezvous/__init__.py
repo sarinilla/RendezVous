@@ -95,4 +95,25 @@ class AchieveType:
     PLAY = 1     #: number of games played
     WIN = 2      #: number of games won
     STREAK = 3   #: number of games won in a row
+
+
+def FileReader(filename):
+
+    """Read [TAG]Value text files. Return a generator of (tag, value) pairs."""
+        
+    file = open(filename, 'r')
+    try:
+        for line in file:
+            if line == "\n":
+                continue
+            match = re.search('\[(.*)\](.*)\n', line)
+            if not match:
+                warnings.warn("Unexpected text in %s: %s" 
+                                % (filename, line),
+                              SyntaxWarning)
+                continue
+
+            yield(match.group(1).upper(), match.group(2))
+    finally:
+        file.close()
     

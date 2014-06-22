@@ -3,7 +3,7 @@ import re
 import warnings
 
 
-from rendezvous import AchieveType, AchievementSyntaxWarning
+from rendezvous import AchieveType, AchievementSyntaxWarning, FileReader
 from rendezvous import SpecialSuit, SpecialValue, Operator, Alignment
 
 
@@ -328,30 +328,11 @@ class AchievementList:
         index = self.available.index(achievement)
         return (128 * int(index / 8), 1024 - 128 * (index % 8 + 1), 128, 128)
         
-    def _reader(self, filename):
-        """Read a file and yield (tag, value) pairs."""
-        file = open(filename, 'r')
-        try:
-            for line in file:
-                if line == "\n":
-                    continue
-                match = re.search('\[(.*)\](.*)\n', line)
-                if not match:
-                    warnings.warn("Unexpected text in %s: %s" 
-                                  % (filename, line),
-                                  SyntaxWarning)
-                    continue
-
-                yield(match.group(1).upper(), match.group(2))
-        finally:
-            file.close()
-        
     def _read_available(self):
         """Populate self.available with all available Achievements."""
         self.available = []
-        reader = self._reader(self._available_file)
         name = description = code = ""
-        for (tag, value) in reader:
+        for (tag, value) in FileReader(self._available_file):
             if tag == "ACH-NAME":
                 name = value
             elif tag == "ACH-DESC":
@@ -379,8 +360,7 @@ class AchievementList:
                 pass
             f = open(self._unlocked_file, 'w')
             f.close()
-        reader = self._reader(self._unlocked_file)
-        for (tag, value) in reader:
+        for (tag, value) in FileReader(self._unlocked_file):
             if tag == "ACH-NAME":
                 self.achieved.append(value)
             else:
