@@ -33,10 +33,11 @@ class GameSettings:
             return self.value
 
         def __set__(self, instance, value):
-            if float(value) < self.min:
-                value = self.min
-            if float(value) > self.max:
-                value = self.max
+            if self._typecast in (float, int):
+                if float(value) < self.min:
+                    value = self.min
+                if float(value) > self.max:
+                    value = self.max
             if self.value == self._typecast(value):
                 return
             self.value = self._typecast(value)
@@ -54,6 +55,8 @@ class GameSettings:
             doc="Speed multiplier for special effects; lower == faster")
     AI_DIFFICULTY = Setting(2, minvalue=1, maxvalue=3,
             doc="Intelligence of your opponent")
+    CURRENT_DECK = Setting("Standard", type=str,
+            doc="The base filename for the deck of cards to play with")
 
     def __init__(self, filename="rendezvous.ini"):
         self.config = configparser.SafeConfigParser()

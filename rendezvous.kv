@@ -62,6 +62,26 @@
             size_hint: 1, None
 
 
+## Deck Catalog - gui/screens/deck.py ##
+
+<DeckDisplay>:
+    orientation: "vertical"
+    canvas:
+        Color:
+            rgba: root.get_shading(root.purchased)
+    BoxLayout:
+        size_hint: (1, 7)
+        Widget:
+        ToolTipDisplay:
+            card: root.deck
+        Widget:
+    BoxLayout:
+        Widget:
+        Button:
+            text: "Play With" if root.purchased else "Purchase"
+        Widget:
+
+
 ## Win Screens - gui/screens/game.py ##            
 
 <AchievementEarnedDisplay>:
@@ -263,6 +283,9 @@
                 text: "Achievements"
                 on_release: root.manager.switcher('achieve')
             Button:
+                text: "Decks"
+                on_release: root.manager.switcher('decks')
+            Button:
                 text: "Settings"
                 on_release: root.manager.switcher('settings')
             Button:
@@ -320,9 +343,15 @@
             text: "GAME"
             on_release: app.root.switcher('main')
         ActionButton:
+            text: "Decks"
+            on_release: app.root.switcher('decks')
+        ActionButton:
             text: "Achievements"
             on_release: app.root.switcher('achieve')
         ActionOverflow:
             ActionButton:
                 text: "Settings"
                 on_release: app.root.switcher('settings')
+            ActionButton:
+                text: "Help"
+

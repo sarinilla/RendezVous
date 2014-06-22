@@ -12,7 +12,7 @@ from kivy.uix.screenmanager import ScreenManager, FadeTransition, Screen
 from kivy.loader import Loader
 
 from rendezvous import GameSettings
-from rendezvous.deck import DeckDefinition, Card
+from rendezvous.deck import DeckDefinition, Card, DeckCatalog, DeckCatalogEntry
 from rendezvous.gameplay import RendezVousGame
 from rendezvous.statistics import Statistics
 from rendezvous.achievements import AchievementList
@@ -25,9 +25,10 @@ from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTuto
 from gui.settings import SettingSlider, SettingAIDifficulty
 from gui.screens.achievements import AchievementsScreen
 from gui.screens.settings import SettingsScreen
+from gui.screens.deck import DeckCatalogScreen
 
 
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 
 
 class RendezVousWidget(ScreenManager):
@@ -69,6 +70,9 @@ class RendezVousWidget(ScreenManager):
                                           name='achieve')
         self.add_widget(self.achieve)
         self.add_widget(SettingsScreen(name='settings'))
+        self.decks = DeckCatalogScreen(catalog=self.app.deck_catalog,
+                                       name='decks')
+        self.add_widget(self.decks)
 
         # Prepare the tutorial (if needed)
         if self.app.achievements.achieved == []:
@@ -86,9 +90,11 @@ class RendezVousWidget(ScreenManager):
             self.game.round > GameSettings.NUM_ROUNDS):
                 self.play_again()
                 return
-        elif screen == 'achieve':
-            self.achieve.update()
         self.current = screen
+        try:
+            self.current_screen.update()
+        except AttributeError:
+            pass
 
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
@@ -362,7 +368,10 @@ class RendezVousApp(App):
         self.achievements = AchievementList(os.path.join(user_dir, "unlocked.txt"))
         loader = Loader.image(self.achievements.image_file)
         loader.bind(on_load=self._achievements_loaded)
-        self.loaded_deck = DeckDefinition()
+        self.deck_catalog = DeckCatalog(os.path.join(user_dir, "decks.txt"))
+        if not self.deck_catalog.purchased(GameSettings.CURRENT_DECK):
+            GameSettings.CURRENT_DECK = "Standard"
+        self.loaded_deck = DeckDefinition(GameSettings.CURRENT_DECK)
         loader = Loader.image(self.loaded_deck.img_file)
         loader.bind(on_load=self._image_loaded)
         self.deck_texture = Image(self.loaded_deck.img_file).texture
@@ -393,6 +402,8 @@ class RendezVousApp(App):
         elif card is None or str(card) is " ":
             return Texture.create()
             #region = self.loaded_deck.get_back_texture()
+        elif isinstance(card, DeckCatalogEntry):
+            return card.texture
         else:
             if isinstance(card, str):
                 card = self.loaded_deck.get_special(card)

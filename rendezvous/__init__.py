@@ -1,3 +1,6 @@
+import re
+
+
 from rendezvous import settings
 GameSettings = settings.GameSettings()
 

@@ -155,7 +155,48 @@ class SpecialCard(Card):
     def reset(self):
         """No effects to undo."""
         return
-            
+
+
+class Deck:
+    
+    """A player's deck of cards.
+
+    Methods:
+      shuffle -- reshuffle the entire deck and start from the beginning
+      draw    -- return the top card from the deck
+
+    """
+
+    def __init__(self, definition, shuffle=True, achievements=None):
+        """Prep the card list."""
+        self.definition = definition
+        self.achievements = achievements
+        self._cards = list(definition.cards(self.achievements))
+        self._next = self._draw()
+        if shuffle:
+            self.shuffle()
+
+    def shuffle(self):
+        """Shuffle the full deck together."""
+        self._cards = list(self.definition.cards(self.achievements))
+        random.shuffle(self._cards)
+        self._next = self._draw()
+
+    def _draw(self):
+        """Generator; return each card in the current deck."""
+        for card in self._cards:
+            yield card
+
+    def draw(self, auto_shuffle=True):
+        """Return the next card in the current deck."""
+        try:
+            return next(self._next)
+        except StopIteration:
+            if not auto_shuffle:
+                raise
+            self.shuffle()
+            return next(self._next)
+        
         
 class DeckDefinition:
     
@@ -484,44 +525,98 @@ class DeckDefinition:
         return (130 * col, 2048 - 182 * (row + 1), 130, 182)
 
 
-class Deck:
+class DeckCatalogEntry:
+
+    """One deck available for purchase."""
     
-    """A player's deck of cards.
+    def __init__(self, name, description, base_filename):
+        self.name = name
+        self.description = description
+        self.definition = base_filename + ".txt"
+        self.image_file = base_filename + ".png"
+        self.icon = base_filename + "Icon.png"
 
-    Methods:
-      shuffle -- reshuffle the entire deck and start from the beginning
-      draw    -- return the top card from the deck
+    def __str__(self):
+        return self.name
 
-    """
+    def __eq__(self, other):
+        return self.name == str(other)
 
-    def __init__(self, definition, shuffle=True, achievements=None):
-        """Prep the card list."""
-        self.definition = definition
-        self.achievements = achievements
-        self._cards = list(definition.cards(self.achievements))
-        self._next = self._draw()
-        if shuffle:
-            self.shuffle()
 
-    def shuffle(self):
-        """Shuffle the full deck together."""
-        self._cards = list(self.definition.cards(self.achievements))
-        random.shuffle(self._cards)
-        self._next = self._draw()
+class DeckCatalog:
 
-    def _draw(self):
-        """Generator; return each card in the current deck."""
-        for card in self._cards:
-            yield card
+    """List of decks available for purchase and play."""
 
-    def draw(self, auto_shuffle=True):
-        """Return the next card in the current deck."""
+    def __init__(self, purchased_file=None, directory=None):
+        if purchased_file is None:
+            purchased_file = os.path.join("player", "decks.txt")
+        if directory is None:
+            directory = os.path.join("data", "decks")
+        self.decks = []
+        self._read_available(directory)
+        self._purchased = []
+        self._read_purchased(purchased_file)
+
+    # Shortcut to .decks as a hash[deck_name]
+    def __len__(self):
+        return len(self.decks)
+    def __getitem__(self, name):
+        return self.decks[self.decks.index(name)]
+    def __iter__(self):
+        return iter(self.decks)
+
+    def _read_available(self, directory):
+        """Locate all available deck files."""
+        for (dirpath, dirnames, filenames) in os.walk(directory):
+            for file in filenames:
+                if file[-4:] != ".txt":
+                    continue
+                if "Achievements" in file:
+                    continue
+                base = os.path.join(dirpath, file[:-4])
+                name = desc = ""
+                for (tag, value) in FileReader(base + ".txt"):
+                    if tag == "DECK-NAME":
+                        name = value
+                    elif tag == "DECK-DESC":
+                        desc = value
+                    else:
+                        self.decks.append(DeckCatalogEntry(name, desc, base))
+                        break
+
+    def _read_purchased(self, filename):
+        """Read the list of purchased decks."""
+        self._purchased_filename = filename
+        if not os.path.isfile(filename):
+            f = open(filename, 'w')
+            f.close()
+        for (tag, value) in FileReader(filename):
+            if tag == "DECK-NAME":
+                self._purchased.append(value)
+
+    def _write(self):
+        """Write the list of purchased decks."""
+        f = open(self._purchased_filename, 'w')
         try:
-            return next(self._next)
-        except StopIteration:
-            if not auto_shuffle:
-                raise
-            self.shuffle()
-            return next(self._next)
-        
-        
+            for deck_name in self._purchased:
+                f.write("[DECK-NAME]%s" % deck_name)
+        finally:
+            f.close()
+
+    def purchased(self, deck_name):
+        """Return the DeckCatalogEntry if purchased, or None."""
+        try:
+            deck = self.decks[self.decks.index(deck_name)]
+        except:
+            return None
+        if deck_name in self._purchased:
+            return deck
+
+    def purchase(self, deck):
+        """Mark the deck purchased and return its DeckCatalogEntry."""
+        deck = self.decks[self.decks.index(deck_name)]
+        self._purchased.append(deck.name)
+        self._write()
+        return deck
+
+    

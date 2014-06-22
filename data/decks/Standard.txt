@@ -1,4 +1,4 @@
-[DECK-NAME]Standard RendezVous Deck
+[DECK-NAME]Lovers & Spies Deck
 [DECK-DESC]A standard deck featuring Lovers & Spies.
 
 [SUIT]Boyfriend
