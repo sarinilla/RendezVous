@@ -371,7 +371,7 @@ class RendezVousApp(App):
         loader = Loader.image(self.achievements.image_file)
         loader.bind(on_load=self._achievements_loaded)
         self.deck_catalog = DeckCatalog(os.path.join(user_dir, "decks.txt"))
-        if not self.deck_catalog.purchased(GameSettings.CURRENT_DECK):
+        if self.deck_catalog.purchased(GameSettings.CURRENT_DECK) is None:
             GameSettings.CURRENT_DECK = "Standard"
         self.load_deck(GameSettings.CURRENT_DECK)
 
@@ -391,6 +391,7 @@ class RendezVousApp(App):
         """Prepare the given deck for play."""
         if self.loaded_deck and self.loaded_deck.name == deck_base:
             return
+        GameSettings.CURRENT_DECK = deck_base
         self.loaded_deck = DeckDefinition(deck_base)
         self.deck_texture = None
         loader = Loader.image(self.loaded_deck.img_file)
@@ -400,7 +401,7 @@ class RendezVousApp(App):
             screen.gameboard.update()
             screen.hand_display.update()
             screen.scoreboard.update_suits()
-            screen.tooltip.card = None
+            screen.tooltip.card = screen.tooltip.DUMMY_CARD
             
         if self.root:
             self.root.game.load_deck(self.loaded_deck)
