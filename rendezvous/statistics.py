@@ -1,14 +1,84 @@
 import os
+import re
+
+class BaseStats:
+
+    """Track statistics for a single deck or suit.
+    
+    Attributes:
+      wins        -- total number of games won
+      losses      -- total number of games lost
+      played      -- total number of games played
+      win_streak  -- current number of games won in a row
+      best_streak -- record number of games won in a row
+
+    """
+
+    def __init__(self, string=None):
+        self.wins = 0
+        self.losses = 0
+        self.played = 0
+        self.win_streak = 0
+        self.best_streak = 0
+        if string is not None:
+            try:
+                self._load(string)
+            except:
+                pass
+
+    @property
+    def draws(self):
+        return self.played - self.wins - self.losses
+
+    def __str__(self):
+        return str((self.wins, self.losses, self.played,
+                    self.win_streak, self.best_streak))
+
+    def __repr__(self):
+        return str(self)
+
+    def _load(self, string):
+        values = tuple(int(v) for v in re.findall("[0-9]+", string))
+        (self.wins, self.losses, self.played,
+         self.win_streak, self.best_streak) = values
+
+    def record(self, player_score, dealer_score):
+        """Record the end of a game."""
+        if player_score > dealer_score:
+            self.win()
+        elif player_score < dealer_score:
+            self.lose()
+        else:
+            self.draw()
+
+    def win(self):
+        """Record a win."""
+        self.played += 1
+        self.wins += 1
+        self.win_streak += 1
+        if self.win_streak > self.best_streak:
+            self.best_streak = self.win_streak
+
+    def lose(self):
+        """Record a loss."""
+        self.played += 1
+        self.losses += 1
+        self.win_streak = 0
+
+    def draw(self):
+        """Record a draw."""
+        self.played += 1
+        self.win_streak = 0
+        
 
 class Statistics:
 
     """Track player statistics.
     
     Attributes:
-      wins       -- total number of games won
-      played     -- total number of games played
-      win_streak -- current number of games won in a row
-      suits      -- { 'name' : (wins, losses, draws) }
+      base   -- BaseStats for games played/won/etc in general
+      decks  -- { 'base_filename' : BaseStats for that deck }
+      suits  -- { 'name' : BaseStats for that suit }
       
     Methods:
       record_game -- note the end of a game
@@ -16,34 +86,24 @@ class Statistics:
     """
     
     def __init__(self, filename=None):
-        self.wins = 0
-        self.played = 0
-        self.win_streak = 0
+        self.base = BaseStats()
+        self.decks = {}
         self.suits = {}
         self._load(filename)
     
-    def record_game(self, score, player_index):
+    def record_game(self, deck_base, score, player_index):
         """Note the end of a game."""
-        self.played += 1
-        if score.total(player_index) > score.total(player_index-1):
-            self.wins += 1
-            self.win_streak += 1
-        else:
-            self.win_streak = 0
+        self.base.record(score.total(player_index),
+                         score.total(player_index-1))
+        if deck_base not in self.decks:
+            self.decks[deck_base] = BaseStats()
+        self.decks[deck_base].record(score.total(player_index),
+                                     score.total(player_index-1))
         for i, suit in enumerate(score.suits):
-            try:
-                suit_win, suit_loss, suit_draw = self.suits[suit]
-            except KeyError:
-                suit_win, suit_loss, suit_draw = 0, 0, 0
-            psuit = score.scores[player_index][i]
-            dsuit = score.scores[player_index-1][i]
-            if psuit > dsuit:
-                suit_win += 1
-            elif psuit < dsuit:
-                suit_loss += 1
-            else:
-                suit_draw += 1
-            self.suits[suit] = (suit_win, suit_loss, suit_draw)
+            if suit not in self.suits:
+                self.suits[suit] = BaseStats()
+            self.suits[suit].record(score.scores[player_index][i],
+                                    score.scores[player_index-1][i])
         self._save()
         
     def _load(self, filename):
@@ -54,24 +114,25 @@ class Statistics:
             return
         f = open(filename, 'r')
         try:
-            self.wins = int(f.readline().strip())
-            self.played = int(f.readline().strip())
-            self.win_streak = int(f.readline().strip())
+            self.base = BaseStats(f.readline().strip())
             for line in f.readlines():
-                match = re.match('(.+):(\d+),(\d+),(\d+)', line)
-                if match is not None:
-                    self.suits[match.group(1)] = (int(match.group(2)),
-                                                  int(match.group(3)),
-                                                  int(match.group(4)))
+                match = re.match('(DECK|SUIT):(.+):(.+)', line.strip())
+                if match is None: continue
+                if match.group(1) == "DECK:":
+                    self.decks[match.group(2)] = BaseStats(match.group(3))
+                else: #if match.group(1) == "SUIT:":
+                    self.suits[match.group(2)] = BaseStats(match.group(3))
         finally:
             f.close()
             
     def _save(self):
         f = open(self.filename, 'w')
         try:
-            f.write("%s\n%s\n%s\n" % (self.wins, self.played, self.win_streak))
-            for suit, (wins, losses, draws) in self.suits.items():
-                f.write("%s:%s,%s,%s\n" % (suit, wins, losses, draws))
+            f.write("%s\n" % self.base)
+            for deck, stats in self.decks.items():
+                f.write("DECK:%s:%s\n" % (deck, stats))
+            for suit, stats in self.suits.items():
+                f.write("SUIT:%s:%s\n" % (suit, stats))
         finally:
             f.close()
     

@@ -445,8 +445,8 @@ class RendezVousApp(App):
         
     def record_score(self, score):
         """Update meta-data at the end of each game."""
-        self.statistics.record_game(score, PLAYER)
-        return self.achievements.check(score, PLAYER, self.statistics)
+        self.statistics.record_game(self.loaded_deck.base_filename, score, PLAYER)
+        return self.achievements.check(score, PLAYER, self.statistics.base)
 
 
     # Manage deck images
