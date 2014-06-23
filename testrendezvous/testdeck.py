@@ -259,6 +259,7 @@ class TestDeckDefinition(unittest.TestCase):
 
     def test_attributes(self):
         """Verify the simple storage."""
+        self.assertEqual(self.dd.base_filename, "Standard")
         self.assertEqual(self.dd.name, "Lovers & Spies Deck")
         self.assertEqual(self.dd.desc, "A standard deck featuring Lovers & Spies.")
         self.assertEqual(self.dd.suits, ["Boyfriend", "Girlfriend", "Spy",
@@ -404,6 +405,8 @@ class TestDeckCatalogEntry(unittest.TestCase):
                          os.path.join("Directory", "Base.png"))
         self.assertEqual(self.deck.icon,
                          os.path.join("Directory", "BaseIcon.png"))
+        self.assertEqual(self.deck.hand,
+                         os.path.join("Directory", "BaseHand.png"))
 
     def test_string(self):
         self.assertEqual(str(self.deck), "Name")

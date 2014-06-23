@@ -7,11 +7,11 @@
         Rectangle:
             texture: app.deck_texture and app.get_texture(root.card)
             size: min(root.size[0], root.size[1] * 5 / 7), min(root.size[1], root.size[0] * 7 / 5)
-            pos: root.pos[0] + (root.size[0] - self.size[0]) / 2, root.pos[1]
+            pos: root.pos[0] + (root.size[0] - min(root.size[0], root.size[1] * 5 / 7)) / 2, root.pos[1]
         Rectangle:
             texture: app.deck_texture and app.get_texture("WAIT" if root.waited else None)
             size: min(root.size[0], root.size[1] * 5 / 7), min(root.size[1], root.size[0] * 7 / 5)
-            pos: root.pos[0] + (root.size[0] - self.size[0]) / 2, root.pos[1]
+            pos: root.pos[0] + (root.size[0] - min(root.size[0], root.size[1] * 5 / 7)) / 2, root.pos[1]
     on_card: root.canvas.ask_update()
     on_color: root.canvas.ask_update()
 
@@ -42,17 +42,15 @@
 
 <ToolTipDisplay>:
     orientation: "vertical"
-    ProgressBar:
-        value: 0
-        size_hint: 1, .2
     CardDisplay:
         card: root.card
-        pos: root.pos[0] + (root.size[0] - self.size[0]) / 2, root.pos[1]
+        color: root.color
     Label:
         text: root.card and "[b]%s[/b]" % root.card.name
         text_size: self.size
         markup: True
         size_hint: 1, .25
+        halign: "center"
     ScrollView:
         do_scroll_x: False
         Label:
@@ -60,6 +58,7 @@
             text_size: self.parent.size[0], self.text_size[1]
             font_size: dp(12)
             size_hint: 1, None
+            halign: "center"
 
 
 ## Deck Catalog - gui/screens/deck.py ##
@@ -68,13 +67,23 @@
     orientation: "vertical"
     canvas:
         Color:
-            rgba: root.get_shading(root.purchased)
+            rgba: root.get_backdrop(root.purchased)
+        Rectangle:
+            size: root.size
+            pos: root.pos
     BoxLayout:
         size_hint: (1, 7)
-        Widget:
         ToolTipDisplay:
             card: root.deck
+            color: root.get_shading(root.purchased)
         Widget:
+            canvas:
+                Color:
+                    rgba: root.get_shading(root.purchased)
+                Rectangle:
+                    texture: root.deck.hand_texture
+                    size: min(self.size[0], self.size[1]*750/391), min(self.size[1], self.size[0]*391/750)
+                    pos: self.pos[0], self.pos[1] + (self.size[1] - min(self.size[1], self.size[0]*391/750)) / 2
     BoxLayout:
         Widget:
         Button:
@@ -270,11 +279,34 @@
 <HomeScreen>:
     BoxLayout:
         orientation: "vertical"
-        Button:
+        FloatLayout:
             size_hint: 1, 5
-            text: "PLAY"
-            margin: dp(300), dp(500)
-            on_release: root.manager.switcher('main')
+            Button:
+                canvas.after:
+                    Color:
+                        rgba: 0, 0, 0, 1
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Rectangle:
+                        texture: app.deck_texture and app.deck_catalog[app.loaded_deck.name].hand_texture
+                        size: self.size
+                        pos: self.pos
+                text: "PLAY"
+                on_release: root.manager.switcher('main')
+                pos: self.parent.pos
+            Label:
+                text: "PLAY NOW"
+                font_size: dp(100)
+                color: .1, .1, .1, 1
+                pos: white_text.pos[0]-dp(5), white_text.pos[1]+dp(5)
+            Label:
+                id: white_text
+                text: "PLAY NOW"
+                font_size: dp(100)
+                color: .95, .95, .95, 1
         BoxLayout:
             Label:
                 text: "0 winks"

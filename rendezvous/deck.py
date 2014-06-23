@@ -293,7 +293,7 @@ class DeckDefinition:
     """
 
     def __init__(self, name="Standard"):
-        self.name = name
+        self.name = self.base_filename = name
         self.img_file = os.path.join("data", "decks", name + ".png")
         self.def_file = os.path.join("data", "decks", name + ".txt")
         if not os.path.isfile(self.img_file):
@@ -538,6 +538,7 @@ class DeckCatalogEntry:
         self.definition = os.path.join(directory, base_filename) + ".txt"
         self.image_file = os.path.join(directory, base_filename) + ".png"
         self.icon = os.path.join(directory, base_filename) + "Icon.png"
+        self.hand = os.path.join(directory, base_filename) + "Hand.png"
 
     def __str__(self):
         return self.name

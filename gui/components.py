@@ -6,6 +6,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.progressbar import ProgressBar
 
 from rendezvous import GameSettings, SpecialSuit, EffectType
 from rendezvous.deck import Card
@@ -78,6 +79,7 @@ class ToolTipDisplay(BoxLayout):
     DUMMY_CARD.description = "Drag a card here for more information."
 
     card = ObjectProperty(DUMMY_CARD)
+    color = ListProperty(BLANK)
 
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
@@ -430,6 +432,7 @@ class ScoreDisplay(BoxLayout):
                                        dscore=self.scoreboard[DEALER][i])
             self.rows.append(display)
             self.add_widget(display)
+        self.add_widget(ProgressBar(value=0, size_hint=(1, .2)))
 
     def update(self):
         """Update the display scales."""

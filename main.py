@@ -389,8 +389,9 @@ class RendezVousApp(App):
 
     def load_deck(self, deck_base):
         """Prepare the given deck for play."""
-        if self.loaded_deck and self.loaded_deck.name == deck_base:
-            return
+        if self.loaded_deck is not None:
+            if self.loaded_deck.base_filename == deck_base:
+                return
         GameSettings.CURRENT_DECK = deck_base
         self.loaded_deck = DeckDefinition(deck_base)
         self.deck_texture = None
@@ -413,7 +414,7 @@ class RendezVousApp(App):
         """Purchase and load the given deck."""
         self.deck_catalog.purchase(deck_entry)
         self.load_deck(deck_entry.base_filename)
-        self.root.switcher('main')
+        self.root.switcher('home')
         
     def record_score(self, score):
         """Update meta-data at the end of each game."""

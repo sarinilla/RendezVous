@@ -17,13 +17,26 @@ class DeckDisplay(BoxLayout):
     purchased = BooleanProperty()
 
     def __init__(self, **kwargs):
+        try:
+            self._update_textures(kwargs['deck'])
+        except KeyError:
+            pass
         BoxLayout.__init__(self, **kwargs)
-        if 'texture' not in dir(self.deck):
-            self.deck.texture = Image(self.deck.icon).texture
 
+    def _update_textures(self, deck):
+        if 'texture' not in dir(deck):
+            deck.texture = Image(deck.icon).texture
+        if 'hand_texture' not in dir(deck):
+            deck.hand_texture = Image(deck.hand).texture
+        
     def get_shading(self, purchased):  # include purchased for auto-binding
         """Return the color to tint the entire display."""
-        if self.purchased: return (1, 1, 1, 1)
+        if purchased: return (1, 1, 1, 1)
+        else: return (.5, .5, .5, 1)
+
+    def get_backdrop(self, purchased):  # include purchased for auto-binding
+        """Return the color to tint the entire display."""
+        if purchased: return (0, 0, 0, 1)
         else: return (.5, .5, .5, 1)
 
     def clicked(self):
