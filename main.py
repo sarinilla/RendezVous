@@ -91,10 +91,11 @@ class RendezVousWidget(ScreenManager):
                 self.play_again()
                 return
         self.current = screen
-        try:
-            self.current_screen.update()
-        except AttributeError:
-            pass
+        
+        try: self.current_screen.update()
+        except AttributeError: pass
+        try: self.current_screen.round_counter.max_round = GameSettings.NUM_ROUNDS
+        except AttributeError: pass
 
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
