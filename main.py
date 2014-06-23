@@ -373,6 +373,7 @@ class RendezVousApp(App):
         self.deck_catalog = DeckCatalog(os.path.join(user_dir, "decks.txt"))
         if self.deck_catalog.purchased(GameSettings.CURRENT_DECK) is None:
             GameSettings.CURRENT_DECK = "Standard"
+        self._loaded_decks = {}
         self.load_deck(GameSettings.CURRENT_DECK)
 
     def _image_loaded(self, loader):
@@ -390,14 +391,39 @@ class RendezVousApp(App):
     def load_deck(self, deck_base):
         """Prepare the given deck for play."""
         if self.loaded_deck is not None:
+
+            # Don't reload the same deck
             if self.loaded_deck.base_filename == deck_base:
                 return
+
+            # Cache current deck's details
+            current = self.loaded_deck.base_filename
+            if current not in self._loaded_decks:
+                self._loaded_decks[current] = {}
+                self._loaded_decks[current]['deck'] = self.loaded_deck
+                self._loaded_decks[current]['texture'] = self.deck_texture
+
+        # Read from cache, if available
         GameSettings.CURRENT_DECK = deck_base
+        if deck_base in self._loaded_decks:
+            self.loaded_deck  = self._loaded_decks[deck_base]['deck']
+            self.deck_texture = self._loaded_decks[deck_base]['texture']
+            self._update_deck()
+            return
+
+        # Load the deck from scratch
+        self._load_deck(deck_base)
+
+    def _load_deck(self, deck_base):
+        """Load the deck from its hard drive files."""
         self.loaded_deck = DeckDefinition(deck_base)
         self.deck_texture = None
         loader = Loader.image(self.loaded_deck.img_file)
         loader.bind(on_load=self._image_loaded)
+        self._update_deck()
 
+    def _update_deck(self):
+        """Update the game and screens to use the newly loaded deck."""
         def update_deck(screen):
             screen.gameboard.update()
             screen.hand_display.update()
