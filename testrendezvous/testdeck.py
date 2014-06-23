@@ -387,7 +387,61 @@ class TestDeckDefinition(unittest.TestCase):
                          (9 * 130, 2048 - 11 * 182, 260, 364))
         self.assertEqual(self.dd.get_dealer_texture("Spy", -1),
                          (11 * 130, 2048 - 7 * 182, 260, 364))
-        
+
+
+class TestDeckCatalogEntry(unittest.TestCase):
+
+    def setUp(self):
+        self.deck = DeckCatalogEntry("Name", "Desc", "Directory", "Base")
+
+    def test_init(self):
+        self.assertEqual(self.deck.name, "Name")
+        self.assertEqual(self.deck.description, "Desc")
+        self.assertEqual(self.deck.base_filename, "Base")
+        self.assertEqual(self.deck.definition,
+                         os.path.join("Directory", "Base.txt"))
+        self.assertEqual(self.deck.image_file,
+                         os.path.join("Directory", "Base.png"))
+        self.assertEqual(self.deck.icon,
+                         os.path.join("Directory", "BaseIcon.png"))
+
+    def test_string(self):
+        self.assertEqual(str(self.deck), "Name")
+
+    def test_equal(self):
+        self.assertEqual(self.deck, "Name")
+
+
+class TestDeckCatalog(unittest.TestCase):
+
+    def setUp(self):
+        self.catalog = DeckCatalog("test_deck_catalog.txt")
+
+    def tearDown(self):
+        os.remove("test_deck_catalog.txt")
+
+    def test_init(self):
+        self.assertTrue(len(self.catalog.decks) > 0)
+        self.assertEqual(self.catalog._purchased, [])
+
+    def test_container(self):
+        self.assertEqual(len(self.catalog), len(self.catalog.decks))
+        standard = self.catalog["Standard"]
+        self.assertIsInstance(standard, DeckCatalogEntry)
+        self.assertEqual(self.catalog["Lovers & Spies Deck"], standard)
+        self.assertEqual(self.catalog[standard], standard)
+
+    def test_purchase(self):
+        self.assertIs(self.catalog.purchased("Standard"), None)
+        standard = self.catalog.purchase("Standard")
+        self.assertIsInstance(standard, DeckCatalogEntry)
+        self.assertEqual(self.catalog._purchased, ["Lovers & Spies Deck"])
+
+    def test_permanent_purchase(self):
+        self.assertEqual(self.catalog._purchased, [])
+        self.catalog.purchase("Standard")
+        self.catalog = DeckCatalog("test_deck_catalog.txt")
+        self.assertEqual(self.catalog._purchased, ["Lovers & Spies Deck"])
         
         
 if __name__ == "__main__":

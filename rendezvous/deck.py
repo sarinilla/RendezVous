@@ -564,9 +564,17 @@ class DeckCatalog:
     def __len__(self):
         return len(self.decks)
     def __getitem__(self, name):
-        return self.decks[self.decks.index(name)]
+        return self._find_deck(name)
     def __iter__(self):
         return iter(self.decks)
+
+    def _find_deck(self, name):
+        """Locate and return a deck by name or base filename."""
+        name = str(name)
+        for deck in self.decks:
+            if deck.name == name or deck.base_filename == name:
+                return deck
+        raise ValueError("invalid deck name '%s'" % deck_name)
 
     def _read_available(self, directory):
         """Locate all available deck files."""
@@ -610,12 +618,10 @@ class DeckCatalog:
 
     def purchased(self, deck_name):
         """Return the DeckCatalogEntry if purchased, or None."""
-        try:
-            deck = self[deck_name]
-        except:
-            return None
-        if deck_name in self._purchased:
+        deck = self[deck_name]
+        if deck.name in self._purchased:
             return deck
+        return None
 
     def purchase(self, deck):
         """Mark the deck purchased and return its DeckCatalogEntry."""
