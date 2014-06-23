@@ -252,6 +252,7 @@ class TestRequirement(unittest.TestCase):
         """Test the verify function for an empty application."""
         r = Requirement()
         self.assertTrue(r.verify([]))
+        self.assertTrue(r.verify([Card("Suit", 1)]))
         
     def test_verify_at_least_exact(self):
         """Test Operator.AT_LEAST in verify function."""
@@ -308,6 +309,11 @@ class TestRequirement(unittest.TestCase):
                         style=Application(min_value=3))
         self.assertFalse(r.verify([Card("Suit", 2), Card("Suit", 3),
                                    Card("Suit", 4)]))
+
+    def test_filter_no_style(self):
+        cards = [Card("Suit", i) for i in range(4)]
+        r = Requirement()
+        self.assertEqual(r.filter(Alignment.FRIENDLY, cards), cards)
 
     def test_string_(self):
         """Test string output."""
@@ -403,6 +409,11 @@ class TestApplication(unittest.TestCase):
         a = Application(opposite=Application(min_value=3))
         self.assertFalse(a.match(Alignment.ALL, Card("Suit", 3), Card("Suit", 2)))
         self.assertTrue(a.match(Alignment.ALL, Card("Suit", 2), Card("Suit", 3)))
+
+    def test_filter_any(self):
+        cards = [Card("Suit", i+1) for i in range(4)]
+        a = Application()
+        self.assertEqual(a.filter(Alignment.FRIENDLY, cards), cards)
 
     def test_string_(self):
         """Verify string output."""

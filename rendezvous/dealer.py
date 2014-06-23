@@ -116,7 +116,8 @@ class PossiblePlay:
         for card in self.cards:
             if (card.suit == SpecialSuit.SPECIAL and
                 card.effect.effect == EffectType.CLONE):
-                self.cards.sort(reverse=True)
+                self.cards.sort(reverse=
+                        card.application.has_alignment(Alignment.FRIENDLY))
                 return
         if self.dealer_empty():
             random.shuffle(self.cards)
@@ -160,7 +161,9 @@ class PossiblePlay:
                 continue
 
             # 10-pt bonus for SpecialCards!
-            value += 10
+            if (card.application.has_alignment(Alignment.ENEMY) or
+                card.application.filter(Alignment.FRIENDLY, self.cards) != []):
+                value += 10
 
             # Adjust buffed card values and known debuffs
             if card.effect.effect == EffectType.BUFF:
@@ -197,24 +200,17 @@ class PossiblePlay:
 
             # Score all cards as the CLONE
             elif card.effect.effect == EffectType.CLONE:
-                rcard = None
+                rcard = card.requirement.filter(Alignment.FRIENDLY, self.cards)[0]
                 for ocard in self.cards:
-                    if ocard.suit == SpecialSuit.SPECIAL:
-                        continue
-                    elif rcard is not None:
+                    if card.application.match(Alignment.FRIENDLY, ocard, None):
                         value -= ocard.value
                         value += rcard.value
-                    elif card.application.match(Alignment.FRIENDLY, ocard, None):
-                        rcard = ocard
-                if card.application.alignment in (Alignment.ENEMY,
-                                                  Alignment.ALL):
-                    ecard = self.board[self.player-1][0]
-                    if (ecard is not None and
-                        card.application.match(Alignment.ENEMY, ecard)):
-                        if ecard.value < 5:
-                            value += ecard.value * (len(self.board[self.player-1])-1)
-                        elif ecard.value > 6:
-                            value -= ecard.value * (len(self.board[self.player-1])-1)
+                if card.application.has_alignment(Alignment.ENEMY):
+                    for ecard in self.board[self.player-1]:
+                        if ecard is None:
+                            value += 6 - rcard.value
+                        else:
+                            value += ecard.value - rcard.value
 
             # Score low cards (and not good specials!) with FLUSH
             elif card.effect.effect == EffectType.FLUSH:
@@ -319,88 +315,104 @@ class ArtificialIntelligence:
                                             self.board[self.player])):
                 continue
 
-            # Grab best cards meeting requirements
-            required = applied = []
-            required = card.requirement.filter(Alignment.FRIENDLY, self.hand)
-            applied = card.requirement.filter(Alignment.FRIENDLY,
-                                              self.board[self.player])
-            needed = card.requirement.totalcount() - len(applied)
-            cards = given + [card]
-            reverse_values = card.effect.effect in (EffectType.SWITCH,
-                                                    EffectType.REVERSE,
-                                                    EffectType.KISS)
-            def adjusted_value(req_card):
-                """Prefer cards that will be affected, and account for reversal."""
-                val = req_card.value
-                if reverse_values:
-                    val = -val
-                if card.application.match(Alignment.FRIENDLY, req_card):
-                    val += 50
-                return val
-            if not card.requirement.has_operator(Operator.NO_MORE_THAN):
-                required.sort(key=adjusted_value, reverse=True)
-                if card.effect.effect == EffectType.CLONE and required:
-                    cards.append(required[0])
-                    required.sort()  # then get low ones!
-                    needed -= 1
-                cards.extend(required[:needed])
-                if len(cards) > self._cards_needed:
-                    continue  # can't play this one
-
-            # Grab best cards it will be applied to
-            if reverse_values:
-                self.hand.sort(reverse=False)
-            applies = list(filter(lambda x: x not in cards,
-                                  card.application.filter(Alignment.FRIENDLY,
-                                                          self.hand)))
-            if not card.requirement.has_operator(Operator.AT_LEAST):
-                applies = list(filter(lambda x: x not in required,
-                                      applies))
-            if (card.effect.effect == EffectType.CLONE and
-                self._cards_needed > len(cards)):
-                cards.append(applies[0])
-            else:
-                cards.extend(applies[:self._cards_needed - len(cards)])
-            if reverse_values:
-                self.hand.sort(reverse=True)
-
-            # Grab best filler cards (no specials)
-            extra = list(filter(lambda x: x not in cards and
-                                          x.suit != SpecialSuit.SPECIAL,
-                                self.hand))
-            if not card.requirement.has_operator(Operator.AT_LEAST):
-                extra = list(filter(lambda x: x not in required,
-                                    extra))
-            if card.effect.effect == EffectType.CLONE:
-                if len(list(card.application.filter(Alignment.FRIENDLY, cards))):
-                    extra.sort()
-            cards.extend(extra[:self._cards_needed - len(cards)])
-            
-            # Fill with matching / no-requirement specials if needed
-            if len(cards) < self._cards_needed:
-                specials = list(filter(lambda x: x not in cards and
-                                                 x.suit == SpecialSuit.SPECIAL,
-                                       self.hand))
-                for scard in specials:
-                    if (scard.requirement.verify(cards) and
-                        len(scard.application.filter(Alignment.FRIENDLY, cards))):
-                        cards.append(scard)
-                        if len(cards) == self._cards_needed:
-                            break
-                        specials.remove(scard)
-                else:
-                    for scard in specials:
-                        if scard.requirement.verify(cards):
-                            cards.append(scard)
-                            if len(cards) == self._cards_needed:
-                                break
-
+            # Grab cards logically
+            cards = self._grab_requirements(card, given + [card])
+            if cards == []: continue
+            cards = self._grab_applied(card, cards)
+            cards = self._grab_filler(card, cards)
+                        
             # Save play only if we found enough cards
             if len(cards) == self._cards_needed:
                 self.possible_plays.append(PossiblePlay(cards, self.board,
                                                         self.score, self.hand,
                                                         self.player))
         self.hand.extend(given)
+
+    def _reverse_values(self, special):
+        """Should we favor low cards with this special?"""
+        return (special.effect.effect in (EffectType.SWITCH,
+                                          EffectType.REVERSE,
+                                          EffectType.KISS) or
+                (special.effect.effect == EffectType.CLONE and
+                 special.application.has_alignment(Alignment.FRIENDLY)))
+        
+    def _grab_requirements(self, special, cards):
+        """Grab the best cards meeting the requirements.
+
+        Return all cards to be played so far (extending cards).
+        """
+
+        # Find cards that will meet the requirements
+        required = applied = []
+        required = list(filter(lambda x: x.suit != SpecialSuit.SPECIAL,
+                    special.requirement.filter(Alignment.FRIENDLY, self.hand)))
+        applied = special.requirement.filter(Alignment.FRIENDLY,
+                                             self.board[self.player] + cards)
+        needed = max(0, special.requirement.totalcount() - len(applied))
+
+        # Ensure we have room and cards available for all requirements
+        if len(required) < needed: return []
+        if len(cards) + needed > self._cards_needed: return []
+
+        # Pick out the best cards
+        reverse_values = self._reverse_values(special)
+        if not special.requirement.has_operator(Operator.NO_MORE_THAN):
+            required.sort(reverse=not reverse_values)
+            # FRIENDLY clone needs one high card, then all low
+            # ENEMY clone needs one low card, then all high
+            if special.effect.effect == EffectType.CLONE:
+                if required == []: return []
+                cards.append(required.pop())
+                needed = max(0, needed-1)
+            cards.extend(required[:needed])
+        return cards
+
+    def _grab_applied(self, special, cards):
+        """Grab best cards the special will apply to."""
+        reverse_values = self._reverse_values(special)
+        self.hand.sort(reverse=not reverse_values)
+        applies = list(filter(lambda x: x not in cards,
+                              special.application.filter(Alignment.FRIENDLY,
+                                                         self.hand)))
+        if not special.requirement.has_operator(Operator.AT_LEAST):
+            required = special.requirement.filter(Alignment.FRIENDLY, self.hand)
+            applies = list(filter(lambda x: x not in required, applies))
+        cards.extend(applies[:self._cards_needed - len(cards)])
+        return cards
+        
+    def _grab_filler(self, special, cards):
+        """Grab additional filler cards to play with the special."""
+        self.hand.sort(reverse=True)
+        
+        # Grab best filler cards (no specials)
+        extra = list(filter(lambda x: x not in cards and
+                                      x.suit != SpecialSuit.SPECIAL,
+                            self.hand))
+        if not special.requirement.has_operator(Operator.AT_LEAST):
+            required = special.requirement.filter(Alignment.FRIENDLY, self.hand)
+            extra = list(filter(lambda x: x not in required, extra))
+        cards.extend(extra[:self._cards_needed - len(cards)])
+            
+        # Fill with matching / no-requirement specials if needed
+        if len(cards) < self._cards_needed:
+            specials = list(filter(lambda x: x not in cards and
+                                             x.suit == SpecialSuit.SPECIAL,
+                                   self.hand))
+            for scard in specials:
+                if (scard.requirement.verify(cards) and
+                    len(scard.application.filter(Alignment.FRIENDLY, cards))):
+                    cards.append(scard)
+                    if len(cards) == self._cards_needed:
+                        break
+                    specials.remove(scard)
+            else:
+                for scard in specials:
+                    if scard.requirement.verify(cards):
+                        cards.append(scard)
+                        if len(cards) == self._cards_needed:
+                            break
+        return cards
+
 
     def _consider_values(self, given=[]):
         """Pick the highest filler cards we have."""

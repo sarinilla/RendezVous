@@ -177,10 +177,15 @@ class Requirement:
     def has_operator(self, operator):
         return self.operator == operator
 
-    @combinable_list_method
+    # lazy man's @combinable_sum_list_method
     def filter(self, alignment, cards):
+        if 'items' in dir(self):
+            result = []
+            for i in self.items:
+                result.extend(i.filter(alignment, cards))
+            return result
         if self.style is None:
-            return []
+            return cards
         return self.style.filter(alignment, cards)
 
     # lazy man's @combinable_sum_method :o

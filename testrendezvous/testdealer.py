@@ -59,6 +59,19 @@ class TestPossiblePlay(unittest.TestCase):
                                         Card("Suit", 1),
                                         sc])
 
+    def test_arrange_clone_enemy(self):
+        """Give the enemy a low-value card."""
+        sc = SpecialCard('Clone', 'Testing Card', Requirement(),
+                         Application(alignment=Alignment.ENEMY),
+                         Effect(EffectType.CLONE))
+        self.p.cards = [Card("Suit", i+1) for i in range(4)]  # unshuffle
+        self.p.cards[2] = sc                                  # replace 3
+        self.p._arrange()
+        self.assertEqual(self.p.cards, [sc,
+                                        Card("Suit", 1),
+                                        Card("Suit", 2),
+                                        Card("Suit", 4)])
+
     def test_arrange_simple_hold(self):
         """Arrange cards to (barely) beat dealer holds."""
         self.p.board[1] = [Card("Suit", 2), Card("Suit", 1), Card("Suit", 3), None]
@@ -148,6 +161,32 @@ class TestPossiblePlay(unittest.TestCase):
     def test_calculate_base(self):
         """Simple value is the sum of the values."""
         self.assertEqual(self.p.value, 10)
+
+    def test_calculate_special_bonus(self):
+        """10-point bonus just for playing a special."""
+        sc = SpecialCard("Bonus", "Test Bonus", Requirement(),
+                         Application(alignment=Alignment.FRIENDLY),
+                         Effect(EffectType.BUFF, 0))
+        self.p.cards = [Card("Suit", 2), Card("Suit", 3), Card("Suit", 4), sc]
+        self.assertEqual(self.p._calculate(), 19)
+
+    def test_calculate_special_bonus_unapplied(self):
+        """No bonus if it doesn't apply to anything."""
+        sc = SpecialCard("Bonus", "Test Bonus", Requirement(),
+                         Application(alignment=Alignment.FRIENDLY,
+                                     suits=["No Suit"]),
+                         Effect(EffectType.BUFF, 0))
+        self.p.cards = [Card("Suit", 2), Card("Suit", 3), Card("Suit", 4), sc]
+        self.assertEqual(self.p._calculate(), 9)
+
+    def test_calculate_special_bonus_enemy(self):
+        """Include a bonus if it applies to the enemy unknown."""
+        sc = SpecialCard("Bonus", "Test Bonus", Requirement(),
+                         Application(alignment=Alignment.ENEMY,
+                                     suits=["No Suit"]),
+                         Effect(EffectType.BUFF, 0))
+        self.p.cards = [Card("Suit", 2), Card("Suit", 3), Card("Suit", 4), sc]
+        self.assertEqual(self.p._calculate(), 19)
 
     def test_calculate_buff(self):
         """Account for the buffed value."""
@@ -243,32 +282,40 @@ class TestPossiblePlay(unittest.TestCase):
         self.p.cards = [Card("Suit", 8), Card("Suit", 3), Card("Suit", 4), sc]
         self.assertEqual(self.p._calculate(), 34)
 
+    def test_calculate_clone_other(self):
+        """Account for a clone when requirement != application."""
+        sc = SpecialCard("Clone", "Test Special",
+                         Requirement(count=1, style=Application(suits=["No Suit"])),
+                         Application(alignment=Alignment.FRIENDLY, suits=["Suit"]),
+                         Effect(EffectType.CLONE))
+        self.p.cards = [Card("Suit", 3), Card("No Suit", 8), Card("Suit", 4), sc]
+        self.assertEqual(self.p._calculate(), 34)
+
     def test_calculate_clone_enemy(self):
-        """No points for an unknown enemy clone."""
-        self.p.board[1] = [None, None, Card("Suit", 2), None]
+        """Account for an unknown enemy clone."""
         sc = SpecialCard("Clone", "Test Special", Requirement(),
                          Application(alignment=Alignment.ENEMY),
                          Effect(EffectType.CLONE))
         self.p.cards = [Card("Suit", 2), Card("Suit", 3), Card("Suit", 4), sc]
-        self.assertEqual(self.p._calculate(), 19)
+        self.assertEqual(self.p._calculate(), 35)
 
     def test_calculate_clone_enemy_hold(self):
-        """Gain points for a low enemy clone."""
+        """Lose points for a low enemy clone."""
         self.p.board[1] = [Card("Suit", 2), None, None, None]
         sc = SpecialCard("Replace", "Test Special", Requirement(),
                          Application(alignment=Alignment.ENEMY),
                          Effect(EffectType.CLONE))
-        self.p.cards = [Card("Suit", 2), Card("Suit", 3), Card("Suit", 4), sc]
-        self.assertEqual(self.p._calculate(), 25)
+        self.p.cards = [Card("Suit", 4), Card("Suit", 3), Card("Suit", 2), sc]
+        self.assertEqual(self.p._calculate(), 23)
 
     def test_calculate_clone_enemy_hold_high(self):
-        """Lose points for a high enemy replace."""
+        """Gain points for a high enemy clone."""
         self.p.board[1] = [Card("Suit", 8), None, None, None]
         sc = SpecialCard("Replace", "Test Special", Requirement(),
                          Application(alignment=Alignment.ENEMY),
                          Effect(EffectType.CLONE))
         self.p.cards = [Card("Suit", 2), Card("Suit", 3), Card("Suit", 4), sc]
-        self.assertEqual(self.p._calculate(), -5)
+        self.assertEqual(self.p._calculate(), 37)
         
     def test_calculate_flush(self):
         """Score the points in the hand for a flush."""
@@ -466,6 +513,32 @@ class TestAI(unittest.TestCase):
         self.assertEqual(sorted(self.ai.get_best_play()),
                          [replace,
                           Card("Suit", 1), Card("Suit", 2), Card("Suit", 9)])
+
+    def test_clone_differing(self):
+        """Use clone requirement and application correctly."""
+        clone = SpecialCard("Clone", "",
+                            Requirement(count=1, style=Application(suits=["Cloned"])),
+                            Application(alignment=Alignment.FRIENDLY, suits=["Replaced"]),
+                            Effect(EffectType.CLONE))
+        self.ai.hand = ([Card("Replaced", i+2) for i in range(5)] +
+                        [Card("Cloned", i+1) for i in range(4)] +
+                        [clone])
+        self.ai.analyze()
+        self.assertEqual(sorted(self.ai.get_best_play()),
+                         [clone, Card("Replaced", 2), Card("Replaced", 3),
+                          Card("Cloned", 4)])
+
+    def test_clone_enemy(self):
+        """Clone a low card to the enemy."""
+        clone = SpecialCard("Clone", "",
+                            Requirement(),
+                            Application(alignment=Alignment.ENEMY),
+                            Effect(EffectType.CLONE))
+        self.ai.hand = ([Card("Suit", i+1) for i in range(9)] + [clone])
+        self.ai.analyze()
+        self.assertEqual(sorted(self.ai.get_best_play()),
+                         [clone, Card("Suit", 1), Card("Suit", 8),
+                          Card("Suit", 9)])
 
     def test_flush(self):
         """Use a flush with highest of low cards."""
