@@ -350,6 +350,7 @@ class RendezVousWidget(ScreenManager):
         self.current = 'main'
         self.remove_widget(self._winner)
         self._in_progress = False
+        self._end_of_round = False
 
 
 class RendezVousApp(App):
