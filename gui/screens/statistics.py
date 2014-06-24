@@ -29,7 +29,7 @@ class StatisticsDisplay(BoxLayout):
 
     def best_suit(self, *binds):
         """Return the suit with the most wins for the current deck."""
-        if self.deck is None: return ""
+        if self.deck is None or self.statistics is None: return ""
         best = ("", 0)
         for suit in self.deck.suits:
             if suit not in self.statistics.suits:
@@ -40,7 +40,7 @@ class StatisticsDisplay(BoxLayout):
 
     def worst_suit(self, *binds):
         """Return the suit with the most losses for the current deck."""
-        if self.deck is None: return ""
+        if self.deck is None or self.statistics is None: return ""
         best = ("", 0)
         for suit in self.deck.suits:
             if suit not in self.statistics.suits:
