@@ -176,19 +176,24 @@
 <WinnerScreen>:
     BoxLayout:
         orientation: "vertical"
-        Carousel:
-            id: carousel
-            direction: "right"
-            size_hint: (1, 3)
-        Label:
-            text: "Play Again?"
+        ActionBar:
+            size_hint: (1, .075)
         BoxLayout:
-            Button:
-                text: "YES"
-                on_press: root.manager.play_again()
-            Button:
-                text: "no"
-                on_press: root.manager.switcher('home')
+            orientation: "vertical"
+            Carousel:
+                id: carousel
+                direction: "right"
+                size_hint: (1, 3)
+            Label:
+                text: "Play Again?"
+            BoxLayout:
+                size_hint: (1, .75)
+                Button:
+                    text: "YES"
+                    on_press: root.manager.play_again()
+                Button:
+                    text: "no"
+                    on_press: root.manager.switcher('home')
 
 
 ## Tutorial Screens - gui/screens/tutorial.py ##
