@@ -95,13 +95,14 @@ class Gameboard:
       play_cards -- play one or more cards onto the Gameboard
       wait       -- mark a card to hold for the next round
       next_round -- clear all cards not marked to hold
+      clear_wait -- reset the holds for the next round
       clear      -- clear all cards, ignoring holds
       is_full    -- return whether the player's side is full already
 
     """
 
     def __init__(self):
-        self._clear_wait()
+        self.clear_wait()
         self._clear_board()
 
     def __len__(self):
@@ -133,7 +134,7 @@ class Gameboard:
         """Hold the given card through the next round."""
         self._wait[player_index][card_index] = True
 
-    def _clear_wait(self):
+    def clear_wait(self):
         """Clear all holds."""
         self._wait = [[False for i in range(GameSettings.CARDS_ON_BOARD)]
                       for i in range(GameSettings.NUM_PLAYERS)]
@@ -154,11 +155,10 @@ class Gameboard:
     def next_round(self):
         """Advance to the next round."""
         self._clear_board()
-        self._clear_wait()
 
     def clear(self):
         """Reset the board for a new game."""
-        self._clear_wait()
+        self.clear_wait()
         self._clear_board()
 
     def validate(self, cards):
@@ -329,6 +329,7 @@ class RendezVousGame:
 
     def score_round(self):
         """Score the current round, applying all specials."""
+        self.board.clear_wait()
         self._apply_specials()
         self.score.score(self.board)
 

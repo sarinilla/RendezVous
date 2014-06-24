@@ -236,6 +236,7 @@ class RendezVousWidget(ScreenManager):
 
     def _play_dealer(self):
         """Place the dealer's selected cards on the board."""
+        self.game.board.clear_wait()
         if GameSettings.AI_DIFFICULTY == 3:
             self._get_dealer_play()
         if self.current == 'tutorial-hand':
