@@ -47,7 +47,7 @@ icon.filename = %(source.dir)s/data/RVlogo.png
 orientation = landscape
 
 # (bool) Indicate if the application should be fullscreen or not
-fullscreen = 1
+fullscreen = 0
 
 
 #
