@@ -110,7 +110,7 @@ def FileReader(filename):
         for line in file:
             if line == "\n":
                 continue
-            match = re.search('\[(.*)\](.*)', line)
+            match = re.search('\[(.*)\](.*)', line.strip())
             if not match:
                 warnings.warn("Unexpected text in %s: %s" 
                                 % (filename, line),
