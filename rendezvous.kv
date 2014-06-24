@@ -97,6 +97,7 @@
 <AchievementEarnedDisplay>:
     orientation: "vertical"
     Widget:
+        size_hint: 1, .5
     BoxLayout:
         Widget:
             canvas:
@@ -120,6 +121,7 @@
                 text: root.achievement.description
                 text_size: self.size
     Widget:
+        size_hint: 1, .5
 
 
 <UnlockDisplay>:
@@ -377,7 +379,7 @@
     ActionView:
         use_separator: True
         ActionPrevious:
-            app_icon: app.icon
+            app_icon: app.icon_png
             title: "RendezVous"
             on_release: app.root.switcher('home')
         ActionButton:
@@ -406,7 +408,7 @@
     orientation: "vertical"
     Label:
         text: root.title
-        font_size: dp(50)
+        font_size: dp(30)
         halign: "center"
     Label:
         text: "%s wins, %s losses, %s draws" % (root.basestats.wins, root.basestats.losses, root.basestats.draws) if root.basestats is not None else " "

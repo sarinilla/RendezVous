@@ -5,7 +5,7 @@ except ImportError:
     import ConfigParser as configparser  # Python 2.x
 
 
-class GameSettings:
+class GameSettings(object):  # 2.x requires explicit new-style classes
 
     """Stores customizable settings for the game.
 
@@ -15,16 +15,16 @@ class GameSettings:
 
     """
 
-    class Setting:
+    class Setting(object):  # 2.x requires explicit new-style classes
 
         """Data descriptor to disguise config values as class attributes."""
 
-        def __init__(self, defaultvalue, minvalue=1, maxvalue=10, type=int,
+        def __init__(self, defaultvalue, minvalue=1, maxvalue=10, typ=int,
                      doc=None):
             self.value = defaultvalue
             self.min = minvalue
             self.max = maxvalue
-            self._typecast = type
+            self._typecast = typ
             if doc is not None:
                 self.__doc__ = doc
 
@@ -41,7 +41,7 @@ class GameSettings:
             if self.value == self._typecast(value):
                 return
             self.value = self._typecast(value)
-            instance.write()
+            instance.write()        
 
     NUM_PLAYERS = Setting(2,
             doc="The number of players in the game (including AI)")
@@ -51,11 +51,11 @@ class GameSettings:
             doc="The number of cards held in a player's Hand")
     NUM_ROUNDS = Setting(20, maxvalue=100,
             doc="The number of rounds in a single game")
-    SPEED = Setting(1.0, type=float, minvalue=0.001,
+    SPEED = Setting(1.0, typ=float, minvalue=0.001,
             doc="Speed multiplier for special effects; lower == faster")
     AI_DIFFICULTY = Setting(2, minvalue=1, maxvalue=3,
             doc="Intelligence of your opponent")
-    CURRENT_DECK = Setting("Standard", type=str,
+    CURRENT_DECK = Setting("Standard", typ=str,
             doc="The base filename for the deck of cards to play with")
 
     def __init__(self, filename="rendezvous.ini"):
@@ -89,7 +89,7 @@ class GameSettings:
         try:
             if self.mtime == os.path.getmtime(self.filename):
                 return
-        except FileNotFoundError:
+        except OSError:  # FileNotFoundError in v3.3
             return
         self.config.read(self.filename)
         for (name, value) in self.config.items(self.section):

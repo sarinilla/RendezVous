@@ -37,7 +37,7 @@ class SettingSlider(SettingNumeric):
         """Modified from SettingString's popup."""
         # create popup layout
         self.popup = SliderPopup(title=self.title, setting=self,
-                                 value=self.value,
+                                 value=float(self.value),
                                  size=(min(0.95 * Window.width, dp(500)), dp(250)))
         self.popup.open()
 

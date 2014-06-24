@@ -29,7 +29,7 @@ from gui.screens.deck import DeckCatalogScreen
 from gui.screens.statistics import StatisticsScreen
 
 
-__version__ = '0.5.0'
+__version__ = '0.5.3'
 
 
 class RendezVousWidget(ScreenManager):
@@ -370,6 +370,7 @@ class RendezVousApp(App):
         """Load the deck image and create the RendezVousWidget."""
         App.__init__(self, **kwargs)
         self.icon = os.path.join("data", "RVlogo.ico")
+        self.icon_png = os.path.join("data", "RVlogo.png")
         user_dir = self.user_data_dir
         if not os.path.isdir(user_dir):
             user_dir = "player"

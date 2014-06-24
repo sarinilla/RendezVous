@@ -575,7 +575,7 @@ class DeckCatalog:
         for deck in self.decks:
             if deck.name == name or deck.base_filename == name:
                 return deck
-        raise ValueError("invalid deck name '%s'" % deck_name)
+        raise ValueError("invalid deck name '%s'" % name)
 
     def _read_available(self, directory):
         """Locate all available deck files."""

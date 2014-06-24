@@ -93,12 +93,12 @@ class Statistics:
     
     def record_game(self, deck_base, score, player_index):
         """Note the end of a game."""
-        self.base.record(score.total(player_index),
-                         score.total(player_index-1))
+        self.base.record(score.wins(player_index),
+                         score.wins(player_index-1))
         if deck_base not in self.decks:
             self.decks[deck_base] = BaseStats()
-        self.decks[deck_base].record(score.total(player_index),
-                                     score.total(player_index-1))
+        self.decks[deck_base].record(score.wins(player_index),
+                                     score.wins(player_index-1))
         for i, suit in enumerate(score.suits):
             if suit not in self.suits:
                 self.suits[suit] = BaseStats()
