@@ -1,4 +1,5 @@
 from kivy.app import App
+from kivy.clock import Clock
 from kivy.properties import ObjectProperty, ListProperty, NumericProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.progressbar import ProgressBar
@@ -14,6 +15,7 @@ from gui import PLAYER, DEALER
 from gui.components import BoardDisplay, ScoreDisplay, HandDisplay
 from gui.components import RoundCounter, ToolTipDisplay
 from gui.components import SuitDisplay, SuitScoreDisplay
+from gui.screens.statistics import StatisticsDisplay
 
 
 ## Classic Game Screen ##
@@ -159,8 +161,11 @@ class WinnerScreen(Screen):
     def __init__(self, score, achieved=None, **kwargs):
         Screen.__init__(self, **kwargs)
     
-        self.ids.carousel.add_widget(FinalScoreDisplay(score=score))
+        stat = App.get_running_app().statistics
         deck = App.get_running_app().loaded_deck
+        self.ids.carousel.add_widget(StatisticsDisplay(statistics=stat,
+                                                       deck=deck))
+        self.ids.carousel.add_widget(FinalScoreDisplay(score=score))
         for achievement in achieved:
             if achievement.reward is None:
                 ach = AchievementEarnedDisplay(achievement=achievement)
@@ -169,5 +174,9 @@ class WinnerScreen(Screen):
             unlock = UnlockDisplay(achievement=achievement,
                                    reward=deck.get_special(achievement.reward))
             self.ids.carousel.add_widget(unlock)
+        self.ids.carousel.index = 1
         if achieved:
-            self.ids.carousel.index = 1
+            Clock.schedule_once(lambda dt: self._advance(), 0.5)
+
+    def _advance(self):
+        self.ids.carousel.index = 2
