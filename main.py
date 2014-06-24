@@ -26,9 +26,10 @@ from gui.settings import SettingSlider, SettingAIDifficulty
 from gui.screens.achievements import AchievementsScreen
 from gui.screens.settings import SettingsScreen
 from gui.screens.deck import DeckCatalogScreen
+from gui.screens.statistics import StatisticsScreen
 
 
-__version__ = '0.4.6'
+__version__ = '0.4.7'
 
 
 class RendezVousWidget(ScreenManager):
@@ -73,6 +74,9 @@ class RendezVousWidget(ScreenManager):
         self.decks = DeckCatalogScreen(catalog=self.app.deck_catalog,
                                        name='decks')
         self.add_widget(self.decks)
+        self.stats = StatisticsScreen(statistics=self.app.statistics,
+                                      name='stats')
+        self.add_widget(self.stats)
 
         # Prepare the tutorial (if needed)
         if self.app.achievements.achieved == []:
@@ -433,6 +437,7 @@ class RendezVousApp(App):
             screen.tooltip.card = screen.tooltip.DUMMY_CARD
             
         if self.root:
+            self.root.stats.main.update()
             self.root.game.load_deck(self.loaded_deck)
             update_deck(self.root.main)
             if self.root.current[:7] == 'tutorial':

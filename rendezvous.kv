@@ -20,7 +20,7 @@
     canvas:
         Rectangle:
             texture: app.deck_texture and app.get_suit_texture(root.suit)
-            pos: self.pos[0], self.pos[1] + (self.size[1] - min(self.size[0], self.size[1])) / 2
+            pos: self.pos[0] + (self.size[0] - min(self.size[0], self.size[1])) / 2, self.pos[1] + (self.size[1] - min(self.size[0], self.size[1])) / 2
             size: min(self.size[0], self.size[1]), min(self.size[0], self.size[1])
 
 
@@ -316,6 +316,9 @@
                 text: "Achievements"
                 on_release: root.manager.switcher('achieve')
             Button:
+                text: "Stats"
+                on_release: root.manager.switcher('stats')
+            Button:
                 text: "Decks"
                 on_release: root.manager.switcher('decks')
             Button:
@@ -381,10 +384,57 @@
         ActionButton:
             text: "Achievements"
             on_release: app.root.switcher('achieve')
+        ActionButton:
+            text: "Stats"
+            on_release: app.root.switcher('stats')
         ActionOverflow:
             ActionButton:
                 text: "Settings"
                 on_release: app.root.switcher('settings')
             ActionButton:
                 text: "Help"
+
+
+## Statistics - gui/screens/statistics.py ##
+
+<BaseStatsDisplay>:
+    orientation: "vertical"
+    Label:
+        text: root.title
+        font_size: dp(50)
+        halign: "center"
+    Label:
+        text: "%s wins, %s losses, %s draws" % (root.basestats.wins, root.basestats.losses, root.basestats.draws) if root.basestats is not None else " "
+        halign: "center"
+    Label:
+        text: "current streak of %s, record streak of %s" % (root.basestats.win_streak, root.basestats.best_streak) if root.basestats is not None else " "
+        halign: "center"
+
+
+<StatisticsDisplay>:
+    orientation: "vertical"
+    BaseStatsDisplay:
+        title: "Overall Statistics"
+        basestats: root.statistics.base if root.statistics is not None else None
+    BaseStatsDisplay:
+        title: root.deck.name if root.deck else ""
+        basestats: app.statistics.decks[root.deck.base_filename] if root.statistics is not None and root.deck is not None and root.deck.base_filename in root.statistics.decks else None
+    BoxLayout:
+        size_hint: 1, .5
+        Widget:
+        SuitDisplay:
+            suit: str(root.best_suit(root.deck, root.statistics))
+            size: dp(10), dp(10)
+        Label:
+            text: "Best suit: %s" % root.best_suit(root.deck, root.statistics)
+        Widget:
+    BoxLayout:
+        size_hint: 1, .5
+        Widget:
+        Label:
+            text: "Worst suit: %s" % root.worst_suit(root.deck, root.statistics)
+        SuitDisplay:
+            suit: str(root.worst_suit(root.deck, root.statistics))
+            size: dp(10), dp(10)
+        Widget:
 

@@ -118,9 +118,9 @@ class Statistics:
             for line in f.readlines():
                 match = re.match('(DECK|SUIT):(.+):(.+)', line.strip())
                 if match is None: continue
-                if match.group(1) == "DECK:":
+                if match.group(1) == "DECK":
                     self.decks[match.group(2)] = BaseStats(match.group(3))
-                else: #if match.group(1) == "SUIT:":
+                else: #if match.group(1) == "SUIT":
                     self.suits[match.group(2)] = BaseStats(match.group(3))
         finally:
             f.close()
