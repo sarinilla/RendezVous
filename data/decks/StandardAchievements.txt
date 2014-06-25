@@ -1,0 +1,55 @@
+[ACH-NAME]RendezVous Beginner
+[ACH-CODE]Play 1
+[ACH-REWARD]Reinforcements
+
+[ACH-NAME]RendezVous Student
+[ACH-CODE]Play 5
+[ACH-REWARD]Gossip
+
+[ACH-NAME]RendezVous Player
+[ACH-CODE]Play 25
+[ACH-REWARD]Time Waits for No Man
+
+[ACH-NAME]RendezVous Lover
+[ACH-CODE]Play 100
+[ACH-REWARD]
+
+[ACH-NAME]RendezVous Addict
+[ACH-CODE]Play 1000
+[ACH-REWARD]
+
+[ACH-NAME]Beginner's Luck
+[ACH-CODE]Win 1
+[ACH-REWARD]Love and Honor
+
+[ACH-NAME]Winner's Circle
+[ACH-CODE]Win 5
+[ACH-REWARD]Cement Shoes
+
+[ACH-NAME]Experienced
+[ACH-CODE]Win 25
+[ACH-REWARD]Counter Intelligence
+
+[ACH-NAME]Master
+[ACH-CODE]Win 100
+[ACH-REWARD]
+
+[ACH-NAME]Grand Master
+[ACH-CODE]Win 1000
+[ACH-REWARD]
+
+[ACH-NAME]Streaker
+[ACH-CODE]Streak 2
+[ACH-REWARD]Training
+
+[ACH-NAME]Frat Party
+[ACH-CODE]Streak 10
+[ACH-REWARD]Turning Tables
+
+[ACH-NAME]Party Hard!
+[ACH-CODE]Streak 100
+[ACH-REWARD]
+
+[ACH-NAME]Inconceivable!
+[ACH-CODE]Streak 1000
+[ACH-REWARD]

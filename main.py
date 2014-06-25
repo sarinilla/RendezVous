@@ -393,6 +393,10 @@ class RendezVousApp(App):
         if loader.image.texture:
             self.achievement_texture = loader.image.texture
 
+    def _deck_achievements_loaded(self, loader):
+        if loader.image.texture:
+            self.deck_achievement_texture = loader.image.texture
+
     def build(self):
         return RendezVousWidget(app=self)
 
@@ -410,12 +414,17 @@ class RendezVousApp(App):
                 self._loaded_decks[current] = {}
                 self._loaded_decks[current]['deck'] = self.loaded_deck
                 self._loaded_decks[current]['texture'] = self.deck_texture
+                self._loaded_decks[current]['achtexture'] = self.deck_achievement_texture
+
+        # Always update the Achievements from the files
+        self.achievements.load_deck(deck_base)
 
         # Read from cache, if available
         GameSettings.CURRENT_DECK = deck_base
         if deck_base in self._loaded_decks:
             self.loaded_deck  = self._loaded_decks[deck_base]['deck']
             self.deck_texture = self._loaded_decks[deck_base]['texture']
+            self.deck_achievement_texture = self.loaded_decks[deck_base]['achtexture']
             self._update_deck()
             return
 
@@ -428,6 +437,8 @@ class RendezVousApp(App):
         self.deck_texture = None
         loader = Loader.image(self.loaded_deck.img_file)
         loader.bind(on_load=self._image_loaded)
+        loader = Loader.image(self.achievements.deck_image_file)
+        loader.bind(on_load=self._deck_achievements_loaded)
         self._update_deck()
 
     def _update_deck(self):
@@ -444,6 +455,16 @@ class RendezVousApp(App):
             update_deck(self.root.main)
             if self.root.current[:7] == 'tutorial':
                 update_deck(self.root.current_screen)
+
+            # Rebuild achievements screen from scratch
+            self.root.remove_widget(self.root.achieve)
+            self.root.achieve = AchievementsScreen(
+                                        achievements=self.achievements,
+                                        name='achieve')
+            self.root.add_widget(self.root.achieve)
+            if self.root.current == 'achieve':
+                self.root.current = 'home'
+                self.root.current = 'achieve'
 
     def purchase_deck(self, deck_entry):
         """Purchase and load the given deck."""
@@ -530,7 +551,7 @@ class RendezVousApp(App):
         finally:
             fp.close()
 
-    # (ScreenManager handles custom display)
+    # (ScreenManager handles custom settings display)
     def display_settings(self, settings):
         pass
     def close_settings(self, *args):

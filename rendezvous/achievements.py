@@ -219,6 +219,7 @@ class AchievementList:
       available  -- list of all Achievements
       achieved   -- list of those the player has earned
       image_file -- grid of Achievement icons
+      deck_image_file -- deck-specific version of image_file
       
     Methods:
       unlocked  -- return whether the given SpecialCard has been unlocked
@@ -269,14 +270,21 @@ class AchievementList:
       
     """
     
-    def __init__(self, player_file=None):
-        self._available_file = os.path.join("data", "Achievements.txt")
+    def __init__(self, player_file=None, deck="Standard"):
+        self._base_available_file = os.path.join("data", "Achievements.txt")
         self.image_file = os.path.join("data", "Achievements.png")
-        self._read_available()
+        self._base_available = []
+        self._read_available(self._base_available, self._base_available_file)
+        self.load_deck(deck)
         if player_file is None:
             self._unlocked_file = os.path.join("player", "unlocked.txt")
         else: self._unlocked_file = player_file
         self._read_unlocked()
+
+    @property
+    def available(self):
+        """Return the full list of available Achievements."""
+        return self._deck_available + self._base_available
         
     def __len__(self):
         return len(self.available)
@@ -325,14 +333,23 @@ class AchievementList:
 
     def get_achievement_texture(self, achievement):
         """Return (L, B, W, H) rectangle for the given Achievement."""
-        index = self.available.index(achievement)
+        try:
+            index = self._base_available.index(achievement)
+        except ValueError:
+            index = self._deck_available.index(achievement)
         return (128 * int(index / 8), 1024 - 128 * (index % 8 + 1), 128, 128)
+
+    def load_deck(self, deck_base):
+        """Read the deck-specific Achievements."""
+        self._deck_available_file = os.path.join("data", "decks", str(deck_base) + "Achievements.txt")
+        self.deck_image_file = os.path.join("data", "decks", str(deck_base) + "Achievements.png")
+        self._deck_available = []
+        self._read_available(self._deck_available, self._deck_available_file)
         
-    def _read_available(self):
+    def _read_available(self, array, filename):
         """Populate self.available with all available Achievements."""
-        self.available = []
         name = description = code = ""
-        for (tag, value) in FileReader(self._available_file):
+        for (tag, value) in FileReader(filename):
             if tag == "ACH-NAME":
                 name = value
             elif tag == "ACH-DESC":
@@ -344,7 +361,7 @@ class AchievementList:
                     warnings.warn("Incomplete achievement definition:\nName: %s\nDescription: %s\nCode: %s\nReward: %s" % (name, description, code, value), AchievementSyntaxWarning)
                 if not value:
                     value = None
-                self.available.append(Achievement(name, description, value, code))
+                array.append(Achievement(name, description, value, code))
                 name = description = code = ""
             else:
                 warnings.warn("Unknown tag in achievement file: %s" % tag,
