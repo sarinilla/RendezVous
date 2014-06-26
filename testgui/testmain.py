@@ -2,12 +2,15 @@
 
 import unittest
 
+from kivy.core import Builder
+
 from main import *
 
 
 class TestTouch(unittest.TestCase):
 
     def setUp(self):
+        Builder.load_file('rendezvous.kv')  # just in case of tutorial
         self.app = RendezVousApp()
         self.root = RendezVousWidget(app=self.app)
         self.root.current = 'main'
@@ -93,6 +96,7 @@ class TestTouch(unittest.TestCase):
 class TestDragAndDrop(unittest.TestCase):
 
     def setUp(self):
+        Builder.load_file('rendezvous.kv')  # just in case of tutorial
         self.app = RendezVousApp()
         self.root = RendezVousWidget(app=self.app)
         self.root.current = 'main'
