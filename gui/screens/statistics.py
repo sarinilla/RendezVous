@@ -11,21 +11,11 @@ class BaseStatsDisplay(BoxLayout):
     title = StringProperty()
     basestats = ObjectProperty(allownone=True)
 
-    def update(self):
-        """Force an update."""
-        bs = self.basestats
-        self.basestats = None
-        self.basestats = bs
-
 
 class StatisticsDisplay(BoxLayout):
 
     deck = ObjectProperty()
     statistics = ObjectProperty(allownone=True)
-
-    def __init__(self, **kwargs):
-        BoxLayout.__init__(self, **kwargs)
-        App.get_running_app().bind(on_deck_texture=self.update)
 
     def best_suit(self, *binds):
         """Return the suit with the most wins for the current deck."""
@@ -49,11 +39,6 @@ class StatisticsDisplay(BoxLayout):
                 best = (suit, self.statistics.suits[suit].losses)
         return best[0]
 
-    def update(self, *args):
-        self.deck = App.get_running_app().loaded_deck
-        self.statistics = None
-        self.statistics = App.get_running_app().statistics
-
 
 class StatisticsScreen(Screen):
     
@@ -69,7 +54,3 @@ class StatisticsScreen(Screen):
                                       deck=App.get_running_app().loaded_deck)
         layout.add_widget(self.main)
         self.add_widget(layout)
-
-    def update(self):
-        """Update the player's statistics."""
-        self.main.update()

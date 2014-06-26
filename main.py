@@ -74,9 +74,7 @@ class RendezVousWidget(ScreenManager):
         self.decks = DeckCatalogScreen(catalog=self.app.deck_catalog,
                                        name='decks')
         self.add_widget(self.decks)
-        self.stats = StatisticsScreen(statistics=self.app.statistics,
-                                      name='stats')
-        self.add_widget(self.stats)
+        # 'stats' will be generated new on each view
 
         # Prepare the tutorial (if needed)
         if self.app.achievements.achieved == []:
@@ -95,6 +93,14 @@ class RendezVousWidget(ScreenManager):
                 self.play_again()
                 return
         elif screen == 'achieve' and self.app.deck_achievement_texture is None:
+            return
+        elif screen == 'stats':
+            # Force update each time
+            try: self.remove_widget(self.stats)
+            except AttributeError: pass
+            self.stats = StatisticsScreen(statistics=self.app.statistics,
+                                          name='stats')
+            self.switch_to(self.stats)
             return
         self.current = screen
         
@@ -470,7 +476,6 @@ class RendezVousApp(App):
             screen.tooltip.card = screen.tooltip.DUMMY_CARD
             
         if self.root:
-            self.root.stats.main.update()
             self.root.game.load_deck(self.loaded_deck)
             update_deck(self.root.main)
             if self.root.current[:7] == 'tutorial':
