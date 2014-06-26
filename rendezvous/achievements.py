@@ -529,6 +529,10 @@ class AchievementList:
                     reached.append(self.achieve(achievement))
         return reached
 
+    def deck_specific(self, achievement):
+        """Return boolean indicating whether achievement is deck-specific."""
+        return achievement in self._deck_available
+
     def get_achievement_texture(self, achievement):
         """Return (L, B, W, H) rectangle for the given Achievement."""
         try:

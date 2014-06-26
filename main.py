@@ -94,12 +94,24 @@ class RendezVousWidget(ScreenManager):
             self.game.round > GameSettings.NUM_ROUNDS):
                 self.play_again()
                 return
+        elif screen == 'achieve' and self.app.deck_achievement_texture is None:
+            return
         self.current = screen
         
         try: self.current_screen.update()
         except AttributeError: pass
         try: self.current_screen.round_counter.max_round = GameSettings.NUM_ROUNDS
         except AttributeError: pass
+
+    def update_achievements(self):
+        # Rebuild achievements screen from scratch
+        self.remove_widget(self.achieve)
+        self.achieve = AchievementsScreen(achievements=self.app.achievements,
+                                          name='achieve')
+        self.add_widget(self.achieve)
+        if self.current == 'achieve':
+            self.current = 'home'
+            self.current = 'achieve'
 
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
@@ -391,12 +403,16 @@ class RendezVousApp(App):
             self.deck_texture = loader.image.texture
 
     def _achievements_loaded(self, loader):
+        """Update the standard achievement image when it's finished loading."""
         if loader.image.texture:
             self.achievement_texture = loader.image.texture
 
     def _deck_achievements_loaded(self, loader):
+        """Update the deck's achievement image when it's finished loading."""
         if loader.image.texture:
             self.deck_achievement_texture = loader.image.texture
+            if self.root is not None:
+                self.root.update_achievements()
 
     def build(self):
         return RendezVousWidget(app=self)
@@ -425,7 +441,9 @@ class RendezVousApp(App):
         if deck_base in self._loaded_decks:
             self.loaded_deck  = self._loaded_decks[deck_base]['deck']
             self.deck_texture = self._loaded_decks[deck_base]['texture']
-            self.deck_achievement_texture = self.loaded_decks[deck_base]['achtexture']
+            self.deck_achievement_texture = self._loaded_decks[deck_base]['achtexture']
+            if self.root is not None:
+                self.root.update_achievements()
             self._update_deck()
             return
 
@@ -438,6 +456,7 @@ class RendezVousApp(App):
         self.deck_texture = None
         loader = Loader.image(self.loaded_deck.img_file)
         loader.bind(on_load=self._image_loaded)
+        self.deck_achievement_texture = None
         loader = Loader.image(self.achievements.deck_image_file)
         loader.bind(on_load=self._deck_achievements_loaded)
         self._update_deck()
@@ -457,16 +476,6 @@ class RendezVousApp(App):
             if self.root.current[:7] == 'tutorial':
                 update_deck(self.root.current_screen)
 
-            # Rebuild achievements screen from scratch
-            self.root.remove_widget(self.root.achieve)
-            self.root.achieve = AchievementsScreen(
-                                        achievements=self.achievements,
-                                        name='achieve')
-            self.root.add_widget(self.root.achieve)
-            if self.root.current == 'achieve':
-                self.root.current = 'home'
-                self.root.current = 'achieve'
-
     def purchase_deck(self, deck_entry):
         """Purchase and load the given deck."""
         self.deck_catalog.purchase(deck_entry)
@@ -476,49 +485,63 @@ class RendezVousApp(App):
     def record_score(self, score):
         """Update meta-data at the end of each game."""
         self.statistics.record_game(self.loaded_deck.base_filename, score, PLAYER)
-        return self.achievements.check(score, PLAYER, self.statistics.base)
+        return self.achievements.check(score, PLAYER, self.statistics)
 
     def record_round(self, board):
         """Check for achievements at the end of each round."""
-        return self.achievements.check(board, PLAYER)
+        return self.achievements.check_round(board, PLAYER)
 
 
     # Manage deck images
 
     def get_texture(self, card):
         """Return the appropriate texture to display."""
-        if card == "HIDDEN":
-            region = self.loaded_deck.get_locked_texture()
-        elif card == "WAIT":
-            region = self.loaded_deck.get_wait_texture()
-        elif card is None or str(card) is " ":
+        try:
+            if card == "HIDDEN":
+                region = self.loaded_deck.get_locked_texture()
+            elif card == "WAIT":
+                region = self.loaded_deck.get_wait_texture()
+            elif card is None or str(card) is " ":
+                return Texture.create()
+                #region = self.loaded_deck.get_back_texture()
+            elif isinstance(card, DeckCatalogEntry):
+                return card.texture
+            elif isinstance(card, str):
+                return self.get_texture(self.loaded_deck.get_special(card))
+            else:
+                region = self.loaded_deck.get_card_texture(card)
+            return self.deck_texture.get_region(*region)
+        except:
             return Texture.create()
-            #region = self.loaded_deck.get_back_texture()
-        elif isinstance(card, DeckCatalogEntry):
-            return card.texture
-        elif isinstance(card, str):
-            return self.get_texture(self.loaded_deck.get_special(card))
-        else:
-            region = self.loaded_deck.get_card_texture(card)
-        return self.deck_texture.get_region(*region)
 
     def get_suit_texture(self, suit):
         """Return the appropriate texture to display."""
-        if suit:
-            region = self.loaded_deck.get_suit_texture(suit)
-            return self.deck_texture.get_region(*region)
-        else:
-            return Image(os.path.join("data", "RVlogo.png")).texture
-
+        try:
+            if suit:
+                region = self.loaded_deck.get_suit_texture(suit)
+                return self.deck_texture.get_region(*region)
+            else:
+                return Image(os.path.join("data", "RVlogo.png")).texture
+        except:
+            return Texture.create()
+        
     def get_dealer_texture(self, *args):
         """Return the appropriate dealer texture to display."""
-        region = self.loaded_deck.get_dealer_texture(*args)
-        return self.deck_texture.get_region(*region)
+        try:
+            region = self.loaded_deck.get_dealer_texture(*args)
+            return self.deck_texture.get_region(*region)
+        except:
+            return Texture.create()
             
     def get_achievement_texture(self, achievement):
         """Return the appropriate texture to display."""
-        region = self.achievements.get_achievement_texture(achievement)
-        return self.achievement_texture.get_region(*region)
+        try:
+            region = self.achievements.get_achievement_texture(achievement)
+            if self.achievements.deck_specific(achievement):
+                return self.deck_achievement_texture.get_region(*region)
+            return self.achievement_texture.get_region(*region)
+        except:
+            return Texture.create()
 
 
     # Allow automatic pause and resume when switching apps
