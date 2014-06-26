@@ -115,23 +115,29 @@ class Achievement:
                 
             self.suit = SpecialSuit.TOTAL
             self.value = None  # easy parsing of double suits
-            if "EACH" in code:
+            keywords = '(PLAY|WIN|STREAK|\d|ENEMY|FRIENDLY|<|>|=|ONLY|WIN|LOSE|\s)*'
+            operators = '(<|>|=|\s)*'
+            match = re.match(keywords + '(\w*)' + operators + "(\w*)" + keywords + "$", code)
+            if match:
+                if match.group(2):
+                    self.suit = remove_caps(match.group(2))
+                    if match.group(4):
+                        self.value = remove_caps(match.group(4))
+                        try:
+                            self.value = int(self.value)
+                        except ValueError:
+                            pass
+                elif match.group(4):
+                    self.suit = remove_caps(match.group(4))
+                        
+            if self.suit.upper() == "EACH":
                 self.suit = SpecialSuit.EACH
-            elif "ANY" in code:
+            elif self.suit.upper() == "ANY":
                 self.suit = SpecialSuit.ANY
-            elif "ONE" in code:
+            elif self.suit.upper() == "ONE":
                 self.suit = SpecialSuit.ONE
-            else:
-                keywords = '(PLAY|WIN|STREAK|\d|ENEMY|FRIENDLY|<|>|=|ONLY|EACH|ANY|ONE|TOTAL|WIN|LOSE|\s)*'
-                operators = '(<|>|=|\s)*'
-                match = re.match(keywords + '(\w*)' + operators + "(\w*)" + keywords + "$", code)
-                if match:
-                    if match.group(2):
-                        self.suit = remove_caps(match.group(2))
-                        if match.group(4):
-                            self.value = remove_caps(match.group(4))
-                    elif match.group(4):
-                        self.suit = remove_caps(match.group(4))
+            elif self.suit.upper() == "TOTAL":
+                self.suit = SpecialSuit.TOTAL
                         
             match = re.search('(\d+)', code)
             if match is not None and self.value is None:
@@ -212,9 +218,9 @@ class Achievement:
             elif self.suit == SpecialSuit.TOTAL:
                 return "overall score"
             elif self.count == 0:
-                return "only %s" % self.suit
+                return "only %s" % suitindex(self.suit)
             else:
-                return self.suit
+                return suitindex(self.suit)
             
         # Statistics Achievements
         if self.type == AchieveType.PLAY:
@@ -258,16 +264,21 @@ class Achievement:
             return ("Finish a game with %s total score %s %s."
                     % (align(), operator(), self.value))
         try:
+            self.value = int(self.value)
+        except ValueError:  # string for self.value
+            if self.suit in SpecialSuit.all():
+                return ("Finish a game with %s score in %s %s that of %s %s."
+                        % (align(), suit(), operator(), align(),
+                           suitindex(self.value)))
+            return ("Finish a game with %s %s score %s that of %s %s."
+                    % (align(), suit(), operator(),
+                       align(), suitindex(self.value)))
+        else:  # value is integer
             if self.suit.upper().startswith("SUIT"):
                 return ("Finish a game with %s %s score %s %s."
-                        % (align(), suitindex(self.suit),
-                           operator(), int(self.value)))
+                        % (align(), suit(), operator(), self.value))
             return ("Finish a game with %s score %s %s in %s." 
-                    % (align(), operator(), int(self.value), suit()))
-        except ValueError:  # string for self.value
-            return ("Finish a game with %s %s score %s that of %s %s."
-                    % (align(), suitindex(self.suit), operator(),
-                       align(), suitindex(self.value)))
+                    % (align(), operator(), self.value, suit()))
         
     def check(self, score, player_index, stats):
         """Return whether this Achievement has been reached."""

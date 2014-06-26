@@ -58,6 +58,12 @@ class SpecialSuit:
     ONE = "One"              #: exactly one suit
     TOTAL = "Total"          #: total score
 
+    @staticmethod
+    def all():
+        for i in (SpecialSuit.ANY, SpecialSuit.EACH, SpecialSuit.ONE,
+                  SpecialSuit.TOTAL):
+            yield i
+
 
 class SpecialValue:
     """Special non-numerical card values."""

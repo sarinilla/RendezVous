@@ -123,7 +123,7 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.description,
              "Finish a game with your Boyfriend score less than that of your Girlfriend.")
 
-    def test_parse_suit_index(self):
+    def test_parse_suit_index_value(self):
         self.a._parse_code("Boyfriend < SUIT1")
         self.assertEqual(self.a.type, AchieveType.SCORE)
         self.assertEqual(self.a.count, 1)
@@ -133,6 +133,28 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.value, "SUIT1")
         self.assertEqual(self.a.description,
              "Finish a game with your Boyfriend score less than that of your first suit.")
+
+    def test_parse_suit_index_with_special(self):
+        self.a._parse_code("Each == SUIT1")
+        self.assertEqual(self.a.type, AchieveType.SCORE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suit, SpecialSuit.EACH)
+        self.assertEqual(self.a.operator, Operator.EXACTLY)
+        self.assertEqual(self.a.value, "SUIT1")
+        self.assertEqual(self.a.description,
+             "Finish a game with your score in every suit exactly that of your first suit.")
+
+    def test_parse_suit_index_on_both(self):
+        self.a._parse_code("SUIT1 < SUIT2")
+        self.assertEqual(self.a.type, AchieveType.SCORE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suit, "SUIT1")
+        self.assertEqual(self.a.operator, Operator.LESS_THAN)
+        self.assertEqual(self.a.value, "SUIT2")
+        self.assertEqual(self.a.description,
+             "Finish a game with your first suit score less than that of your second suit.")
              
     def test_parse_total(self):
         self.a._parse_code("Friendly Total 800")
@@ -415,6 +437,11 @@ class TestAchievementCheck(unittest.TestCase):
         self.a._parse_code("Enemy Each 500")
         self.score.scores = [[600, 200], [600, 600]]
         self.assertTrue(self.a.check(self.score, 0, self.stats))
+        
+    def test_less_than_false(self):
+        self.a._parse_code("Any < 500")
+        self.score.scores = [[600, 600], [600, 600]]
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
         
     def test_less_than(self):
         self.a._parse_code("Any < 500")
