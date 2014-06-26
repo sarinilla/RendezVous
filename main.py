@@ -88,9 +88,9 @@ class RendezVousWidget(ScreenManager):
         """Handle a request to switch screens."""
         if isinstance(screen, Screen):
             screen = screen.name
-        if (screen == 'main' and
-            self.game.round > GameSettings.NUM_ROUNDS):
+        if (screen == 'main' and self.game.round == 0):
                 self.play_again()
+                self.main.round_counter.max_round = GameSettings.NUM_ROUNDS
                 return
         elif screen == 'achieve' and self.app.deck_achievement_texture is None:
             return
@@ -337,6 +337,7 @@ class RendezVousWidget(ScreenManager):
             self._winner = WinnerScreen(self.game.score, self.achieved,
                                         name='winner')
             self.switch_to(self._winner)
+            self.game.round = 0  # mark GAME OVER to trigger replay
             return False
         elif self.game.board.is_full(PLAYER):
             self._get_dealer_play()
