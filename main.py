@@ -248,7 +248,6 @@ class RendezVousWidget(ScreenManager):
 
     def _play_dealer(self):
         """Place the dealer's selected cards on the board."""
-        self.game.board.clear_wait()
         if GameSettings.AI_DIFFICULTY == 3:
             self._get_dealer_play()
         if self.current == 'tutorial-hand':
@@ -270,6 +269,7 @@ class RendezVousWidget(ScreenManager):
         
     def _specials(self):
         """Apply all specials."""
+        self.game.board.clear_wait()
         if self.current == 'tutorial-board':
             self._in_progress = False
             return  # until continue is pressed

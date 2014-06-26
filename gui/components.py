@@ -337,10 +337,15 @@ class BoardDisplay(BoxLayout):
                     Clock.schedule_once(lambda dt:callback())
                 return
         self.slots[DEALER][index].card = self.board[DEALER][index]
-        Clock.schedule_once(lambda t: self._play_next_dealer(index=index,
+        if self.board._wait[DEALER][index]:
+            Clock.schedule_once(lambda t: self._play_next_dealer(index=index,
                                                              callback=callback,
-                                                             timer=timer),
-                            timer)
+                                                             timer=timer))
+        else:
+            Clock.schedule_once(lambda t: self._play_next_dealer(index=index,
+                                                                 callback=callback,
+                                                                 timer=timer),
+                                timer)
 
     def apply_specials(self, game, hand_display,
                        callback=None, timer=GameSettings.SPEED):
