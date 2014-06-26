@@ -44,26 +44,24 @@
     #orientation: "vertical"
     ScrollView:
         do_scroll_x: False
-        Widget:
+        BoxLayout:
+            orientation: "vertical"
             size_hint: 1, None
-            height: max(root.height, self.height)
-            BoxLayout:
-                orientation: "vertical"
-                size: self.parent.size
-                CardDisplay:
-                    card: root.card
-                    color: root.color
-                Label:
-                    text: root.card and "[b]%s[/b]" % root.card.name
-                    text_size: self.size
-                    markup: True
-                    size_hint: 1, .25
-                    halign: "center"
-                Label:
-                    text: root.card and root.card.description
-                    text_size: self.parent.size[0], self.text_size[1]
-                    font_size: dp(12)
-                    halign: "center"
+            size: root.size[0], max(root.size[1], self.size[1])
+            CardDisplay:
+                card: root.card
+                color: root.color
+            Label:
+                text: root.card and "[b]%s[/b]" % root.card.name
+                text_size: self.size
+                markup: True
+                size_hint: 1, .25
+                halign: "center"
+            Label:
+                text: root.card and root.card.description
+                text_size: self.parent.size[0], self.text_size[1]
+                font_size: dp(12)
+                halign: "center"
 
 
 ## Deck Catalog - gui/screens/deck.py ##
