@@ -554,7 +554,7 @@ class AchievementList:
         if "Secret RendezVous" in self.achieved:
             return []
         if "Standard" in self.deck_image_file:
-            return
+            return []
         for achievement in self._deck_available:
             if achievement.reward is not None:
                 if achievement not in self.achieved:
