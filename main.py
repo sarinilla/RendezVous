@@ -122,7 +122,6 @@ class RendezVousWidget(ScreenManager):
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
         if self._in_progress: return
-        if card_display.card is None: return
         if self.current == 'tutorial-tooltip':
             for slot in self.current_screen.hand_display.slots:
                 slot.highlight(BLANK)
@@ -131,6 +130,8 @@ class RendezVousWidget(ScreenManager):
             cont = self.current_screen.gameboard.next_round_prompted()
             if not cont:
                 return
+            
+        if card_display.card is None: return
         
         loc = card_display.parent
         if loc is self.current_screen.hand_display:
