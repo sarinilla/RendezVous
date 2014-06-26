@@ -41,8 +41,9 @@
 
 
 <ToolTipDisplay>:
-    #orientation: "vertical"
+    on_card: scroller.scroll_y = 1
     ScrollView:
+        id: scroller
         do_scroll_x: False
         BoxLayout:
             orientation: "vertical"
