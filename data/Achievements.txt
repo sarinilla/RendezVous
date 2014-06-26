@@ -27,10 +27,12 @@
 [ACH-REWARD]
 
 [ACH-NAME]Jack of All Trades
+[ACH-CODE]Each == SUIT1
 [ACH-DESC]Finish a game with equal scores in all suits.
 [ACH-REWARD]
 
 [ACH-NAME]Perfect Vision
+[ACH-CODE]Wait 4 Enemy
 [ACH-DESC]Make all of the Dealer's cards WAIT for one turn.
 [ACH-REWARD]
 

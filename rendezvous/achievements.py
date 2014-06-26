@@ -43,7 +43,7 @@ class Achievement:
         
         Outputs:
           self.type       -- from AchieveType
-          self.count      -- number of games that must meet the requirement
+          self.count      -- number of games or cards that must match
           self.alignment  -- from Alignment
           self.suit       -- suit name or from SpecialSuit
           self.operator   -- from Operator (only < or >=)
@@ -52,20 +52,54 @@ class Achievement:
         Also generates the description if needed.
         
         """
-        
         code = code_string.upper()
-        if "PLAY" == code[:4]: 
-            self.type = AchieveType.PLAY
-            self.count = int(code[5:])
-        elif "WIN" == code[:3]: 
-            self.type = AchieveType.WIN
-            self.count = int(code[4:])
-        elif "STREAK" == code[:6]:
-            self.type = AchieveType.STREAK
-            self.count = int(code[7:])
+        def remove_caps(string):
+            """Return the given string with its original capitalization."""
+            i = code.index(string)
+            return code_string[i:i+len(string)]
+
+        # Statistics Achievements
+        match = re.match("(PLAY|WIN|STREAK)\s*(\d+)\s*(\w*)", code)
+        if match is not None:
+            if match.group(1) == "PLAY": 
+                self.type = AchieveType.PLAY
+            elif match.group(1) == "WIN":
+                self.type = AchieveType.WIN
+            else: #if match.group(1) == "STREAK":
+                self.type = AchieveType.STREAK
+            self.count = int(match.group(2))
+            if match.group(3):
+                self.suit = remove_caps(match.group(3))
+            else:
+                self.suit = SpecialSuit.ANY
+
+        # Round Achievements
+        elif code.startswith("USE") or code.startswith("WAIT"):
+            match = re.match("(USE|WAIT)\s*(\d*)\s*(FRIENDLY|ENEMY)?\s*(.*)", code)
+            self.type = (AchieveType.USE if match.group(1) == "USE"
+                         else AchieveType.WAIT)
+            
+            try:
+                self.count = int(match.group(2))
+            except ValueError:
+                self.count = 1
+                
+            if "ENEMY" in code:
+                self.alignment = Alignment.ENEMY
+            else:
+                self.alignment = Alignment.FRIENDLY
+
+            self.suit = remove_caps(match.group(4))
+            if not self.suit:
+                self.suit = SpecialSuit.ANY
+
+        # Score Achievements
         else:
             self.type = AchieveType.SCORE
+            
             self.count = 1
+            if "ONLY" in code:
+                self.count = 0
             
             if "ENEMY" in code:
                 self.alignment = Alignment.ENEMY
@@ -74,10 +108,13 @@ class Achievement:
                 
             if "<" in code:
                 self.operator = Operator.LESS_THAN
+            elif "=" in code and ">" not in code:
+                self.operator = Operator.EXACTLY
             else:
                 self.operator = Operator.AT_LEAST
                 
             self.suit = SpecialSuit.TOTAL
+            self.value = None  # easy parsing of double suits
             if "EACH" in code:
                 self.suit = SpecialSuit.EACH
             elif "ANY" in code:
@@ -85,21 +122,26 @@ class Achievement:
             elif "ONE" in code:
                 self.suit = SpecialSuit.ONE
             else:
-                keywords = '(PLAY|WIN|STREAK|\d|ENEMY|FRIENDLY|<|>=|EACH|ANY|ONE|TOTAL|WIN|LOSE|\s)*'
-                match = re.match(keywords + '(\w*?)' + keywords + "$", code)
-                if match and match.group(2):
-                    i = code.index(match.group(2))
-                    self.suit = code_string[i:i+len(match.group(2))]
+                keywords = '(PLAY|WIN|STREAK|\d|ENEMY|FRIENDLY|<|>|=|ONLY|EACH|ANY|ONE|TOTAL|WIN|LOSE|\s)*'
+                operators = '(<|>|=|\s)*'
+                match = re.match(keywords + '(\w*)' + operators + "(\w*)" + keywords + "$", code)
+                if match:
+                    if match.group(2):
+                        self.suit = remove_caps(match.group(2))
+                        if match.group(4):
+                            self.value = remove_caps(match.group(4))
+                    elif match.group(4):
+                        self.suit = remove_caps(match.group(4))
                         
             match = re.search('(\d+)', code)
-            if match:
+            if match is not None and self.value is None:
                 self.value = int(match.group(1))
             elif 'LOSE' in code:
                 self.value = SpecialValue.LOSE
-            else:
+            elif 'WIN' in code or self.value is None:
                 self.value = SpecialValue.WIN
                 
-        
+        # Auto-generate description
         if not self.description:
             self.description = self._describe()
             
@@ -118,6 +160,32 @@ class Achievement:
         def games():
             """Translate self.count."""
             return plural(self.count, "game")
+
+        def suitindex(suit):
+            """Translate a SUIT#."""
+            if not suit.upper().startswith("SUIT"):
+                return suit
+            try:
+                i = int(suit[4:])
+            except ValueError:
+                return suit
+            if i == 1:
+                return "first suit"
+            elif i == 2:
+                return "second suit"
+            elif i == 3:
+                return "third suit"
+            else:
+                return "%sth suit" % i
+
+        def statsuit():
+            """Translate self.suit for a Statistics Achievement."""
+            if self.suit == SpecialSuit.ANY:
+                return ""
+            elif self.suit.upper().startswith("SUIT"):
+                return " in the %s" % suitindex(self.suit)
+            else:
+                return " with %s" % self.suit
             
         def align():
             """Translate self.alignment."""
@@ -129,6 +197,8 @@ class Achievement:
             """Translate self.operator."""
             if self.operator == Operator.LESS_THAN:
                 return "less than"
+            elif self.operator == Operator.EXACTLY:
+                return "exactly"
             return "at least"
             
         def suit():
@@ -141,76 +211,173 @@ class Achievement:
                 return "exactly one suit"
             elif self.suit == SpecialSuit.TOTAL:
                 return "overall score"
+            elif self.count == 0:
+                return "only %s" % self.suit
             else:
                 return self.suit
             
         # Statistics Achievements
         if self.type == AchieveType.PLAY:
-            return "Play %s of RendezVous." % games()
+            return "Play %s of RendezVous%s." % (games(), statsuit())
         elif self.type == AchieveType.WIN:
-            return "Win at least %s of RendezVous." % games()
+            return "Win at least %s of RendezVous%s." % (games(), statsuit())
         elif self.type == AchieveType.STREAK:
-            return "Win %s of RendezVous in a row."  % games()
+            return "Win %s of RendezVous in a row%s." % (games(), statsuit())
+
+        # Round Achievements:
+        elif self.type == AchieveType.USE:
+            play = ("Play" if self.alignment == Alignment.FRIENDLY
+                    else "Have the dealer play")
+            card = ("card" if self.suit == SpecialSuit.ANY
+                    else "%s card" % self.suit)
+            if self.count == 1:
+                return "%s the %s." % (play, card)
+            else:
+                return ("%s at least %s %ss."
+                        % (play, self.count, card))
+        elif self.type == AchieveType.WAIT:
+            hold = ("Hold" if self.alignment == Alignment.ENEMY
+                    else "Have the dealer hold")
+            oalign = ("the dealer's" if self.alignment == Alignment.ENEMY
+                      else "your")
+            card = ("card" if self.suit == SpecialSuit.ANY
+                    else "%s card" % self.suit)
+            if self.count == 1:
+                return "%s %s %s." % (hold, oalign, card)
+            else:
+                return ("%s at least %s of %s %ss."
+                        % (hold, self.count, oalign, card))
         
         # Score-based Achievements
         elif self.value == SpecialValue.WIN:
-            return "Win %s in %s." % (games(), suit())
+            return "Win a game in %s." % suit()
         elif self.value == SpecialValue.LOSE:
-            return "Lose %s in %s." % (games(), suit())
+            return "Lose a game in %s." % suit()
             
         elif self.suit == SpecialSuit.TOTAL:
-            return ("Finish %s with %s total score %s %s."
-                    % (games(), align(), operator(), self.value))
-        else:
-            return ("Finish %s with %s score %s %s in %s." 
-                    % (games(), align(), operator(), self.value, suit()))
+            return ("Finish a game with %s total score %s %s."
+                    % (align(), operator(), self.value))
+        try:
+            if self.suit.upper().startswith("SUIT"):
+                return ("Finish a game with %s %s score %s %s."
+                        % (align(), suitindex(self.suit),
+                           operator(), int(self.value)))
+            return ("Finish a game with %s score %s %s in %s." 
+                    % (align(), operator(), int(self.value), suit()))
+        except ValueError:  # string for self.value
+            return ("Finish a game with %s %s score %s that of %s %s."
+                    % (align(), suitindex(self.suit), operator(),
+                       align(), suitindex(self.value)))
         
     def check(self, score, player_index, stats):
         """Return whether this Achievement has been reached."""
-        if self.type == None:
+        if self.type == None or AchieveType.per_round(self.type):
             return False
+
+        substats = stats.base
+        if self.suit in stats.decks:
+            substats = stats.decks[self.suit]
+        elif self.suit in stats.suits:
+            substats = stats.suits[self.suit]
         if self.type == AchieveType.PLAY:
-            return stats.played >= self.count
+            return substats.played >= self.count
         elif self.type == AchieveType.WIN:
-            return stats.wins >= self.count
+            return substats.wins >= self.count
         elif self.type == AchieveType.STREAK:
-            return stats.win_streak >= self.count
+            return substats.win_streak >= self.count
             
         if self.suit == SpecialSuit.EACH:
             for i, pscore in enumerate(score[player_index]):
-                if not self._check(pscore, score[player_index-1][i]):
+                if not self._check(pscore, score[player_index-1][i],
+                                   self._get_target(score, player_index)):
                     return False
             return True
         elif self.suit == SpecialSuit.ANY:
             for i, pscore in enumerate(score[player_index]):
-                if self._check(pscore, score[player_index-1][i]):
+                if self._check(pscore, score[player_index-1][i],
+                               self._get_target(score, player_index)):
                     return True
             return False
         elif self.suit == SpecialSuit.ONE:
             found = False
             for i, pscore in enumerate(score[player_index]):
-                if self._check(pscore, score[player_index-1][i]):
+                if self._check(pscore, score[player_index-1][i],
+                               self._get_target(score, player_index)):
                     if found: return False
                     found = True
             return found
-        elif self.suit in score.suits:
-            i = score.suits.index(self.suit)
-            return self._check(score[player_index][i], 
-                               score[player_index-1][i])
-        else:  #if self.suit == SpecialSuit.TOTAL:
+        elif self.suit == SpecialSuit.TOTAL:
             return self._check(score.total(player_index), 
-                               score.total(player_index-1))
+                               score.total(player_index-1),
+                               self._get_target(score, player_index))
+        else:  # single suit
+            index = -1
+            if self.suit in score.suits:
+                index = score.suits.index(self.suit)
+                if not self._check(score[player_index][index], 
+                                   score[player_index-1][index],
+                                   self._get_target(score, player_index)):
+                    return False
+            elif self.suit.upper().startswith("SUIT"):
+                index = int(self.suit[4:]) - 1
+                if not self._check(score[player_index][index], 
+                                   score[player_index-1][index],
+                                   self._get_target(score, player_index)):
+                    return False
+            if self.count > 0:  # not ONLY?
+                return True
+            for i, suit in enumerate(score.suits):
+                if i == index: continue
+                if self._check(score[player_index][i],
+                               score[player_index-1][i],
+                               self._get_target(score, player_index)):
+                    return False
+            return True
+
+    def check_round(self, board, player_index):
+        """Return whether this Achievement has been reached."""
+        if self.type == None or not AchieveType.per_round(self.type):
+            return False
+        side = player_index
+        if self.alignment == Alignment.ENEMY:
+            side -= 1
+        count = 0
+        for i, card in enumerate(board[side]):
+            if (self.suit == SpecialSuit.ANY or
+                card.suit.upper() == self.suit.upper() or
+                card.name.upper() == self.suit.upper()):
+                if self.type == AchieveType.USE or board._wait[side][i]:
+                    count += 1
+                    if count >= self.count:
+                        return True
+        return False
+
+    def _get_target(self, score, player_index):
+        try:
+            return int(self.value)
+        except ValueError:
+            pass
+        player = player_index
+        if self.alignment == Alignment.ENEMY:
+            player -= 1
+        elif self.value.upper().startswith("SUIT"):
+            return score[player][int(self.value[4:]) - 1]
+        else:
+            return score[player][score.suits.index(self.value)]
     
-    def _check(self, pscore, dscore):
+    def _check(self, pscore, dscore, target):
         """Return whether these scores meet the requirements."""
         if self.value == SpecialValue.WIN:
             return pscore > dscore
         elif self.value == SpecialValue.LOSE:
             return pscore < dscore
-        score = pscore if self.alignment == Alignment.FRIENDLY else dscore
+        
+        score = pscore if self.alignment == Alignment.FRIENDLY else dscore        
         if self.operator == Operator.LESS_THAN:
-            return score < self.value
-        return score >= self.value
+            return score < target
+        elif self.operator == Operator.EXACTLY:
+            return score == target
+        return score >= target
     
 class AchievementList:
     """List of available and accomplished Achievements.
@@ -250,6 +417,10 @@ class AchievementList:
         PLAY # -- play at least # games
         WIN #  -- win at least # games
         STREAK # -- win at least # games in a row
+
+        Statistic-based Requirements can optionally be followed by the name
+        of a deck (as given in the filenames, not as per the [DECK-NAME] tag)
+        or a suit.
           
       Score Requirements:
         * Alignment: FRIENDLY or ENEMY (default: FRIENDLY)
@@ -258,8 +429,26 @@ class AchievementList:
           - ANY  -- must meet the requirements in at least one suit
           - ONE  -- must meet the requirements in exactly one suit
           - TOTAL (default) -- total score must meet the requirements
-        * Operator: < or >= (default: >=)
-        * Value: numerical score, or WIN or LOSE (default: WIN)
+          - ONLY suit_name -- must meet the requirements only in the given suit
+        * Operator: < or >= or == (default: >=)
+        * Value:
+          - numerical score -- must be equal to this score
+          - suit name -- must be equal to the score in this suit
+          - SUIT# where # is an index 1-5 -- as above
+          - WIN (default) -- must beat the dealer in this suit
+          - LOSE -- dealer must beat the player in this suit
+
+      Round Requirements:
+        * Command:
+          - USE  -- play the given card or combination
+          - WAIT -- hold the given card or combination to the next round
+        * Number of cards that must meet the requirements in a single round
+          (default: 1)
+        * Alignment: FRIENDLY or ENEMY (default: FRIENDLY)
+        * Card Type:
+          - suit name (e.g. "Boyfriend")
+          - suit name + value (e.g. "Boyfriend 10")
+          - name of special card (e.g. "Perfume")
       
       
     Accomplished Achievements File Format:  Unlocked.txt
@@ -328,6 +517,15 @@ class AchievementList:
         for achievement in self.available:
             if achievement not in self.achieved:
                 if achievement.check(score, player_index, stats):
+                    reached.append(self.achieve(achievement))
+        return reached
+        
+    def check_round(self, board, player_index):
+        """Return list of Achievements newly reached in this round."""
+        reached = []
+        for achievement in self.available:
+            if achievement not in self.achieved:
+                if achievement.check_round(board, player_index):
                     reached.append(self.achieve(achievement))
         return reached
 

@@ -29,7 +29,7 @@ from gui.screens.deck import DeckCatalogScreen
 from gui.screens.statistics import StatisticsScreen
 
 
-__version__ = '0.5.4'
+__version__ = '0.5.5'
 
 
 class RendezVousWidget(ScreenManager):
@@ -308,6 +308,7 @@ class RendezVousWidget(ScreenManager):
             self.current_screen.tutorial.title = "The Scoreboard"
             self.current_screen.tutorial.text= "Your score in each suit is shown above, to the left. The dealer's score is to the right.\n\nAfter %s rounds, the winner is the one leading in the most suits." % GameSettings.NUM_ROUNDS
             self.current_screen.tutorial.footer = "Play a few rounds!"
+        self.achieved += self.app.record_round(self.game.board)
         game_over = self.game.next_round()
         if game_over:
             self.achieved += self.app.record_score(self.game.score)
@@ -476,6 +477,10 @@ class RendezVousApp(App):
         """Update meta-data at the end of each game."""
         self.statistics.record_game(self.loaded_deck.base_filename, score, PLAYER)
         return self.achievements.check(score, PLAYER, self.statistics.base)
+
+    def record_round(self, board):
+        """Check for achievements at the end of each round."""
+        return self.achievements.check(board, PLAYER)
 
 
     # Manage deck images

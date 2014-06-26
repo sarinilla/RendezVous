@@ -99,6 +99,13 @@ class AchieveType:
     PLAY = 1     #: number of games played
     WIN = 2      #: number of games won
     STREAK = 3   #: number of games won in a row
+    ROUND = 4    ## marker to start round-based types
+    USE = 5      #: use a specific card or suit
+    WAIT = 6     #: hold a specific card or suit
+
+    @classmethod
+    def per_round(cls, achievetype):
+        return achievetype > cls.ROUND
 
 
 def FileReader(filename):
