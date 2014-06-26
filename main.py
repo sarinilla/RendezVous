@@ -10,6 +10,7 @@ from kivy.properties import ObjectProperty
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager, FadeTransition, Screen
+from kivy.uix.settings import SettingBoolean, SettingsWithNoMenu
 from kivy.loader import Loader
 
 from rendezvous import GameSettings
@@ -84,6 +85,13 @@ class RendezVousWidget(ScreenManager):
             self.current_screen.tutorial.title = "Welcome to RendezVous!"
             self.current_screen.tutorial.text = "This tutorial will walk you through your first game, introducing key concepts along the way. RendezVous is easy to play, but you will find the strategies to be endless!\n\nYour hand is displayed below. Each round, you will pick 4 cards to play, then your hand will be refilled to 10 again. Go ahead and pick your first four cards now.\n\n(Higher values are better!)"
             self.current_screen.tutorial.footer = "SELECT 4 CARDS BELOW"
+
+    def rebuild_decks(self):
+        """Rebuild the deck catalog screen (e.g. after catalog update)."""
+        self.remove_widget(self.decks)
+        self.decks = DeckCatalogScreen(catalog=self.app.deck_catalog,
+                                       name='decks')
+        self.add_widget(self.decks)
 
     def switcher(self, screen):
         """Handle a request to switch screens."""
@@ -393,6 +401,7 @@ class RendezVousApp(App):
         App.__init__(self, **kwargs)
         self.icon = os.path.join("data", "RVlogo.ico")
         self.icon_png = os.path.join("data", "RVlogo.png")
+        self.settings_cls = SettingsWithNoMenu
         user_dir = self.user_data_dir
         if not os.path.isdir(user_dir):
             user_dir = "player"
@@ -572,13 +581,16 @@ class RendezVousApp(App):
 
     def on_config_change(self, config, section, key, value):
         """Handle special config cases."""
-        if key.upper() == 'NUM_ROUNDS':
+        key = key.upper()
+        if key == 'NUM_ROUNDS':
             self.root.main.round_counter.max_round = int(value)
-        elif key.upper() == 'FULLSCREEN':
+        elif key == 'FULLSCREEN':
             if value:
                 Config.set('graphics', 'fullscreen', 'auto')
             else:
                 Config.set('graphics', 'fullscreen', 0)
+        elif key == 'SHOW_PRIVATE':
+            self.root.rebuild_decks()
 
     def build_settings(self, settings):
         """Load the JSON file with settings details."""
@@ -590,6 +602,13 @@ class RendezVousApp(App):
             settings.register_type('customAI', SettingAIDifficulty)
             settings.add_json_panel('Game Settings', self.config,
                                     data="\n".join(fp.readlines()))
+            if self.deck_catalog.private:
+                settings.interface.current_panel.add_widget(
+                    SettingBoolean(panel=settings.interface.current_panel,
+                                   title="Show Private Decks",
+                                   desc="Include private decks in the deck catalog.",
+                                   section="DEFAULT",
+                                   key="show_private"))
         finally:
             fp.close()
 

@@ -21,7 +21,11 @@ class GameSettings(object):  # 2.x requires explicit new-style classes
 
         def __init__(self, defaultvalue, minvalue=1, maxvalue=10, typ=int,
                      doc=None):
-            self.value = defaultvalue
+            if typ is bool: # store as integers
+                typ = int
+                minvalue = 0
+                maxvalue = 1
+            self.value = typ(defaultvalue)
             self.min = minvalue
             self.max = maxvalue
             self._typecast = typ
@@ -38,9 +42,6 @@ class GameSettings(object):  # 2.x requires explicit new-style classes
                     value = self.min
                 if float(value) > self.max:
                     value = self.max
-            elif self._typecast is bool:
-                if str(value) == 'False':
-                    value = False
             if self.value == self._typecast(value):
                 return
             self.value = self._typecast(value)
