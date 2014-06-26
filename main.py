@@ -405,15 +405,21 @@ class RendezVousApp(App):
         user_dir = self.user_data_dir
         if not os.path.isdir(user_dir):
             user_dir = "player"
+        self.deck_catalog = DeckCatalog(os.path.join(user_dir, "decks.txt"))
+        if self.deck_catalog.purchased(GameSettings.CURRENT_DECK) is None:
+            GameSettings.CURRENT_DECK = "Standard"
+        self._preload_home_screen()
         self.statistics = Statistics(os.path.join(user_dir, "stats.txt"))
         self.achievements = AchievementList(os.path.join(user_dir, "unlocked.txt"))
         loader = Loader.image(self.achievements.image_file)
         loader.bind(on_load=self._achievements_loaded)
-        self.deck_catalog = DeckCatalog(os.path.join(user_dir, "decks.txt"))
-        if self.deck_catalog.purchased(GameSettings.CURRENT_DECK) is None:
-            GameSettings.CURRENT_DECK = "Standard"
         self._loaded_decks = {}
         self.load_deck(GameSettings.CURRENT_DECK)
+
+    def _preload_home_screen(self):
+        """Prioritize loading of images for the home screen."""
+        deck = self.deck_catalog[GameSettings.CURRENT_DECK]
+        deck.hand_texture = Image(deck.hand).texture
 
     def _image_loaded(self, loader):
         """Update the deck image when it's finished loading."""
