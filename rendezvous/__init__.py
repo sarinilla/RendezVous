@@ -61,10 +61,10 @@ class SpecialSuit:
 
 class SpecialValue:
     """Special non-numerical card values."""
-    WIN = 100         #: automatically win the match
-    LOSE = -100       #: automatically lose the match
-    KISS = 555        #: both sides treated as "winning"
-    SPECIAL = -999    #: SpecialCard (ignore value)
+    WIN = 10000       #: automatically win the match
+    LOSE = -10000     #: automatically lose the match
+    KISS = 55555      #: both sides treated as "winning"
+    SPECIAL = -99999  #: SpecialCard (ignore value)
     # Note: WIN and LOSE as opposites is counted upon by Card.apply()
 
     @staticmethod
