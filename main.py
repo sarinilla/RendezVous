@@ -3,6 +3,7 @@ import copy
 
 from kivy.clock import Clock
 from kivy.app import App
+from kivy.config import Config
 from kivy.core.image import Image
 from kivy.graphics.texture import Texture
 from kivy.properties import ObjectProperty
@@ -90,7 +91,6 @@ class RendezVousWidget(ScreenManager):
             screen = screen.name
         if (screen == 'main' and self.game.round == 0):
                 self.play_again()
-                self.main.round_counter.max_round = GameSettings.NUM_ROUNDS
                 return
         elif screen == 'achieve' and self.app.deck_achievement_texture is None:
             return
@@ -105,8 +105,6 @@ class RendezVousWidget(ScreenManager):
         self.current = screen
         
         try: self.current_screen.update()
-        except AttributeError: pass
-        try: self.current_screen.round_counter.max_round = GameSettings.NUM_ROUNDS
         except AttributeError: pass
 
     def update_achievements(self):
@@ -575,10 +573,16 @@ class RendezVousApp(App):
     def on_config_change(self, config, section, key, value):
         """Handle special config cases."""
         if key.upper() == 'NUM_ROUNDS':
-            self.root.current_screen.round_counter.max_round = int(value)
+            self.root.main.round_counter.max_round = int(value)
+        elif key.upper() == 'FULLSCREEN':
+            if value:
+                Config.set('graphics', 'fullscreen', 'auto')
+            else:
+                Config.set('graphics', 'fullscreen', 0)
 
     def build_settings(self, settings):
         """Load the JSON file with settings details."""
+        settings.on_config_change = lambda i, c, k, v: self.on_config_change(i, c, k, v)
         settings_file = os.path.join("gui", "settings.json")
         fp = open(settings_file, "r")
         try:
@@ -591,7 +595,7 @@ class RendezVousApp(App):
 
     # (ScreenManager handles custom settings display)
     def display_settings(self, settings):
-        pass
+        self.root.switcher('settings')
     def close_settings(self, *args):
         pass
 

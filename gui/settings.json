@@ -17,5 +17,11 @@
       "desc": "Difficulty of your opponent's strategy.",
       "section": "DEFAULT",
       "key": "AI_DIFFICULTY",
-      "options": ["Dumb Luck", "Artificial Intelligence", "Brilliantly Evil"] }
+      "options": ["Dumb Luck", "Artificial Intelligence", "Brilliantly Evil"] },
+
+    { "type": "bool",
+      "title": "Fullscreen",
+      "desc": "Hide your clock and notifications in fullscreen mode.",
+      "section": "DEFAULT",
+      "key": "FULLSCREEN" }
 ]

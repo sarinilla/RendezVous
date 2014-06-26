@@ -60,6 +60,8 @@ class GameSettings(object):  # 2.x requires explicit new-style classes
             doc="Intelligence of your opponent")
     CURRENT_DECK = Setting("Standard", typ=str,
             doc="The base filename for the deck of cards to play with")
+    FULLSCREEN = Setting(False, typ=bool,
+            doc="Abstract setting to be implemented by the GUI")
     SHOW_PRIVATE = Setting(False, typ=bool,
             doc="Include decks marked private in the catalog?")
 
