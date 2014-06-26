@@ -508,6 +508,7 @@ class AchievementList:
         achievement = self[achievement]  # find by name if needed
         if achievement not in self.achieved:
             self.achieved.append(achievement.name)
+            self._check_special()
             try:
                 f = open(self._unlocked_file, 'a')
                 f.write('[ACH-NAME]%s\n' % achievement.name)
@@ -522,6 +523,8 @@ class AchievementList:
             if achievement not in self.achieved:
                 if achievement.check(score, player_index, stats):
                     reached.append(self.achieve(achievement))
+        if reached:
+            reached.extend(self._check_special())
         return reached
         
     def check_round(self, board, player_index):
@@ -531,7 +534,21 @@ class AchievementList:
             if achievement not in self.achieved:
                 if achievement.check_round(board, player_index):
                     reached.append(self.achieve(achievement))
+        if reached:
+            reached.extend(self._check_special())
         return reached
+
+    def _check_special(self):
+        """Check for the special Secret Rendezvous Achievement."""
+        if "Secret RendezVous" in self.achieved:
+            return []
+        if "Standard" in self.deck_image_file:
+            return
+        for achievement in self._deck_available:
+            if achievement.reward is not None:
+                if achievement not in self.achieved:
+                    return []
+        return [self["Secret RendezVous"]]
 
     def deck_specific(self, achievement):
         """Return boolean indicating whether achievement is deck-specific."""
