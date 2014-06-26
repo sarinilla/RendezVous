@@ -128,12 +128,29 @@ class HandDisplay(BoxLayout):
             self.add_widget(display)
         self._played = []
 
+        # Prep the "Can't Play" button
+        self._cant_play = Button(text="Can't\nPlay?",
+                                on_release=self.cant_play)
+
     def update(self):
         """Update each card in the display."""
+        specials = 0
         for i, card in enumerate(self.hand):
             self.slots[i].card = None  # always force update
             self.slots[i].card = card
+            if card is not None and card.suit == SpecialSuit.SPECIAL:
+                specials += 1
+        if specials + GameSettings.CARDS_ON_BOARD > GameSettings.CARDS_IN_HAND:
+            try: self.add_widget(self._cant_play)
+            except: pass
+        else:
+            try: self.remove_widget(self._cant_play)
+            except: pass
 
+    def cant_play(self, *args):
+        """Player says they can't play anything..."""
+        App.get_running_app().root.cant_play()
+        
     def empty(self):
         """Clear the displayed hand."""
         for slot in self.slots:

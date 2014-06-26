@@ -73,9 +73,13 @@ class Hand:
             try:
                 return ai.get_best_play()
             except IndexError:  # no valid plays
-                self.flush()
-                for i in range(len(score[player_index])):
-                    score[player_index][i] -= 10
+                self.cant_play(player_index, score)
+
+    def cant_play(self, player_index, score):
+        """Take the points cut for not being able to play."""
+        for i in range(len(score[player_index])):
+            score[player_index][i] -= 10
+        self.flush()
 
     def flush(self):
         """Empty hand and refill from deck."""

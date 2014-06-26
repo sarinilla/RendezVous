@@ -125,6 +125,15 @@ class RendezVousWidget(ScreenManager):
             self.current = 'home'
             self.current = 'achieve'
 
+    def cant_play(self):
+        """Player is declared unable to make a move."""
+        for slot in self.current_screen.gameboard.slots[PLAYER]:
+            self.card_touched(slot)  # return to hand
+        self.game.players[PLAYER].cant_play(PLAYER, self.game.score)
+        self.current_screen.gameboard.update()
+        self.current_screen.hand_display.update()
+        self.current_screen.scoreboard.update()
+
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
         if self._in_progress: return
