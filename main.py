@@ -312,8 +312,11 @@ class RendezVousWidget(ScreenManager):
 
     def prompt_for_next_round(self):
         """Display the Replay and Continue buttons."""
-        self.game.players[PLAYER].refill()
-        self.current_screen.hand_display.update()
+        if self.game.round >= GameSettings.NUM_ROUNDS:
+            self.current_screen.hand_display.empty()
+        else:
+            self.game.players[PLAYER].refill()
+            self.current_screen.hand_display.update()
         self._in_progress = False
         self._end_of_round = True
         self.current_screen.gameboard.prompt_for_next_round()

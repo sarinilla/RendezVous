@@ -134,6 +134,11 @@ class HandDisplay(BoxLayout):
             self.slots[i].card = None  # always force update
             self.slots[i].card = card
 
+    def empty(self):
+        """Clear the displayed hand."""
+        for slot in self.slots:
+            slot.card = None
+
     def _find_display(self, card):
         """Return the slot holding this card."""
         if isinstance(card, CardDisplay):
