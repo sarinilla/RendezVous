@@ -38,6 +38,9 @@ class GameSettings(object):  # 2.x requires explicit new-style classes
                     value = self.min
                 if float(value) > self.max:
                     value = self.max
+            elif self._typecast is bool:
+                if str(value) == 'False':
+                    value = False
             if self.value == self._typecast(value):
                 return
             self.value = self._typecast(value)
@@ -57,6 +60,8 @@ class GameSettings(object):  # 2.x requires explicit new-style classes
             doc="Intelligence of your opponent")
     CURRENT_DECK = Setting("Standard", typ=str,
             doc="The base filename for the deck of cards to play with")
+    SHOW_PRIVATE = Setting(False, typ=bool,
+            doc="Include decks marked private in the catalog?")
 
     def __init__(self, filename="rendezvous.ini"):
         self.config = configparser.SafeConfigParser()

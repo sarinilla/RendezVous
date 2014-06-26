@@ -1,6 +1,7 @@
 .buildozer/
 player/
 *.ini
+data/decks/Private*
 
 #################
 ## Eclipse

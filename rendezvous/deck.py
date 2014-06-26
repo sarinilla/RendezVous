@@ -5,7 +5,8 @@ import copy
 import warnings
 
 from rendezvous import DeckSyntaxWarning, MissingDeckError, FileReader
-from rendezvous import Operator, SpecialSuit, SpecialValue, Alignment, EffectType
+from rendezvous import Operator, SpecialSuit, SpecialValue, Alignment
+from rendezvous import EffectType, GameSettings
 from rendezvous.specials import Requirement, Application, Effect
 
 
@@ -540,6 +541,10 @@ class DeckCatalogEntry:
         self.icon = os.path.join(directory, base_filename) + "Icon.png"
         self.hand = os.path.join(directory, base_filename) + "Hand.png"
 
+    @property
+    def private(self):
+        return 'Private' in self.base_filename
+
     def __str__(self):
         return self.name
 
@@ -556,10 +561,31 @@ class DeckCatalog:
             purchased_file = os.path.join("player", "decks.txt")
         if directory is None:
             directory = os.path.join("data", "decks")
-        self.decks = []
+        self._decks = []
         self._read_available(directory)
         self._purchased = []
         self._read_purchased(purchased_file)
+
+    @property
+    def private(self):
+        """Return boolean indicating whether there are any Private decks."""
+        try:
+            return self._has_private
+        except AttributeError:
+            for deck in self._decks:
+                if deck.private:
+                    self._has_private = True
+                    break
+            else:
+                self._has_private = False
+            return self._has_private
+
+    @property
+    def decks(self):
+        """Automatically hide private decks if requested in GameSettings."""
+        if GameSettings.SHOW_PRIVATE:
+            return self._decks
+        return list(filter(lambda d: not d.private, self._decks))
 
     # Shortcut to .decks as a hash[deck_name]
     def __len__(self):
@@ -594,7 +620,7 @@ class DeckCatalog:
                     elif tag == "DECK-DESC":
                         desc = value
                     else:
-                        self.decks.append(DeckCatalogEntry(name, desc,
+                        self._decks.append(DeckCatalogEntry(name, desc,
                                                            dirpath, base))
                         break
 
