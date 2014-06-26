@@ -307,6 +307,10 @@ class Achievement:
                     found = True
             return found
         elif self.suit == SpecialSuit.TOTAL:
+            if self.value in (SpecialValue.WIN, SpecialValue.LOSE):
+                return self._check(score.wins(player_index),
+                                   score.wins(player_index-1),
+                                   self.value)
             return self._check(score.total(player_index), 
                                score.total(player_index-1),
                                self._get_target(score, player_index))
