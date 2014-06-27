@@ -48,17 +48,20 @@
         BoxLayout:
             orientation: "vertical"
             size_hint: 1, None
-            size: root.size[0], max(root.size[1], self.size[1])
+            size: root.size[0], max(root.size[1], card_display.height + name.height + description.height)
             CardDisplay:
+                id: card_display
                 card: root.card
                 color: root.color
             Label:
+                id: name
                 text: root.card and "[b]%s[/b]" % root.card.name
                 text_size: self.size
                 markup: True
                 size_hint: 1, .25
                 halign: "center"
             Label:
+                id: description
                 text: root.card and root.card.description
                 text_size: self.parent.size[0], self.text_size[1]
                 font_size: dp(12)
