@@ -165,7 +165,7 @@ class Requirement:
             return True
         counter = 0
         for card in friendly_cards:
-            if self.style.match(None, card, None):
+            if self.style.match(Alignment.FRIENDLY, card, None):
                 counter += 1
         if self.operator == Operator.AT_LEAST:
             return counter >= self.count
