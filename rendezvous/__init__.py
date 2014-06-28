@@ -1,5 +1,6 @@
 import warnings
 import re
+import os
 
 
 from rendezvous import settings
@@ -133,4 +134,68 @@ def FileReader(filename):
             yield(match.group(1).upper(), match.group(2))
     finally:
         file.close()
-    
+
+
+class Currency:
+
+    """Some form of currency with which to purchase items."""
+
+    def __init__(self, name, description, directory="player"):
+        self.name = name
+        self.plural = self._get_plural()
+        self.description = description
+        self._balance = 0
+        self.filename = os.path.join(directory, name + ".txt")
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+        self._read()
+
+    def _get_plural(self):
+        """Return the proper plural of self.name."""
+        if self.name.endswith("s"):
+            return self.name + "es"
+        return self.name + "s"
+
+    def __str__(self):
+        """Return e.g. "13 kisses"."""
+        return "%s %s" % (self.balance,
+                          self.name if self.balance == 1 else self.plural)
+
+    # Use functions to allow record-keeping later if we choose...
+    def earn(self, number, reason=""):
+        """Record earned currency."""
+        self.balance += number
+
+    def purchase(self, item, price):
+        """Debit the given price for the item; return True for success."""
+        if self.balance >= price:
+            self.balance -= price
+            return True
+        return False
+
+    @property
+    def balance(self):
+        return self._balance
+
+    @balance.setter
+    def balance(self, value):
+        self._balance = value
+        self._write()
+
+    def _read(self):
+        """Read the current balance from a file."""
+        try:
+            f = open(self.filename, 'r')
+        except:
+            self._balance = 0
+            return
+        self._balance = int(f.readline())
+        f.close()
+
+    def _write(self):
+        """Save the current balance to a file."""
+        f = open(self.filename, 'w')
+        try:
+            f.write(str(self._balance))
+        finally:
+            f.close()

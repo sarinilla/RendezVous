@@ -323,9 +323,9 @@
                 color: .95, .95, .95, 1
         BoxLayout:
             Label:
-                text: "0 winks"
+                text: str(app.winks)
             Label:
-                text: "0 kisses"
+                text: str(app.kisses)
             Button:
                 text: "Achievements"
                 on_release: root.manager.switcher('achieve')

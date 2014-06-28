@@ -13,7 +13,7 @@ from kivy.uix.screenmanager import ScreenManager, FadeTransition, Screen
 from kivy.uix.settings import SettingBoolean, SettingsWithNoMenu
 from kivy.loader import Loader
 
-from rendezvous import GameSettings
+from rendezvous import GameSettings, Currency
 from rendezvous.deck import DeckDefinition, Card, DeckCatalog, DeckCatalogEntry
 from rendezvous.gameplay import RendezVousGame
 from rendezvous.statistics import Statistics
@@ -31,7 +31,7 @@ from gui.screens.deck import DeckCatalogScreen
 from gui.screens.statistics import StatisticsScreen
 
 
-__version__ = '0.5.6'
+__version__ = '0.5.7'
 
 
 class RendezVousWidget(ScreenManager):
@@ -404,6 +404,8 @@ class RendezVousApp(App):
     loaded_deck = ObjectProperty()
     deck_texture = ObjectProperty(allownone=True)
     achievement_texture = ObjectProperty(allownone=True)
+    winks = ObjectProperty()
+    kisses = ObjectProperty()
 
     def __init__(self, **kwargs):
         """Load the deck image and create the RendezVousWidget."""
@@ -418,6 +420,7 @@ class RendezVousApp(App):
         if self.deck_catalog.purchased(GameSettings.CURRENT_DECK) is None:
             GameSettings.CURRENT_DECK = "Standard"
         self._preload_home_screen()
+        self._load_currency(user_dir)
         self.statistics = Statistics(os.path.join(user_dir, "stats.txt"))
         self.achievements = AchievementList(os.path.join(user_dir, "unlocked.txt"))
         loader = Loader.image(self.achievements.image_file)
@@ -429,6 +432,17 @@ class RendezVousApp(App):
         """Prioritize loading of images for the home screen."""
         deck = self.deck_catalog[GameSettings.CURRENT_DECK]
         deck.hand_texture = Image(deck.hand).texture
+
+    def _load_currency(self, directory=None):
+        """Force a reload when needed."""
+        if directory is not None:
+            self.user_dir = directory
+        self.winks = Currency('wink',
+                     "In a secret RendezVous, a wink can tip your hand!",
+                     self.user_dir)
+        self.kisses = Currency('kiss',
+                      "When lovers RendezVous, a simple kiss is priceless.",
+                      self.user_dir)
 
     def _image_loaded(self, loader):
         """Update the deck image when it's finished loading."""
@@ -517,6 +531,10 @@ class RendezVousApp(App):
     def record_score(self, score):
         """Update meta-data at the end of each game."""
         self.statistics.record_game(self.loaded_deck.base_filename, score, PLAYER)
+        self.winks.earn(len(score.wins(PLAYER)))
+        if len(score.wins(PLAYER)) > len(score.wins(DEALER)):
+            self.winks.earn(1)
+        self._load_currency()
         return self.achievements.check(score, PLAYER, self.statistics)
 
     def record_round(self, board):
