@@ -1,6 +1,7 @@
+import random
 
 from rendezvous import GameSettings, SpecialSuit, SpecialValue, EffectType
-from rendezvous import Alignment
+from rendezvous import Alignment, TargetField
 from rendezvous.deck import Deck, DeckDefinition
 from rendezvous.dealer import ArtificialIntelligence
 
@@ -359,51 +360,60 @@ class RendezVousGame:
     def _apply(self, player_index, board_index):
         """Apply the special card at the given location across the board."""
         special = self.board[player_index][board_index]
-        
-        if special.effect.effect in (EffectType.BUFF, EffectType.KISS,
-                                     EffectType.REVERSE, EffectType.REPLACE):
-            for p in range(GameSettings.NUM_PLAYERS):
-                for c in range(GameSettings.CARDS_ON_BOARD):
-                    if special.application.match(p == player_index,
-                                                 self.board[p][c],
-                                                 self.board[p-1][c]):
-                        self.board[p][c].apply(special.effect)
-                        
-        elif special.effect.effect == EffectType.SWITCH:
-            for p in range(GameSettings.NUM_PLAYERS):
-                for c in range(GameSettings.CARDS_ON_BOARD):
-                    if special.application.match(p == player_index,
-                                                 self.board[p][c],
-                                                 self.board[p-1][c]):
-                        hold_value = self.board[p][c].value
-                        special.effect.value = self.board[p-1][c].value
-                        if (hold_value == SpecialValue.SPECIAL or
-                            special.effect.value == SpecialValue.SPECIAL):
-                            continue
-                        self.board[p][c].apply(special.effect)
-                        special.effect.value = hold_value
-                        self.board[p-1][c].apply(special.effect)
-                        
-        elif special.effect.effect == EffectType.CLONE:
+
+        # Flush applies to the hand, not to individual cards      
+        if special.effect.effect == EffectType.FLUSH:
+            self.players[player_index].flush()
+            return
+
+        # Some cards need to pre-determine a value
+        if special.effect.effect == EffectType.CLONE:
             special.effect.value = special.requirement.filter(
                         Alignment.FRIENDLY, self.board[player_index])[0]
-            for p in range(GameSettings.NUM_PLAYERS):
-                for c in range(GameSettings.CARDS_ON_BOARD):
-                    if special.application.match(p == player_index,
-                                                 self.board[p][c],
-                                                 self.board[p-1][c]):
-                        self.board[p][c].apply(special.effect)
-                        
-        elif special.effect.effect == EffectType.WAIT:
-            for p in range(GameSettings.NUM_PLAYERS):
-                for c in range(GameSettings.CARDS_ON_BOARD):
-                    if special.application.match(p == player_index,
-                                                 self.board[p][c],
-                                                 self.board[p-1][c]):
-                        self.board.wait(p, c)
-                        
-        elif special.effect.effect == EffectType.FLUSH:
-            self.players[player_index].flush()
+
+        # Apply to some or all of the cards in play
+        for p in range(GameSettings.NUM_PLAYERS):
+            for c in range(GameSettings.CARDS_ON_BOARD):
+                if special.application.match(p == player_index,
+                                             self.board[p][c],
+                                             self.board[p-1][c]):
+                    self._apply_to_card(special.effect, p, c)
+
+    def _apply_to_card(self, effect, player, index):
+
+        # Most effects are handled by the card itself
+        if effect.effect in (EffectType.BUFF, EffectType.KISS,
+                             EffectType.REVERSE, EffectType.REPLACE,
+                             EffectType.CLONE):
+            self.board[player][index].apply(effect)
+
+        # Switch values with the opposing card on the board
+        elif effect.effect == EffectType.SWITCH:
+            hold_value = self.board[player][index].value
+            effect.value = self.board[player-1][index].value
+            if (hold_value == SpecialValue.SPECIAL or
+                effect.value == SpecialValue.SPECIAL):
+                return
+            self.board[player][index].apply(effect)
+            effect.value = hold_value
+            self.board[player-1][index].apply(effect)
+
+        # Mark the card held for the next round
+        elif effect.effect == EffectType.WAIT:
+            self.board.wait(player, index)
+
+        # Randomize a new suit, value, or card
+        elif effect.effect == EffectType.RANDOMIZE:
+            if effect.value == TargetField.SUIT:
+                self.board[player][index].suit = random.choice(self.score.suits)
+            elif effect.value == TargetField.VALUE:
+                self.board[player][index].value = random.randint(1, 10)
+            else:  #effect.value == TargetField.ALL:
+                if random.randint(6) == 0:
+                    self.board[player][index] = self.deck.get_special()
+                    return
+                self.board[player][index].suit = random.choice(self.score.suits)
+                self.board[player][index].value = random.randint(1, 10)
             
         else:
             raise InvalidSpecialEffectError()

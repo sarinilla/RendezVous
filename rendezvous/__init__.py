@@ -80,24 +80,33 @@ class SpecialValue:
             yield i
 
 
+class TargetField:
+    """Target field of a card."""
+    ALL = 0      #: both suit and value; implicitly includes specials
+    SUIT = 1     #: one of the five standard suits
+    VALUE = 2    #: one of the ten standard values
+
+
 class EffectType:
     """Types of things SpecialCards can do."""
-    BUFF = 0     #: adjust the perceived value of the card
-                 #      VALUE: +/- card value, or SpecialValue.WIN/LOSE
-    WAIT = 1     #: force the card to wait through the next round
-                 #      VALUE: N/A
-    SWITCH = 2   #: card value is switched with its opponent
-                 #      VALUE: new value (substituted dynamically)
-    REVERSE = 3  #: card value is reversed (1 becomes 10)
-                 #      VALUE: N/A
-    REPLACE = 4  #: card suit is replaced with the one given
-                 #      VALUE: new suit
-    KISS = 5     #: the card's match is kissed (both treated as a win)
-                 #      VALUE: N/A
-    CLONE = 6    #: the card is replaced by the first REQUIRED suit, value
-                 #      VALUE: new Card (substituted dynamically)
-    FLUSH = 7    #: the player's hand is flushed and refilled
-                 #      VALUE: N/A
+    BUFF = 0       #: adjust the perceived value of the card
+                   #      VALUE: +/- card value, or SpecialValue.WIN/LOSE
+    WAIT = 1       #: force the card to wait through the next round
+                   #      VALUE: N/A
+    SWITCH = 2     #: card value is switched with its opponent
+                   #      VALUE: new value (substituted dynamically)
+    REVERSE = 3    #: card value is reversed (1 becomes 10)
+                   #      VALUE: N/A
+    REPLACE = 4    #: card suit is replaced with the one given
+                   #      VALUE: new suit
+    KISS = 5       #: the card's match is kissed (both treated as a win)
+                   #      VALUE: N/A
+    CLONE = 6      #: the card is replaced by the first REQUIRED suit, value
+                   #      VALUE: new Card (substituted dynamically)
+    FLUSH = 7      #: the player's hand is flushed and refilled
+                   #      VALUE: N/A
+    RANDOMIZE = 8  #: the card is replaced with a random suit and/or value
+                   #      VALUE: choice of TargetField
                  
 
 class AchieveType:

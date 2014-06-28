@@ -6,7 +6,7 @@ import warnings
 
 from rendezvous import DeckSyntaxWarning, MissingDeckError, FileReader
 from rendezvous import Operator, SpecialSuit, SpecialValue, Alignment
-from rendezvous import EffectType, GameSettings
+from rendezvous import EffectType, GameSettings, TargetField
 from rendezvous.specials import Requirement, Application, Effect
 
 
@@ -466,6 +466,16 @@ class DeckDefinition:
             return Effect(EffectType.CLONE)
         elif words[0] == "FLUSH":
             return Effect(EffectType.FLUSH)
+        elif words[0] == "RANDOMIZE":
+            if len(words) == 1 or words[1] == "ALL":
+                return Effect(EffectType.RANDOMIZE, TargetField.ALL)
+            elif words[1] == "SUIT":
+                return Effect(EffectType.RANDOMIZE, TargetField.SUIT)
+            elif words[1] == "VALUE":
+                return Effect(EffectType.RANDOMIZE, TargetField.VALUE)
+            warnings.warn("Invalid randomize target: %s" % words[1],
+                          DeckSyntaxWarning)
+            return Effect(EffectType.RANDOMIZE, TargetField.ALL)
         else:
             warnings.warn("Invalid special card effect: %s" % words[0])
         
@@ -479,8 +489,10 @@ class DeckDefinition:
             if achievements is None or achievements.unlocked(special):
                 yield copy.copy(special)
                 
-    def get_special(self, name):
+    def get_special(self, name=None):
         """Return the named SpecialCard, or None."""
+        if name is None:
+            return copy.copy(random.choice(self.specials))
         for special in self.specials:
             if special.name == name:
                 return copy.copy(special)

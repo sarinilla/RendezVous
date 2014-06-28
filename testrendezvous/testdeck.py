@@ -354,12 +354,24 @@ class TestDeckDefinition(unittest.TestCase):
                          "All matching cards become clones of the first requirement found")
         self.assertEqual(str(self.dd._parse_effect("flush")),
                          "Flush all cards from the player's hand and redraws")
+        self.assertEqual(str(self.dd._parse_effect("randomize")),
+                         "Randomize each card")
+        self.assertEqual(str(self.dd._parse_effect("randomize all")),
+                         "Randomize each card")
+        self.assertEqual(str(self.dd._parse_effect("randomize suit")),
+                         "Randomize the suit of each card")
+        self.assertEqual(str(self.dd._parse_effect("randomize value")),
+                         "Randomize the value of each card")
 
     def test_get_special(self):
         card = self.dd.specials[0]
         result = self.dd.get_special(card.name)
         self.assertEqual(card, result)
         self.assertIsNot(card, result)
+
+    def test_get_special_random(self):
+        result = self.dd.get_special()
+        self.assertIn(result, self.dd.specials)
 
     def test_get_card_texture(self):
         self.assertEqual(self.dd.get_card_texture(Card("Boyfriend", 1)),

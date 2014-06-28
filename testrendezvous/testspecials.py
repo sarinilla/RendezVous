@@ -480,6 +480,12 @@ class TestEffect(unittest.TestCase):
                          "All matching cards become clones of the first requirement found")
         self.assertEqual(str(Effect(EffectType.FLUSH)),
                          "Flush all cards from the player's hand and redraws")
+        self.assertEqual(str(Effect(EffectType.RANDOMIZE, TargetField.ALL)),
+                         "Randomize each card")
+        self.assertEqual(str(Effect(EffectType.RANDOMIZE, TargetField.SUIT)),
+                         "Randomize the suit of each card")
+        self.assertEqual(str(Effect(EffectType.RANDOMIZE, TargetField.VALUE)),
+                         "Randomize the value of each card")
 
 if __name__ == "__main__":
     unittest.main()

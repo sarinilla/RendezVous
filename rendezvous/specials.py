@@ -1,4 +1,5 @@
-from rendezvous import Operator, SpecialSuit, SpecialValue, Alignment, EffectType
+from rendezvous import Operator, SpecialSuit, SpecialValue, Alignment
+from rendezvous import EffectType, TargetField
 
 def combinable_class(cls):
 
@@ -335,6 +336,13 @@ class Effect:
             return "All matching cards become clones of the first requirement found"
         elif self.effect == EffectType.FLUSH:
             return "Flush all cards from the player's hand and redraws"
+        elif self.effect == EffectType.RANDOMIZE:
+            if self.value == TargetField.SUIT:
+                return "Randomize the suit of each card"
+            elif self.value == TargetField.VALUE:
+                return "Randomize the value of each card"
+            else:
+                return "Randomize each card"
         else:
             return "No effect"
         
