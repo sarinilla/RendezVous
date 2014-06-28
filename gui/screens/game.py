@@ -133,8 +133,8 @@ class FinalScoreDisplay(BoxLayout):
             wins.add_widget(ScoreSurround(scores=self.score.by_suit(suit),
                                           center_widget=SuitDisplay(suit=suit)))
         main_bar = ProgressBar(max=len(pwins + dwins), value=len(pwins))
-        wins.add_widget(ScoreSurround(scores=(self.score.total(PLAYER),
-                                              self.score.total(DEALER)),
+        wins.add_widget(ScoreSurround(scores=(self.score.total(DEALER),
+                                              self.score.total(PLAYER)),
                                       center_widget=main_bar,
                                       size_hint=(7, 1)))
         for suit in dwins:
