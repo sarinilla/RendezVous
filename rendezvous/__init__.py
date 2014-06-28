@@ -131,7 +131,7 @@ def FileReader(filename):
                               SyntaxWarning)
                 continue
 
-            yield(match.group(1).upper(), match.group(2))
+            yield(match.group(1).strip().upper(), match.group(2).strip())
     finally:
         file.close()
 

@@ -427,6 +427,8 @@ class TestApplication(unittest.TestCase):
                          "ALL cards")
         self.assertEqual(str(Application(suits=["Suit 1", "Suit 2"])),
                          "Suit 1 or Suit 2 cards")
+        self.assertEqual(str(Application(suits=["Suit 1", "Suit 2", "Suit 3"])),
+                         "Suit 1, Suit 2, or Suit 3 cards")
         self.assertEqual(str(Application(min_value=3)),
                          "cards with a value of 3 or greater")
         self.assertEqual(str(Application(max_value=3)),

@@ -293,6 +293,12 @@ class TestDeckDefinition(unittest.TestCase):
                          "Nothing")
         self.assertEqual(str(self.dd._parse_requirement("any")),
                          "Nothing")
+        self.assertEqual(str(self.dd._parse_requirement("none")),
+                         "Nothing")
+        self.assertEqual(str(self.dd._parse_requirement("na")),
+                         "Nothing")
+        self.assertEqual(str(self.dd._parse_requirement("n/a")),
+                         "Nothing")
         self.assertEqual(str(self.dd._parse_requirement("min 1 <= 5")),
                          "At least 1 card with a value of 5 or less")
 
@@ -314,6 +320,15 @@ class TestDeckDefinition(unittest.TestCase):
                          "ALL cards")
         self.assertEqual(str(self.dd._parse_application("all")),
                          "ALL cards")
+        self.assertEqual(str(self.dd._parse_application("friendly all")),
+                         "Friendly cards")
+        self.assertEqual(str(self.dd._parse_application("friendly boyfriend or girlfriend vs Time")),
+                         "Friendly Boyfriend or Girlfriend cards placed VS Time cards")
+        self.assertEqual(str(self.dd._parse_application("friendly boyfriend, girlfriend, or SPY >= 5")),
+                         "Friendly Boyfriend, Girlfriend, or Spy cards with a value of 5 or greater")
+        self.dd.suits = ["Multi Word Suit"]
+        self.assertEqual(str(self.dd._parse_application("friendly multi word suit")),
+                         "Friendly Multi Word Suit cards")
 
     def test_parse_effect(self):
         """Verify effect parsing from the text file."""

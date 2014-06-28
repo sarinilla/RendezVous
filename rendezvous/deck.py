@@ -305,6 +305,7 @@ class DeckDefinition:
 
     def _read_definition(self):
         """Read details from the Deck Definition File."""
+        self.desc = ""
         self.suits = []
         self.values = list(range(1, 11))
         self.specials = []
@@ -314,9 +315,15 @@ class DeckDefinition:
                 self.name = value
 
             elif tag == "DECK-DESC":
-                self.desc = value
+                if self.desc:
+                    self.desc += "\n\n"
+                self.desc += value
 
             elif tag == "SUIT":
+                try:
+                    value = value[:value.index(':')].strip()
+                except ValueError:
+                    pass  # simple suit without details
                 self.suits.append(value)
 
             elif tag == "SPECIAL-NAME":
@@ -355,7 +362,7 @@ class DeckDefinition:
     def _parse_requirement(self, req_text):
         """[MIN|MAX] # <Application>"""
         req_text = req_text.upper()
-        if req_text == "" or req_text == "ANY":
+        if req_text in ("", "ANY", "NONE", "NA", "N/A"):
             return Requirement()
         match = re.search('(MIN|MAX)?\s*(\d+)\s*(.*)', req_text)
         if not match:
@@ -381,7 +388,7 @@ class DeckDefinition:
         if app_text == "" or app_text == "ANY" or app_text == "ALL":
             return Application()
         match = re.search(
-            '(FRIENDLY|ENEMY|ALL)?\s*(\w+)?\s*([\<\>=]*)\s*(\d*)', app_text)
+            '(FRIENDLY|ENEMY|ALL)?\s*([\w\s,]*?)\s*([\<\>=]*)\s*(\d*)\s*$', app_text)
         if not match:
             warnings.warn("Invalid application: %s" % app_text,
                           DeckSyntaxWarning)
@@ -397,11 +404,21 @@ class DeckDefinition:
             alignment = Alignment.ENEMY
             
         suits = None
-        try:
-            suits = [self.suits[[s.upper() for s in self.suits].index(match.group(2))]]
-        except ValueError:
-            pass
-
+        if match.group(2) and match.group(2) != "ALL":
+            suits_given = match.group(2).replace(",", " OR ").split(" OR ")
+            upper_suits = [s.upper() for s in self.suits]
+            suits = []
+            for given in suits_given:
+                given = given.strip()
+                if given == "": continue  # ", or" has become " or  or "
+                try:
+                    suits.append(self.suits[upper_suits.index(given)])
+                except ValueError:
+                    warnings.warn("Invalid suit in application: %s" % given,
+                                  DeckSyntaxWarning)
+            if not suits:
+                suits = None
+                
         min_value = None
         max_value = None
         if match.group(3) == "<":
@@ -449,6 +466,8 @@ class DeckDefinition:
             return Effect(EffectType.CLONE)
         elif words[0] == "FLUSH":
             return Effect(EffectType.FLUSH)
+        else:
+            warnings.warn("Invalid special card effect: %s" % words[0])
         
 
     def cards(self, achievements=None):

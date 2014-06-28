@@ -232,7 +232,10 @@ class Application:
         elif self.alignment == Alignment.ENEMY:
             txt = "Enemy "
         if self.suits is not None:
-            txt += " or ".join(self.suits) + " "
+            if len(self.suits) < 3:
+                txt += " or ".join(self.suits) + " "
+            else:
+                txt += ", ".join(self.suits[:-1]) + ", or " + self.suits[-1] + " "
         txt += "cards"
         if self.min_value is not None:
             if self.max_value == self.min_value:
