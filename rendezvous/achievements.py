@@ -578,7 +578,10 @@ class AchievementList:
         self._deck_available_file = os.path.join("data", "decks", str(deck_base) + "Achievements.txt")
         self.deck_image_file = os.path.join("data", "decks", str(deck_base) + "Achievements.png")
         self._deck_available = []
-        self._read_available(self._deck_available, self._deck_available_file)
+        try:
+            self._read_available(self._deck_available, self._deck_available_file)
+        except OSError:
+            pass  # No file?  ok...
         
     def _read_available(self, array, filename):
         """Populate self.available with all available Achievements."""

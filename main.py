@@ -504,8 +504,11 @@ class RendezVousApp(App):
         loader = Loader.image(self.loaded_deck.img_file)
         loader.bind(on_load=self._image_loaded)
         self.deck_achievement_texture = None
-        loader = Loader.image(self.achievements.deck_image_file)
-        loader.bind(on_load=self._deck_achievements_loaded)
+        if os.path.exists(self.achievements.deck_image_file):
+            loader = Loader.image(self.achievements.deck_image_file)
+            loader.bind(on_load=self._deck_achievements_loaded)
+        else:
+            self.deck_achievement_texture = Texture.create()
         self._update_deck()
 
     def _update_deck(self):
