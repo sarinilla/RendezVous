@@ -290,6 +290,21 @@
 
 ## Home Screen - gui/screens/home.py ##
 
+<HomeButton@Button>:
+    source: ""
+    canvas:
+        Color:
+            rgba: 0, 0, 0, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            source: self.source
+            size: min(self.size[0], self.size[1]), min(self.size[0], self.size[1])
+            pos: self.pos[0] + (self.size[0] - min(self.size[0], self.size[1])) / 2, self.pos[1] + (self.size[1] - min(self.size[0], self.size[1])) / 2
+
 <HomeScreen>:
     BoxLayout:
         orientation: "vertical"
@@ -326,20 +341,25 @@
                 text: str(app.winks)
             Label:
                 text: str(app.kisses)
-            Button:
-                text: "Achievements"
+            HomeButton:
+                source: "atlas://gui/homescreen/achievements"
+                #text: "Achievements"
                 on_release: root.manager.switcher('achieve')
-            Button:
-                text: "Stats"
+            HomeButton:
+                source: "atlas://gui/homescreen/statistics"
+                #text: "Stats"
                 on_release: root.manager.switcher('stats')
-            Button:
-                text: "Decks"
+            HomeButton:
+                source: "atlas://gui/homescreen/decks"
+                #text: "Decks"
                 on_release: root.manager.switcher('decks')
-            Button:
-                text: "Settings"
+            HomeButton:
+                source: "atlas://gui/homescreen/settings"
+                #text: "Settings"
                 on_release: root.manager.switcher('settings')
-            Button:
-                text: "Help"
+            HomeButton:
+                source: "atlas://gui/homescreen/help"
+                #text: "Help"
 
 
 ## Achievement Screen - gui/screens/achievement.py ##            

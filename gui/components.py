@@ -1,5 +1,8 @@
+import os
+
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.factory import Factory
 from kivy.properties import ObjectProperty, ListProperty, BooleanProperty
 from kivy.properties import StringProperty, NumericProperty
 from kivy.uix.label import Label
@@ -129,8 +132,10 @@ class HandDisplay(BoxLayout):
         self._played = []
 
         # Prep the "Can't Play" button
-        self._cant_play = Button(text="Can't\nPlay?",
-                                on_release=self.cant_play)
+        self._cant_play = Factory.HomeButton(#text="Can't\nPlay?",
+                                             on_release=self.cant_play)
+        self._cant_play.source = "atlas://gui/homescreen/cantplay"
+                                             
 
     def update(self):
         """Update each card in the display."""
