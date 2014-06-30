@@ -620,11 +620,6 @@ class RendezVousApp(App):
         key = key.upper()
         if key == 'NUM_ROUNDS':
             self.root.main.round_counter.max_round = int(value)
-        elif key == 'FULLSCREEN':
-            if value:
-                Config.set('graphics', 'fullscreen', 'auto')
-            else:
-                Config.set('graphics', 'fullscreen', 0)
         elif key == 'SHOW_PRIVATE':
             self.root.rebuild_decks()
 
