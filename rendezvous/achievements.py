@@ -580,7 +580,7 @@ class AchievementList:
         self._deck_available = []
         try:
             self._read_available(self._deck_available, self._deck_available_file)
-        except OSError:
+        except EnvironmentError:
             pass  # No file?  ok...
         
     def _read_available(self, array, filename):
