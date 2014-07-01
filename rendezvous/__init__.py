@@ -70,13 +70,15 @@ class SpecialValue:
     """Special non-numerical card values."""
     WIN = 10000       #: automatically win the match
     LOSE = -10000     #: automatically lose the match
+    DRAW = 33333      #: notes a tie
     KISS = 55555      #: both sides treated as "winning"
     SPECIAL = -99999  #: SpecialCard (ignore value)
     # Note: WIN and LOSE as opposites is counted upon by Card.apply()
 
     @staticmethod
     def all():
-        for i in (SpecialValue.WIN, SpecialValue.LOSE, SpecialValue.KISS):
+        for i in (SpecialValue.WIN, SpecialValue.LOSE, SpecialValue.DRAW,
+                  SpecialValue.KISS):
             yield i
 
 
@@ -111,17 +113,26 @@ class EffectType:
 
 class AchieveType:
     """Types of Achievements to shoot for."""
-    SCORE = 0    #: suit or total score threshold
-    PLAY = 1     #: number of games played
-    WIN = 2      #: number of games won
-    STREAK = 3   #: number of games won in a row
-    ROUND = 4    ## marker to start round-based types
-    USE = 5      #: use a specific card or suit
-    WAIT = 6     #: hold a specific card or suit
+    MULTIPLE = -1  #: multiple sub-achievement types
+    SCORE = 0      #: suit or total score threshold
+    
+    PLAY = 1       #: number of games played
+    WIN = 2        #: number of games won
+    LOSE = 3       #: number of games lost
+    DRAW = 4       #: number of games tied
+    STREAK = 5     #: number of games won/lost/tied in a row
+    
+    ROUND = 8      ## marker to start round-based types
+    USE = 9        #: use a specific card or suit
+    WAIT = 10      #: hold a specific card or suit
 
     @classmethod
     def per_round(cls, achievetype):
         return achievetype > cls.ROUND
+
+    @classmethod
+    def stats(cls, achievetype):
+        return achievetype > cls.SCORE and not cls.per_round(achievetype)
 
 
 def FileReader(filename):

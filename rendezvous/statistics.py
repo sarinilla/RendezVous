@@ -1,6 +1,8 @@
 import os
 import re
 
+from rendezvous import SpecialValue
+
 class BaseStats:
 
     """Track statistics for a single deck or suit.
@@ -9,8 +11,15 @@ class BaseStats:
       wins        -- total number of games won
       losses      -- total number of games lost
       played      -- total number of games played
-      win_streak  -- current number of games won in a row
+      streak      -- current number of matching outcomes in a row
+      streak_type -- SpecialValue indicating the outcome type
       best_streak -- record number of games won in a row
+
+    Properties (calculated attributes):
+      draws       -- total number of games tied
+      win_streak  -- current number of games won in a row
+      lose_streak -- current number of games lost in a row
+      draw_streak -- current number of games tied in a row
 
     """
 
@@ -18,7 +27,8 @@ class BaseStats:
         self.wins = 0
         self.losses = 0
         self.played = 0
-        self.win_streak = 0
+        self.streak = 0
+        self.streak_type = None
         self.best_streak = 0
         if string is not None:
             try:
@@ -30,9 +40,33 @@ class BaseStats:
     def draws(self):
         return self.played - self.wins - self.losses
 
+    @property
+    def win_streak(self):
+        return self.streak if self.streak_type == SpecialValue.WIN else 0
+
+    @win_streak.setter
+    def win_streak(self, value):
+        self.streak_type, self.streak = SpecialValue.WIN, value
+
+    @property
+    def lose_streak(self):
+        return self.streak if self.streak_type == SpecialValue.LOSE else 0
+
+    @lose_streak.setter
+    def lose_streak(self, value):
+        self.streak_type, self.streak = SpecialValue.LOSE, value
+
+    @property
+    def draw_streak(self):
+        return self.streak if self.streak_type == SpecialValue.DRAW else 0
+
+    @draw_streak.setter
+    def draw_streak(self, value):
+        self.streak_type, self.streak = SpecialValue.DRAW, value
+    
     def __str__(self):
         return str((self.wins, self.losses, self.played,
-                    self.win_streak, self.best_streak))
+                    self.streak, self.streak_type, self.best_streak))
 
     def __repr__(self):
         return str(self)
@@ -40,7 +74,7 @@ class BaseStats:
     def _load(self, string):
         values = tuple(int(v) for v in re.findall("[0-9]+", string))
         (self.wins, self.losses, self.played,
-         self.win_streak, self.best_streak) = values
+         self.streak, self.streak_type, self.best_streak) = values
 
     def record(self, player_score, dealer_score):
         """Record the end of a game."""
@@ -63,12 +97,12 @@ class BaseStats:
         """Record a loss."""
         self.played += 1
         self.losses += 1
-        self.win_streak = 0
+        self.lose_streak += 1
 
     def draw(self):
         """Record a draw."""
         self.played += 1
-        self.win_streak = 0
+        self.draw_streak += 1
         
 
 class Statistics:

@@ -53,7 +53,7 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.count, 5)
         self.assertEqual(self.a.suit, SpecialSuit.ANY)
         self.assertEqual(self.a.description,
-                         "Win at least 5 games of RendezVous.")
+                         "Win 5 games of RendezVous.")
                          
     def test_parse_win_specific(self):
         self.a._parse_code("Win 5 Specific")
@@ -61,23 +61,106 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.count, 5)
         self.assertEqual(self.a.suit, "Specific")
         self.assertEqual(self.a.description,
-                         "Win at least 5 games of RendezVous with Specific.")
+                         "Win 5 games of RendezVous with Specific.")
 
-    def test_parse_streak(self):
+    def test_parse_win_streak(self):
         self.a._parse_code("Streak 5")
         self.assertEqual(self.a.type, AchieveType.STREAK)
+        self.assertEqual(self.a.value, AchieveType.WIN)
         self.assertEqual(self.a.count, 5)
         self.assertEqual(self.a.suit, SpecialSuit.ANY)
         self.assertEqual(self.a.description,
                          "Win 5 games of RendezVous in a row.")
 
-    def test_parse_streak(self):
+    def test_parse_win_streak_specific(self):
         self.a._parse_code("Streak 5 Specific")
         self.assertEqual(self.a.type, AchieveType.STREAK)
+        self.assertEqual(self.a.value, AchieveType.WIN)
         self.assertEqual(self.a.count, 5)
         self.assertEqual(self.a.suit, "Specific")
         self.assertEqual(self.a.description,
                          "Win 5 games of RendezVous in a row with Specific.")
+
+    def test_parse_lose(self):
+        self.a._parse_code("LOSE 5")
+        self.assertEqual(self.a.type, AchieveType.LOSE)
+        self.assertEqual(self.a.count, 5)
+        self.assertEqual(self.a.suit, SpecialSuit.ANY)
+        self.assertEqual(self.a.description,
+                         "Lose 5 games of RendezVous.")
+                         
+    def test_parse_lose_specific(self):
+        self.a._parse_code("Lose 5 Specific")
+        self.assertEqual(self.a.type, AchieveType.LOSE)
+        self.assertEqual(self.a.count, 5)
+        self.assertEqual(self.a.suit, "Specific")
+        self.assertEqual(self.a.description,
+                         "Lose 5 games of RendezVous with Specific.")
+
+    def test_parse_lose_streak(self):
+        self.a._parse_code("Lose Streak 5")
+        self.assertEqual(self.a.type, AchieveType.STREAK)
+        self.assertEqual(self.a.value, AchieveType.LOSE)
+        self.assertEqual(self.a.count, 5)
+        self.assertEqual(self.a.suit, SpecialSuit.ANY)
+        self.assertEqual(self.a.description,
+                         "Lose 5 games of RendezVous in a row.")
+
+    def test_parse_lose_streak_specific(self):
+        self.a._parse_code("Lose Streak 5 Specific")
+        self.assertEqual(self.a.type, AchieveType.STREAK)
+        self.assertEqual(self.a.value, AchieveType.LOSE)
+        self.assertEqual(self.a.count, 5)
+        self.assertEqual(self.a.suit, "Specific")
+        self.assertEqual(self.a.description,
+                         "Lose 5 games of RendezVous in a row with Specific.")
+
+    def test_parse_draw(self):
+        self.a._parse_code("DRAW 5")
+        self.assertEqual(self.a.type, AchieveType.DRAW)
+        self.assertEqual(self.a.count, 5)
+        self.assertEqual(self.a.suit, SpecialSuit.ANY)
+        self.assertEqual(self.a.description,
+                         "Tie 5 games of RendezVous.")
+                         
+    def test_parse_draw_specific(self):
+        self.a._parse_code("Draw 5 Specific")
+        self.assertEqual(self.a.type, AchieveType.DRAW)
+        self.assertEqual(self.a.count, 5)
+        self.assertEqual(self.a.suit, "Specific")
+        self.assertEqual(self.a.description,
+                         "Tie 5 games of RendezVous with Specific.")
+
+    def test_parse_draw_streak(self):
+        self.a._parse_code("Draw Streak 5")
+        self.assertEqual(self.a.type, AchieveType.STREAK)
+        self.assertEqual(self.a.value, AchieveType.DRAW)
+        self.assertEqual(self.a.count, 5)
+        self.assertEqual(self.a.suit, SpecialSuit.ANY)
+        self.assertEqual(self.a.description,
+                         "Tie 5 games of RendezVous in a row.")
+
+    def test_parse_draw_streak_specific(self):
+        self.a._parse_code("Draw Streak 5 Specific")
+        self.assertEqual(self.a.type, AchieveType.STREAK)
+        self.assertEqual(self.a.value, AchieveType.DRAW)
+        self.assertEqual(self.a.count, 5)
+        self.assertEqual(self.a.suit, "Specific")
+        self.assertEqual(self.a.description,
+                         "Tie 5 games of RendezVous in a row with Specific.")
+
+    def test_parse_multiple_stat(self):
+        self.a._parse_code("Win Specific")
+        self.a._parse_code("Lose Another")
+        self.assertEqual(self.a.type, AchieveType.MULTIPLE)
+        self.assertEqual(self.a.criteria[0].type, AchieveType.WIN)
+        self.assertEqual(self.a.criteria[0].count, 1)
+        self.assertEqual(self.a.criteria[0].suit, "Specific")
+        self.assertEqual(self.a.criteria[1].type, AchieveType.LOSE)
+        self.assertEqual(self.a.criteria[1].count, 1)
+        self.assertEqual(self.a.criteria[1].suit, "Another")
+        self.assertEqual(self.a.description,
+            "Win a game of RendezVous with Specific and lose it with Another.")
         
     def test_parse_enemy(self):
         self.a._parse_code("Enemy Each < 0")
@@ -166,6 +249,17 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.value, 800)
         self.assertEqual(self.a.description,
              "Finish a game with your total score at least 800.")
+
+    def test_parse_suit_score(self):
+        self.a._parse_code("Special 200")
+        self.assertEqual(self.a.type, AchieveType.SCORE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suit, "Special")
+        self.assertEqual(self.a.operator, Operator.AT_LEAST)
+        self.assertEqual(self.a.value, 200)
+        self.assertEqual(self.a.description,
+            "Finish a game with your score at least 200 in Special.")
              
     def test_parse_any(self):
         self.a._parse_code("Any 400")
@@ -190,15 +284,15 @@ class TestAchievement(unittest.TestCase):
              "Win a game in exactly one suit.")
 
     def test_parse_only(self):
-        self.a._parse_code("Only Specific Win")
+        self.a._parse_code("Only Specific Draw")
         self.assertEqual(self.a.type, AchieveType.SCORE)
         self.assertEqual(self.a.count, 0)
         self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
         self.assertEqual(self.a.suit, "Specific")
         self.assertEqual(self.a.operator, Operator.AT_LEAST)
-        self.assertEqual(self.a.value, SpecialValue.WIN)
+        self.assertEqual(self.a.value, SpecialValue.DRAW)
         self.assertEqual(self.a.description,
-             "Win a game in only Specific.")
+             "Tie a game in only Specific.")
 
     def test_parse_suit_index(self):
         self.a._parse_code("SUIT1 200")
@@ -206,8 +300,40 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.count, 1)
         self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
         self.assertEqual(self.a.suit, "SUIT1")
+        self.assertEqual(self.a.operator, Operator.AT_LEAST)
+        self.assertEqual(self.a.value, 200)
         self.assertEqual(self.a.description,
              "Finish a game with your first suit score at least 200.")
+
+    def test_parse_two_words(self):
+        self.a._parse_code("Two Words < 100")
+        self.assertEqual(self.a.type, AchieveType.SCORE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suit, "Two Words")
+        self.assertEqual(self.a.operator, Operator.LESS_THAN)
+        self.assertEqual(self.a.value, 100)
+        self.assertEqual(self.a.description,
+            "Finish a game with your score less than 100 in Two Words.")
+        
+    def test_parse_multiple_score(self):
+        self.a._parse_code("SUIT1 < 200")
+        self.a._parse_code("SUIT2 Lose")
+        self.assertEqual(self.a.type, AchieveType.MULTIPLE)
+        self.assertEqual(self.a.criteria[0].type, AchieveType.SCORE)
+        self.assertEqual(self.a.criteria[0].count, 1)
+        self.assertEqual(self.a.criteria[0].alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.criteria[0].suit, "SUIT1")
+        self.assertEqual(self.a.criteria[0].operator, Operator.LESS_THAN)
+        self.assertEqual(self.a.criteria[0].value, 200)
+        self.assertEqual(self.a.criteria[1].type, AchieveType.SCORE)
+        self.assertEqual(self.a.criteria[1].count, 1)
+        self.assertEqual(self.a.criteria[1].alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.criteria[1].suit, "SUIT2")
+        self.assertEqual(self.a.criteria[1].operator, Operator.AT_LEAST)
+        self.assertEqual(self.a.criteria[1].value, SpecialValue.LOSE)
+        self.assertEqual(self.a.description,
+            "Finish a game with your first suit score less than 200 and lose it in your second suit.")
 
     def test_parse_use(self):
         self.a._parse_code("Use Boyfriend")
@@ -245,6 +371,15 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.description,
              "Hold at least 2 of the dealer's Boyfriend cards.")
 
+    def test_parse_use_card_value(self):
+        self.a._parse_code("Use Boyfriend 10")
+        self.assertEqual(self.a.type, AchieveType.USE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suit, "Boyfriend 10")
+        self.assertEqual(self.a.description,
+             "Play the Boyfriend 10 card.")
+
     def test_parse_use_any(self):
         self.a._parse_code("Use 4 FRIENDLY")
         self.assertEqual(self.a.type, AchieveType.USE)
@@ -262,9 +397,33 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.suit, SpecialSuit.ANY)
         self.assertEqual(self.a.description,
              "Hold at least 4 of the dealer's cards.")
+
+    def test_parse_use_value(self):
+        self.a._parse_code("Use 4 FRIENDLY < 5")
+        self.assertEqual(self.a.type, AchieveType.USE)
+        self.assertEqual(self.a.count, 4)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suit, SpecialSuit.ANY)
+        self.assertEqual(self.a.operator, Operator.LESS_THAN)
+        self.assertEqual(self.a.value, 5)
+        self.assertEqual(self.a.description,
+             "Play at least 4 cards with a value less than 5.")
+
+    def test_parse_multiple_round(self):
+        self.a._parse_code("Use Specific")
+        self.a._parse_code("Use Another")
+        self.assertEqual(self.a.type, AchieveType.MULTIPLE)
+        self.assertEqual(self.a.criteria[0].type, AchieveType.USE)
+        self.assertEqual(self.a.criteria[0].count, 1)
+        self.assertEqual(self.a.criteria[0].suit, "Specific")
+        self.assertEqual(self.a.criteria[1].type, AchieveType.USE)
+        self.assertEqual(self.a.criteria[1].count, 1)
+        self.assertEqual(self.a.criteria[1].suit, "Another")
+        self.assertEqual(self.a.description,
+            "Play the Specific card and in the same round play the Another card.")
     
     def test_override_description(self):
-        self.a.description = "Test Desc"
+        self.a = Achievement("Name", "Test Desc")
         self.a._parse_code("One Win")
         self.assertEqual(self.a.description, "Test Desc")
         
@@ -314,6 +473,7 @@ class TestAchievementCheck(unittest.TestCase):
     def test_check_win_less(self):
         self.a._parse_code("Win 1")
         self.stats.base.wins = 0
+        self.stats.base.losses = 1
         self.assertFalse(self.a.check(self.score, 0, self.stats))
 
     def test_check_win_equal(self):
@@ -342,22 +502,93 @@ class TestAchievementCheck(unittest.TestCase):
         self.stats.suits['SuitName'].wins = 1
         self.assertTrue(self.a.check(self.score, 0, self.stats))
 
-    def test_check_streak_less(self):
-        self.a._parse_code("Streak 1")
-        self.stats.base.win_streak = 0
+    def test_check_lose_less(self):
+        self.a._parse_code("Lose 1")
+        self.stats.base.losses = 0
+        self.stats.base.wins = 1
         self.assertFalse(self.a.check(self.score, 0, self.stats))
 
-    def test_check_streak_equal(self):
-        self.a._parse_code("Streak 1")
-        self.stats.base.win_streak = 1
+    def test_check_lose_equal(self):
+        self.a._parse_code("Lose 1")
+        self.stats.base.losses = 1
         self.assertTrue(self.a.check(self.score, 0, self.stats))
 
-    def test_check_streak_greater(self):
+    def test_check_lose_greater(self):
+        self.a._parse_code("Lose 1")
+        self.stats.base.losses = 2
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_lose_deck(self):
+        self.a._parse_code("Lose 1 DeckName")
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.decks['DeckName'] = BaseStats()
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.decks['DeckName'].losses = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_lose_suit(self):
+        self.a._parse_code("Lose 1 SuitName")
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.suits['SuitName'] = BaseStats()
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.suits['SuitName'].losses = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_less(self):
+        self.a._parse_code("Draw 1")
+        self.stats.base.wins = 1
+        self.stats.base.played = 1
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_equal(self):
+        self.a._parse_code("Draw 1")
+        self.stats.base.played = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_greater(self):
+        self.a._parse_code("Draw 1")
+        self.stats.base.played = 2
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_deck(self):
+        self.a._parse_code("Draw 1 DeckName")
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.decks['DeckName'] = BaseStats()
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.decks['DeckName'].played = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_suit(self):
+        self.a._parse_code("Draw 1 SuitName")
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.suits['SuitName'] = BaseStats()
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.suits['SuitName'].played = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_win_streak_less(self):
+        self.a._parse_code("Streak 1")
+        self.stats.base.streak = 0
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+
+    def test_check_win_streak_wrong(self):
+        self.a._parse_code("Streak 1")
+        self.stats.base.streak = 1
+        self.stats.base.streak_type = SpecialValue.LOSE
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+
+    def test_check_win_streak_equal(self):
+        self.a._parse_code("Streak 1")
+        self.stats.base.streak = 1
+        self.stats.base.streak_type = SpecialValue.WIN
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_win_streak_greater(self):
         self.a._parse_code("Streak 1")
         self.stats.base.win_streak = 2
         self.assertTrue(self.a.check(self.score, 0, self.stats))
 
-    def test_check_streak_deck(self):
+    def test_check_win_streak_deck(self):
         self.a._parse_code("Streak 1 DeckName")
         self.assertFalse(self.a.check(self.score, 0, self.stats))
         self.stats.decks['DeckName'] = BaseStats()
@@ -365,12 +596,84 @@ class TestAchievementCheck(unittest.TestCase):
         self.stats.decks['DeckName'].win_streak = 1
         self.assertTrue(self.a.check(self.score, 0, self.stats))
 
-    def test_check_streak_suit(self):
+    def test_check_win_streak_suit(self):
         self.a._parse_code("Streak 1 SuitName")
         self.assertFalse(self.a.check(self.score, 0, self.stats))
         self.stats.suits['SuitName'] = BaseStats()
         self.assertFalse(self.a.check(self.score, 0, self.stats))
         self.stats.suits['SuitName'].win_streak = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_lose_streak_less(self):
+        self.a._parse_code("Lose Streak 1")
+        self.stats.base.lose_streak = 0
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+
+    def test_check_lose_streak_wrong(self):
+        self.a._parse_code("Lose Streak 1")
+        self.stats.base.win_streak = 1
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+
+    def test_check_lose_streak_equal(self):
+        self.a._parse_code("Lose Streak 1")
+        self.stats.base.lose_streak = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_lose_streak_greater(self):
+        self.a._parse_code("Lose Streak 1")
+        self.stats.base.lose_streak = 2
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_lose_streak_deck(self):
+        self.a._parse_code("Lose Streak 1 DeckName")
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.decks['DeckName'] = BaseStats()
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.decks['DeckName'].lose_streak = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_lose_streak_suit(self):
+        self.a._parse_code("Lose Streak 1 SuitName")
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.suits['SuitName'] = BaseStats()
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.suits['SuitName'].lose_streak = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_streak_less(self):
+        self.a._parse_code("Draw Streak 1")
+        self.stats.base.draw_streak = 0
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_streak_wrong(self):
+        self.a._parse_code("Draw Streak 1")
+        self.stats.base.win_streak = 1
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_streak_equal(self):
+        self.a._parse_code("Draw Streak 1")
+        self.stats.base.draw_streak = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_streak_greater(self):
+        self.a._parse_code("Draw Streak 1")
+        self.stats.base.draw_streak = 2
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_streak_deck(self):
+        self.a._parse_code("Draw Streak 1 DeckName")
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.decks['DeckName'] = BaseStats()
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.decks['DeckName'].draw_streak = 1
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_check_draw_streak_suit(self):
+        self.a._parse_code("Draw Streak 1 SuitName")
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.suits['SuitName'] = BaseStats()
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        self.stats.suits['SuitName'].draw_streak = 1
         self.assertTrue(self.a.check(self.score, 0, self.stats))
         
     def test_total_false(self):
@@ -408,7 +711,7 @@ class TestAchievementCheck(unittest.TestCase):
         self.score.scores = [[600, 600], [600, 600]]
         self.assertFalse(self.a.check(self.score, 0, self.stats))
         
-    def test_each_some(self):
+    def test_each_some(self):    
         self.a._parse_code("Each 500")
         self.score.scores = [[600, 200], [600, 600]]
         self.assertFalse(self.a.check(self.score, 0, self.stats))
@@ -477,6 +780,16 @@ class TestAchievementCheck(unittest.TestCase):
     def test_suit_lose_true(self):
         self.a._parse_code("Boyfriend Lose")
         self.score.scores = [[100, 500], [200, 300]]
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+        
+    def test_suit_draw_false(self):
+        self.a._parse_code("Boyfriend Draw")
+        self.score.scores = [[400, 500], [200, 500]]
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+        
+    def test_suit_draw_true(self):
+        self.a._parse_code("Boyfriend Draw")
+        self.score.scores = [[400, 500], [400, 300]]
         self.assertTrue(self.a.check(self.score, 0, self.stats))
 
     def test_suit_index_false(self):
@@ -581,6 +894,46 @@ class TestAchievementCheckRound(unittest.TestCase):
         self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
                             [Card("Boyfriend", i+2) for i in range(3)] +
                             [SpecialCard("Perfume", "Desc", None, None, None)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_by_value(self):
+        self.a._parse_code("Use == 5")
+        self.board.board = [[Card("Boyfriend", i+2) for i in range(4)],
+                            [Card("Boyfriend", i+1) for i in range(4)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_by_value_true(self):
+        self.a._parse_code("Use == 5")
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [Card("Boyfriend", i+2) for i in range(4)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_multi_none(self):
+        self.a._parse_code("Use == 5")
+        self.a._parse_code("Use == 6")
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [Card("Boyfriend", i+1) for i in range(4)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_multi_first(self):
+        self.a._parse_code("Use == 5")
+        self.a._parse_code("Use == 6")
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [Card("Boyfriend", i+2) for i in range(4)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_multi_second(self):
+        self.a._parse_code("Use == 5")
+        self.a._parse_code("Use == 6")
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [Card("Boyfriend", i+6) for i in range(4)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_multi_both(self):
+        self.a._parse_code("Use == 5")
+        self.a._parse_code("Use == 6")
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [Card("Boyfriend", i+5) for i in range(4)]]
         self.assertTrue(self.a.check_round(self.board, 1))
         
         

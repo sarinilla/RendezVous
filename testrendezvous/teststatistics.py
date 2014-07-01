@@ -25,19 +25,19 @@ class TestBaseStats(unittest.TestCase):
         self.assertEqual(self.s.best_streak, 0)
 
     def test_string(self):
-        self.assertEqual(str(self.s), "(0, 0, 0, 0, 0)")
+        self.assertEqual(str(self.s), "(0, 0, 0, 0, None, 0)")
 
     def test_win(self):
         self.s.win()
-        self.assertEqual(str(self.s), "(1, 0, 1, 1, 1)")
+        self.assertEqual(str(self.s), "(1, 0, 1, 1, %s, 1)" % SpecialValue.WIN)
 
     def test_loss(self):
         self.s.lose()
-        self.assertEqual(str(self.s), "(0, 1, 1, 0, 0)")
+        self.assertEqual(str(self.s), "(0, 1, 1, 1, %s, 0)" % SpecialValue.LOSE)
 
     def test_draw(self):
         self.s.draw()
-        self.assertEqual(str(self.s), "(0, 0, 1, 0, 0)")
+        self.assertEqual(str(self.s), "(0, 0, 1, 1, %s, 0)" % SpecialValue.DRAW)
 
     def test_streak(self):
         self.s.win()
@@ -46,15 +46,31 @@ class TestBaseStats(unittest.TestCase):
         self.s.draw()
         self.assertEqual(self.s.win_streak, 0)
 
+    def test_lose_streak(self):
+        self.s.lose()
+        self.s.lose()
+        self.assertEqual(self.s.lose_streak, 2)
+        self.s.draw()
+        self.assertEqual(self.s.lose_streak, 0)
+
+    def test_draw_streak(self):
+        self.s.draw()
+        self.s.draw()
+        self.assertEqual(self.s.draw_streak, 2)
+        self.s.win()
+        self.assertEqual(self.s.draw_streak, 0)
+
     def test_best_streak(self):
         self.s.win()
         self.s.win()
         self.s.draw()
+        self.s.draw()
+        self.s.draw()
         self.assertEqual(self.s.best_streak, 2)
 
     def test_load(self):
-        self.s = BaseStats("(1, 2, 4, 0, 1)")
-        self.assertEqual(str(self.s), "(1, 2, 4, 0, 1)")
+        self.s = BaseStats("(1, 2, 4, 1, 2, 1)")
+        self.assertEqual(str(self.s), "(1, 2, 4, 1, 2, 1)")
         self.assertEqual(self.s.draws, 1)
 
 
@@ -73,31 +89,36 @@ class TestStatistics(unittest.TestCase):
             pass
         
     def test_init(self):
-        self.assertEqual(str(self.s.base), "(0, 0, 0, 0, 0)")
+        self.assertEqual(str(self.s.base), "(0, 0, 0, 0, None, 0)")
         self.assertEqual(self.s.decks, {})
         self.assertEqual(self.s.suits, {})
         
     def test_record_win(self):
         self.score.scores = [[500], [400]]
         self.s.record_game("Test", self.score, 0)
-        self.assertEqual(str(self.s.base), "(1, 0, 1, 1, 1)")
-        self.assertEqual(str(self.s.decks), "{'Test': (1, 0, 1, 1, 1)}")
-        self.assertEqual(str(self.s.suits), "{'Test Suit': (1, 0, 1, 1, 1)}")
+        self.assertEqual(str(self.s.base),
+                         "(1, 0, 1, 1, %s, 1)" % SpecialValue.WIN)
+        self.assertEqual(str(self.s.decks),
+                         "{'Test': (1, 0, 1, 1, %s, 1)}" % SpecialValue.WIN)
+        self.assertEqual(str(self.s.suits),
+                         "{'Test Suit': (1, 0, 1, 1, %s, 1)}" % SpecialValue.WIN)
         
     def test_record_draw(self):
         self.score.scores = [[500], [500]]
         self.s.record_game("Test", self.score, 0)
-        self.assertEqual(str(self.s.base), "(0, 0, 1, 0, 0)")
+        self.assertEqual(str(self.s.base),
+                         "(0, 0, 1, 1, %s, 0)" % SpecialValue.DRAW)
         
     def test_record_loss(self):
         self.score.scores = [[500], [600]]
         self.s.record_game("Test", self.score, 0)
-        self.assertEqual(str(self.s.base), "(0, 1, 1, 0, 0)")
+        self.assertEqual(str(self.s.base),
+                         "(0, 1, 1, 1, %s, 0)" % SpecialValue.LOSE)
         
     def test_retrieve(self):
         self.score.scores = [[500], [400]]
         self.s.record_game("Test", self.score, 0)
         s = Statistics('test_other.test')
-        self.assertEqual(str(s.base), "(0, 0, 0, 0, 0)")
+        self.assertEqual(str(s.base), "(0, 0, 0, 0, None, 0)")
         s = Statistics('test_stats.test')
-        self.assertEqual(str(s.base), "(1, 0, 1, 1, 1)")
+        self.assertEqual(str(s.base), "(1, 0, 1, 1, %s, 1)" % SpecialValue.WIN)
