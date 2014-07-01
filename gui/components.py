@@ -140,7 +140,7 @@ class HandDisplay(BoxLayout):
         # Prep the "Can't Play" button
         self._cant_play = HomeButton(on_release=self.cant_play)
         self._cant_play.source = "atlas://gui/homescreen/cantplay"
-        self._cant_play.text = "Can't\nPlay?"
+        self._cant_play.text = "Stuck?"
                                              
 
     def update(self):
