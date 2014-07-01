@@ -442,15 +442,15 @@
             text: "GAME"
             on_release: app.root.switcher('main')
         ActionButton:
-            text: "Decks"
-            on_release: app.root.switcher('decks')
-        ActionButton:
             text: "Achievements"
             on_release: app.root.switcher('achieve')
         ActionButton:
             text: "Stats"
             on_release: app.root.switcher('stats')
         ActionOverflow:
+            ActionButton:
+                text: "Decks"
+                on_release: app.root.switcher('decks')
             ActionButton:
                 text: "Settings"
                 on_release: app.root.switcher('settings')
