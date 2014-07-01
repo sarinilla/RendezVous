@@ -140,7 +140,9 @@ class RendezVousWidget(ScreenManager):
         if self.current == 'tutorial-tooltip':
             for slot in self.current_screen.hand_display.slots:
                 slot.highlight(BLANK)
-                
+        if self.game.round == 0:  # game over!
+            return
+        
         if self._end_of_round:
             cont = self.current_screen.gameboard.next_round_prompted()
             if not cont:
