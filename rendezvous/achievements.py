@@ -520,6 +520,8 @@ class Achievement:
         
     def check(self, score, player_index, stats):
         """Return whether this Achievement has been reached."""
+        if not self.criteria:
+            return False
         for crit in self.criteria:
             if not crit.check(score, player_index, stats):
                 return False
@@ -527,6 +529,8 @@ class Achievement:
 
     def check_round(self, board, player_index):
         """Return whether this Achievement has been reached."""
+        if not self.criteria:
+            return False
         for crit in self.criteria:
             if not crit.check_round(board, player_index):
                 return False
