@@ -180,3 +180,21 @@ class WinnerScreen(Screen):
 
     def _advance(self):
         self.ids.carousel.index = 2
+
+
+class RoundAchievementScreen(Screen):
+
+    """Displays unlocks between rounds."""
+
+    def __init__(self, achieved, **kwargs):
+        Screen.__init__(self, **kwargs)
+
+        deck = App.get_running_app().loaded_deck
+        for achievement in achieved:
+            if achievement.reward is None:
+                ach = AchievementEarnedDisplay(achievement=achievement)
+                self.ids.carousel.add_widget(ach)
+                continue
+            unlock = UnlockDisplay(achievement=achievement,
+                                   reward=deck.get_special(achievement.reward))
+            self.ids.carousel.add_widget(unlock)

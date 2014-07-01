@@ -205,6 +205,26 @@
                     on_press: root.manager.switcher('home')
 
 
+<RoundAchievementScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        ActionBar:
+            size_hint: (1, .075)
+        BoxLayout:
+            orientation: "vertical"
+            Carousel:
+                id: carousel
+                direction: "right"
+                size_hint: (1, 4)
+            BoxLayout:
+                size_hint: (1, .75)
+                Widget:
+                Button:
+                    text: "Continue"
+                    on_press: root.manager.switcher('main')
+                Widget:
+
+
 ## Tutorial Screens - gui/screens/tutorial.py ##
 
 <WinIntroScreen@Screen>:
@@ -303,11 +323,11 @@
                     rgba: 1, 1, 1, 1
                 Rectangle:
                     source: root.source
-                    size: min(root.size[0], root.size[1]*.75), min(root.size[0], root.size[1]*.75)
-                    pos: root.pos[0] + (root.size[0] - min(root.size[0], root.size[1]*.75)) / 2, root.pos[1] + .25*root.size[1]# + (root.size[1]*.75 - min(root.size[0], root.size[1]*.75)) / 2
+                    size: min(root.size[0], root.size[1]*.7), min(root.size[0], root.size[1]*.7)
+                    pos: root.pos[0] + (root.size[0] - min(root.size[0], root.size[1]*.7)) / 2, root.pos[1] + .3*root.size[1]# + (root.size[1]*.7 - min(root.size[0], root.size[1]*.7)) / 2
         Label:
             text: root.text
-            size: root.size[0], root.size[1] * .25
+            size: root.size[0], root.size[1] * .3
             text_size: self.size
             pos: root.pos
             halign: "center"

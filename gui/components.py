@@ -270,7 +270,8 @@ class BoardDisplay(BoxLayout):
 
     def prompt_for_next_round(self):
         """Prompt the user to continue, or replay the scoring sequence."""
-        self.add_widget(self._next_round_prompt)
+        try: self.add_widget(self._next_round_prompt)
+        except: pass
 
     def next_round_prompted(self, *args):
         """Continue to the next round on the user's command."""

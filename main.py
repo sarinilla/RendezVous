@@ -22,7 +22,7 @@ from rendezvous.achievements import AchievementList
 from gui import DEALER, PLAYER
 from gui.components import BLANK, DARKEN
 from gui.screens.home import HomeScreen
-from gui.screens.game import GameScreen, WinnerScreen
+from gui.screens.game import GameScreen, WinnerScreen, RoundAchievementScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 from gui.settings import SettingSlider, SettingAIDifficulty
 from gui.screens.achievements import AchievementsScreen
@@ -352,6 +352,7 @@ class RendezVousWidget(ScreenManager):
             self._winner = WinnerScreen(self.game.score, self.achieved,
                                         name='winner')
             self.switch_to(self._winner)
+            self.achieved = []
             self.game.round = 0  # mark GAME OVER to trigger replay
             return False
         elif self.game.board.is_full(PLAYER):
@@ -380,6 +381,12 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.hand_display.update()
         self._in_progress = False
         self._end_of_round = False
+
+        if self.achieved:
+            self.switch_to(RoundAchievementScreen(self.achieved,
+                                                  name='unlocks'))
+            self.achieved = []
+            return False
         return True
 
     def play_again(self):
