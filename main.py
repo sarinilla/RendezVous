@@ -31,7 +31,7 @@ from gui.screens.deck import DeckCatalogScreen
 from gui.screens.statistics import StatisticsScreen
 
 
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 
 
 class RendezVousWidget(ScreenManager):

@@ -69,3 +69,9 @@ class DeckCatalogScreen(Screen):
         main.add_widget(ActionBar())
         main.add_widget(self.carousel)
         self.add_widget(main)
+
+    def update(self):
+        for slide in self.carousel.slides:
+            if slide.deck.base_filename == "Standard":
+                continue
+            slide.purchased = self.catalog.purchased(slide.deck) is not None
