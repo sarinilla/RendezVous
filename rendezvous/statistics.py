@@ -28,13 +28,10 @@ class BaseStats:
         self.losses = 0
         self.played = 0
         self.streak = 0
-        self.streak_type = None
+        self.streak_type = SpecialValue.WIN
         self.best_streak = 0
         if string is not None:
-            try:
-                self._load(string)
-            except:
-                pass
+            self._load(string)
 
     @property
     def draws(self):
@@ -127,12 +124,12 @@ class Statistics:
     
     def record_game(self, deck_base, score, player_index):
         """Note the end of a game."""
-        self.base.record(score.wins(player_index),
-                         score.wins(player_index-1))
+        self.base.record(len(score.wins(player_index)),
+                         len(score.wins(player_index-1)))
         if deck_base not in self.decks:
             self.decks[deck_base] = BaseStats()
-        self.decks[deck_base].record(score.wins(player_index),
-                                     score.wins(player_index-1))
+        self.decks[deck_base].record(len(score.wins(player_index)),
+                                     len(score.wins(player_index-1)))
         for i, suit in enumerate(score.suits):
             if suit not in self.suits:
                 self.suits[suit] = BaseStats()
