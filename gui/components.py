@@ -235,7 +235,13 @@ class HandDisplay(BoxLayout):
     def confirm(self):
         """Confirm the played cards and update the hand."""
         for index in sorted(self._played, reverse=True):
-            self.hand.pop(index)
+            try:
+                self.hand.pop(index)
+            except IndexError as e:
+                e.extra_info = ("played: " + str(self._played) + "\n"
+                              + "index: " + str(index) + "\n"
+                              + "hand: " + [str(c) for c in self.hand])
+                raise
         self._played = []
 
 

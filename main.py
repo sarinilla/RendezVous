@@ -682,6 +682,9 @@ class RendezVousApp(App):
         #except AttributeError: info = str(sys.exc_info()[0])
         #if not info:
         #    info = str(info)
+        try:
+            tb += "\n" + e.extra_info
+        except AttributeError: pass
         layout.add_widget(Label(text=tb))
         layout.add_widget(Button(text="OK", size_hint=(1, .25),
                                  on_release=popup.dismiss))
