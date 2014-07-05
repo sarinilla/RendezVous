@@ -156,7 +156,7 @@ def FileReader(filename):
         file.close()
 
 
-class Currency:
+class Currency(object):  # explicit subclass for 2.7 property
 
     """Some form of currency with which to purchase items."""
 
