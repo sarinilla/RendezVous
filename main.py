@@ -31,7 +31,7 @@ from gui.screens.deck import DeckCatalogScreen
 from gui.screens.statistics import StatisticsScreen
 
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 
 
 class RendezVousWidget(ScreenManager):
@@ -143,14 +143,20 @@ class RendezVousWidget(ScreenManager):
         if self.game.round == 0:  # game over!
             return
         
+        loc = card_display.parent
         if self._end_of_round:
-            cont = self.current_screen.gameboard.next_round_prompted()
-            if not cont:
+            if loc is self.current_screen.hand_display:
+                cont = self.current_screen.gameboard.next_round_prompted()
+                if not cont:
+                    return
+                # if not blocked, then go ahead and play this card also!
+
+            elif loc.parent is self.current_screen.gameboard:
+                self.current_screen.gameboard.rescore_prompted()
                 return
             
         if card_display.card is None: return
         
-        loc = card_display.parent
         if loc is self.current_screen.hand_display:
             self._place_on_board(card_display)
                     
