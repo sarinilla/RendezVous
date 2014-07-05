@@ -34,7 +34,7 @@ from gui.screens.deck import DeckCatalogScreen
 from gui.screens.statistics import StatisticsScreen
 
 
-__version__ = '0.6.2'
+__version__ = '0.6.3'
 
 
 class RendezVousWidget(ScreenManager):
@@ -130,6 +130,11 @@ class RendezVousWidget(ScreenManager):
 
     def cant_play(self):
         """Prompt the user to confirm that s/he can't play."""
+        if self._in_progress: return
+        if self._end_of_round:
+            cont = self.current_screen.gameboard.next_round_prompted()
+            if not cont:
+                return
         popup = ConfirmPopup(title='Stuck?', callback=self._cant_play)
         popup.open()
 
@@ -373,6 +378,8 @@ class RendezVousWidget(ScreenManager):
             self.game.round = 0  # mark GAME OVER to trigger replay
             return False
         elif self.game.board.is_full(PLAYER):
+            self.current_screen.gameboard.highlight(BLANK)
+            self.current_screen.gameboard.update()
             self._get_dealer_play()
             self._play_dealer()
             return False
