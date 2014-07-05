@@ -68,6 +68,25 @@
                 halign: "center"
 
 
+<ConfirmPopup>:
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            text_size: self.size
+            text: "[b]Are you sure you can't play something?[/b]\n\nClicking YES below will cost you [b]50[/b] points; 10 in each suit.  It will also completely clear your hand, removing any cards on the board, and draw a new 10-card hand from your personal deck.\n\nIf you need help understanding your special cards first, you can drag one to the tooltip display below your score to the right, then scroll to read its requirements."
+            markup: True
+            valign: "middle"
+            halign: "center"
+        BoxLayout:
+            size_hint: 1, .25
+            Button:
+                text: "YES"
+                on_release: root.callback(root)
+            Button:
+                text: "Cancel"
+                on_release: root.dismiss()
+
+
 ## Deck Catalog - gui/screens/deck.py ##
 
 <DeckDisplay>:

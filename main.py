@@ -21,6 +21,7 @@ from rendezvous.achievements import AchievementList
 
 from gui import DEALER, PLAYER
 from gui.components import BLANK, DARKEN
+from gui.components import ConfirmPopup
 from gui.screens.home import HomeScreen
 from gui.screens.game import GameScreen, WinnerScreen, RoundAchievementScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
@@ -126,7 +127,13 @@ class RendezVousWidget(ScreenManager):
             self.current = 'achieve'
 
     def cant_play(self):
+        """Prompt the user to confirm that s/he can't play."""
+        popup = ConfirmPopup(title='Stuck?', callback=self._cant_play)
+        popup.open()
+
+    def _cant_play(self, popup):
         """Player is declared unable to make a move."""
+        popup.dismiss()
         for slot in self.current_screen.gameboard.slots[PLAYER]:
             self.card_touched(slot)  # return to hand
         self.game.players[PLAYER].cant_play(PLAYER, self.game.score)

@@ -9,6 +9,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.progressbar import ProgressBar
+from kivy.uix.popup import Popup
 
 from rendezvous import GameSettings, SpecialSuit, EffectType
 from rendezvous.deck import Card
@@ -96,6 +97,13 @@ class HomeButton(Button):
     """Clickable icon with text beneath."""
 
     source = StringProperty()
+
+
+class ConfirmPopup(Popup):
+
+    """Confirm that the user can't play, and explain the results."""
+
+    callback = ObjectProperty()
 
 
 ## Game Components ##
