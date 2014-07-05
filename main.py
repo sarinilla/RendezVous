@@ -376,6 +376,8 @@ class RendezVousWidget(ScreenManager):
             self.game.round = 0  # mark GAME OVER to trigger replay
             return False
         elif self.game.board.is_full(PLAYER):
+            self.current_screen.gameboard.highlight(BLANK)
+            self.current_screen.gameboard.update()
             self._get_dealer_play()
             self._play_dealer()
             return False
