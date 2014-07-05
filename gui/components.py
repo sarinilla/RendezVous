@@ -1,4 +1,5 @@
 import os
+import traceback
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -44,10 +45,13 @@ class CardDisplay(Widget):
     def on_touch_up(self, touch):
         if not self.collide_point(*touch.pos):
             return
-        if 'card' in dir(touch) and touch.card != self.card:
-            App.get_running_app().root.card_dropped(self, touch.card)
-        else:
-            App.get_running_app().root.card_touched(self)
+        try:
+            if 'card' in dir(touch) and touch.card != self.card:
+                App.get_running_app().root.card_dropped(self, touch.card)
+            else:
+                App.get_running_app().root.card_touched(self)
+        except Exception as e:
+            App.get_running_app().error(e, traceback.format_exc())
 
     def highlight(self, color):
         if color is None:

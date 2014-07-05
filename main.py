@@ -1,4 +1,4 @@
-import os
+import sys, os
 import copy
 
 from kivy.clock import Clock
@@ -7,6 +7,8 @@ from kivy.config import Config
 from kivy.core.image import Image
 from kivy.graphics.texture import Texture
 from kivy.properties import ObjectProperty
+from kivy.uix.popup import Popup
+from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager, FadeTransition, Screen
@@ -671,6 +673,21 @@ class RendezVousApp(App):
     def close_settings(self, *args):
         pass
 
+    # Debugging
+    def error(self, e, tb):
+        popup = Popup(title="%s Encountered" % e.__class__.__name__)
+        layout = BoxLayout(orientation="vertical")
+        #try:
+        #    info = e.strerror
+        #except AttributeError: info = str(sys.exc_info()[0])
+        #if not info:
+        #    info = str(info)
+        layout.add_widget(Label(text=tb))
+        layout.add_widget(Button(text="OK", size_hint=(1, .25),
+                                 on_release=popup.dismiss))
+        popup.add_widget(layout)
+        popup.open()
+    
 
 if __name__ == '__main__':
     RendezVousApp().run()
