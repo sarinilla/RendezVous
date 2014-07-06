@@ -97,6 +97,19 @@ class RendezVousWidget(ScreenManager):
 
     def switcher(self, screen):
         """Handle a request to switch screens."""
+
+        # Switching FROM something important?
+        if self.current == 'cards':
+            for hand in self.game.players:
+                hand.deck.shuffle()
+                if not hand.deck._cards:
+                    return
+                for card in hand:
+                    if str(card) in hand.deck.definition.blocked_cards:
+                        hand.remove(card)
+                hand.refill()
+
+        # Switching TO something important?
         if isinstance(screen, Screen):
             screen = screen.name
         if (screen == 'main' and self.game.round == 0):
@@ -115,11 +128,13 @@ class RendezVousWidget(ScreenManager):
         elif screen == 'cards':
             try: self.remove_widget(self.cards)
             except AttributeError: pass
-            self.cards = DeckEditScreen(definition=self.app.loaded_deck)
+            self.cards = DeckEditScreen(definition=self.app.loaded_deck,
+                                        name='cards')
             self.switch_to(self.cards)
             return
+
+        # Switch & auto-update
         self.current = screen
-        
         try: self.current_screen.update()
         except AttributeError: pass
 
@@ -586,7 +601,6 @@ class RendezVousApp(App):
     def record_round(self, board):
         """Check for achievements at the end of each round."""
         return self.achievements.check_round(board, PLAYER)
-
 
     # Manage deck images
 

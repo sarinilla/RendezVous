@@ -293,8 +293,9 @@ class DeckDefinition:
 
     """
 
-    def __init__(self, name="Standard"):
+    def __init__(self, name="Standard", blocked_cards=[]):
         self.name = self.base_filename = name
+        self.blocked_cards = blocked_cards
         self.img_file = os.path.join("data", "decks", name + ".png")
         self.def_file = os.path.join("data", "decks", name + ".txt")
         if not os.path.isfile(self.img_file):
@@ -480,14 +481,16 @@ class DeckDefinition:
             warnings.warn("Invalid special card effect: %s" % words[0])
         
 
-    def cards(self, achievements=None):
+    def cards(self, achievements=None, use_blocks=True):
         """Generator; return all card in the deck, unshuffled."""
         for suit in self.suits:
             for value in self.values:
-                yield Card(suit, value)
+                if not use_blocks or "%s %s" % (suit, value) not in self.blocked_cards:
+                    yield Card(suit, value)
         for special in self.specials:
             if achievements is None or achievements.unlocked(special):
-                yield copy.copy(special)
+                if not use_blocks or special.name not in self.blocked_cards:
+                    yield copy.copy(special)
                 
     def get_special(self, name=None):
         """Return the named SpecialCard, or None."""

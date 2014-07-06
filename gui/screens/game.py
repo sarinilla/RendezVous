@@ -63,6 +63,10 @@ class GameScreen(Screen):
         main.add_widget(self.hand_display)
         self.add_widget(main)
 
+    def update(self):
+        self.gameboard.update()
+        self.hand_display.update()
+
 
 ## Win/Lose Screen ##
 
