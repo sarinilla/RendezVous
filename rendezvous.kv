@@ -402,6 +402,10 @@
                 text: "Decks"
                 on_release: root.manager.switcher('decks')
             HomeButton:
+                source: "atlas://gui/homescreen/cards"
+                text: "Cards"
+                on_release: root.manager.switcher('cards')
+            HomeButton:
                 source: "atlas://gui/homescreen/settings"
                 text: "Settings"
                 on_release: root.manager.switcher('settings')
@@ -461,6 +465,9 @@
             text: "GAME"
             on_release: app.root.switcher('main')
         ActionButton:
+            text: "Cards"
+            on_release: app.root.switcher('cards')
+        ActionButton:
             text: "Achievements"
             on_release: app.root.switcher('achieve')
         ActionButton:
@@ -519,4 +526,32 @@
             suit: str(root.worst_suit(root.deck, root.statistics))
             size: dp(10), dp(10)
         Widget:
+
+
+## Deck Display / Edit - gui/screens/cards.py ##
+
+<DeckEditDisplay>:
+    do_scroll_y: False
+    BoxLayout:
+        id: layout
+        size_hint_x: None
+        size: root.size[1] * 5 / 7 * len(list(root.definition.cards())), root.size[1]
+        
+
+<DeckCardDisplay>:
+    orientation: "vertical"
+    CardDisplay:
+        card: root.card
+    Label:
+        size_hint: 1, .4
+        text: "[b]" + root.card.name + "[/b]"
+        markup: True
+        text_size: self.size
+        halign: "center"
+        valign: "middle"
+    Label:
+        text: root.card.description
+        text_size: self.size
+        halign: "center"
+        valign: "top"
 

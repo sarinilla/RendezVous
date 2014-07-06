@@ -29,10 +29,11 @@ from gui.settings import SettingSlider, SettingAIDifficulty
 from gui.screens.achievements import AchievementsScreen
 from gui.screens.settings import SettingsScreen
 from gui.screens.deck import DeckCatalogScreen
+from gui.screens.cards import DeckEditScreen
 from gui.screens.statistics import StatisticsScreen
 
 
-__version__ = '0.6.3'
+__version__ = '0.6.4'
 
 
 class RendezVousWidget(ScreenManager):
@@ -77,7 +78,7 @@ class RendezVousWidget(ScreenManager):
         self.decks = DeckCatalogScreen(catalog=self.app.deck_catalog,
                                        name='decks')
         self.add_widget(self.decks)
-        # 'stats' will be generated new on each view
+        # 'stats' and 'cards' will be generated new on each view
 
         # Prepare the tutorial (if needed)
         if self.app.achievements.achieved == []:
@@ -110,6 +111,12 @@ class RendezVousWidget(ScreenManager):
             self.stats = StatisticsScreen(statistics=self.app.statistics,
                                           name='stats')
             self.switch_to(self.stats)
+            return
+        elif screen == 'cards':
+            try: self.remove_widget(self.cards)
+            except AttributeError: pass
+            self.cards = DeckEditScreen(definition=self.app.loaded_deck)
+            self.switch_to(self.cards)
             return
         self.current = screen
         
@@ -146,12 +153,17 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.hand_display.update()
         self.current_screen.scoreboard.update()
 
+    def is_game_screen(self):
+        return self.current == 'main' or self.current.startswith('tutorial')
+
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
         if self._in_progress: return
         if self.current == 'tutorial-tooltip':
             for slot in self.current_screen.hand_display.slots:
                 slot.highlight(BLANK)
+        elif not self.is_game_screen():
+            return
         if self.game.round == 0:  # game over!
             return
         
@@ -185,6 +197,8 @@ class RendezVousWidget(ScreenManager):
         """
         # No dragging during scoring (except to tooltip; handled separately)
         if self._in_progress: return
+        elif not self.is_game_screen():
+            return
         
         # Only drag actual cards (no empty slots)
         if card is None: return
@@ -579,9 +593,9 @@ class RendezVousApp(App):
     def get_texture(self, card):
         """Return the appropriate texture to display."""
         try:
-            if card == "HIDDEN":
+            if str(card) == "HIDDEN":
                 region = self.loaded_deck.get_locked_texture()
-            elif card == "WAIT":
+            elif str(card) == "WAIT":
                 region = self.loaded_deck.get_wait_texture()
             elif card is None or str(card) is " ":
                 return Texture.create()
