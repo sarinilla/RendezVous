@@ -275,6 +275,12 @@ class TestDeckDefinition(unittest.TestCase):
                 expected.append(Card(suit, value))
         self.assertEqual(list(self.dd.cards())[:50], expected)
         self.assertEqual(len(list(self.dd.cards())), 67)
+
+    def test_blocked(self):
+        """Verify the generator skips blocked cards."""
+        self.dd.blocked_cards = [str(Card('Boyfriend', i+1)) for i in range(4)]
+        self.assertEqual(list(self.dd.cards())[0], Card('Boyfriend', 5))
+        self.assertEqual(len(list(self.dd.cards())), 63)
         
     def test_unlocks(self):
         """Verify the generator removes locked SpecialCards."""
