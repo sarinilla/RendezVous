@@ -25,7 +25,7 @@ class TestBaseStats(unittest.TestCase):
         self.assertEqual(self.s.best_streak, 0)
 
     def test_string(self):
-        self.assertEqual(str(self.s), "(0, 0, 0, 0, None, 0)")
+        self.assertEqual(str(self.s), "(0, 0, 0, 0, %s, 0)" % SpecialValue.WIN)
 
     def test_win(self):
         self.s.win()
@@ -89,7 +89,7 @@ class TestStatistics(unittest.TestCase):
             pass
         
     def test_init(self):
-        self.assertEqual(str(self.s.base), "(0, 0, 0, 0, None, 0)")
+        self.assertEqual(str(self.s.base), "(0, 0, 0, 0, %s, 0)" % SpecialValue.WIN)
         self.assertEqual(self.s.decks, {})
         self.assertEqual(self.s.suits, {})
         
@@ -119,6 +119,6 @@ class TestStatistics(unittest.TestCase):
         self.score.scores = [[500], [400]]
         self.s.record_game("Test", self.score, 0)
         s = Statistics('test_other.test')
-        self.assertEqual(str(s.base), "(0, 0, 0, 0, None, 0)")
+        self.assertEqual(str(s.base), "(0, 0, 0, 0, %s, 0)" % SpecialValue.WIN)
         s = Statistics('test_stats.test')
         self.assertEqual(str(s.base), "(1, 0, 1, 1, %s, 1)" % SpecialValue.WIN)
