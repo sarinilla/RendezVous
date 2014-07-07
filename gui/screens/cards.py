@@ -8,7 +8,7 @@ from kivy.uix.actionbar import ActionBar
 from rendezvous.deck import Card
 
 
-class DeckCardDisplay(BoxLayout):
+class DeckCardDisplay(ScrollView):
 
     """Show a card and its details vertically."""
 
@@ -16,7 +16,7 @@ class DeckCardDisplay(BoxLayout):
     blocked = BooleanProperty()
 
     def __init__(self, **kwargs):
-        BoxLayout.__init__(self, **kwargs)
+        ScrollView.__init__(self, **kwargs)
         self.blocked = str(self.card) in App.get_running_app().loaded_deck.blocked_cards
 
     def button_text(self, blocked):  # include for auto-binding
