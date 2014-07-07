@@ -1,5 +1,6 @@
 import sys, os
 import copy
+import traceback
 
 from kivy.clock import Clock
 from kivy.app import App
@@ -337,7 +338,12 @@ class RendezVousWidget(ScreenManager):
                                                   callback=self._specials,
                                                   timer=GameSettings.SPEED)
         for card in self.dealer_play:
-            self.game.players[DEALER].remove(card)
+            try:
+                self.game.players[DEALER].remove(card)
+            except ValueError as e:
+                e.extra_info = ("Invalid dealer card: %s\nfrom hand: %s"
+                        % (card, [str(c) for c in self.game.players[DEALER]]))
+                self.app.error(e, traceback.format_exc())
         self.dealer_play = None
         
     def _specials(self):
@@ -714,11 +720,6 @@ class RendezVousApp(App):
     def error(self, e, tb):
         popup = Popup(title="%s Encountered" % e.__class__.__name__)
         layout = BoxLayout(orientation="vertical")
-        #try:
-        #    info = e.strerror
-        #except AttributeError: info = str(sys.exc_info()[0])
-        #if not info:
-        #    info = str(info)
         try:
             tb += "\n" + e.extra_info
         except AttributeError: pass
