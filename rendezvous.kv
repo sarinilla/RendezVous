@@ -204,7 +204,7 @@
         Rectangle:
             texture: app.get_dealer_texture(*root.get_dealer())
             size: min(self.size[0], self.size[1]), min(self.size[0], self.size[1])
-            pos: self.pos[0] + (root.size[0] - self.size[0]) / 2, self.pos[1]
+            pos: self.pos[0] + (self.size[0] - min(self.size[0], self.size[1])) / 2, self.pos[1]
 
 
 <WinnerScreen>:
