@@ -3,7 +3,7 @@ import re
 
 from rendezvous import SpecialValue
 
-class BaseStats:
+class BaseStats(object):  # required for properties in v2.7
 
     """Track statistics for a single deck or suit.
     
