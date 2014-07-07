@@ -65,14 +65,12 @@ class SuitDisplay(Widget):
 
     def flash(self, *args, symbol="WINK"):
         """Show another symbol (default: WINK) briefly."""
-        print("flashing", self.suit, "to", symbol)
         self.backup = self.suit
         self.suit = symbol
         Clock.schedule_once(self._flash_over, 0.5)
 
     def _flash_over(self, *args):
         self.suit = self.backup
-        print("done flashing", self.suit)
         del self.backup
 
 
