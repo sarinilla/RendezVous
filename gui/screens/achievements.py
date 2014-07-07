@@ -1,9 +1,15 @@
+from kivy.app import App
 from kivy.properties import ObjectProperty, BooleanProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.actionbar import ActionBar
+from kivy.uix.popup import Popup
+from kivy.uix.button import Button
+from kivy.uix.widget import Widget
+
+from gui.screens.game import AchievementEarnedDisplay, UnlockDisplay
 
 
 class AchievementDisplay(BoxLayout):
@@ -31,6 +37,34 @@ class AchievementDisplay(BoxLayout):
             return self.achievement.reward
         else:
             return "HIDDEN"
+
+    def on_touch_down(self, touch):
+        """Make sure we don't grab drag touches."""
+        if self.collide_point(*touch.pos):
+            touch.start = self
+            touch.push(attrs=["start"])
+
+    def on_touch_up(self, touch):
+        """Display the Achievement screen on a touch."""
+        if not self.earned: return
+        if not self.collide_point(*touch.pos): return
+        if 'start' in dir(touch) and touch.start is self:
+            popup = Popup(title=str(self.achievement))
+            layout = BoxLayout(orientation="vertical")
+            if self.achievement.reward is None:
+                layout.add_widget(AchievementEarnedDisplay(achievement=self.achievement))
+            else:
+                card = App.get_running_app().loaded_deck.get_special(self.achievement.reward)
+                layout.add_widget(UnlockDisplay(achievement=self.achievement,
+                                                reward=card))
+            buttons = BoxLayout(size_hint=(1, .125))
+            buttons.add_widget(Widget())
+            buttons.add_widget(Button(text="OK", size_hint=(2, 1),
+                                      on_release=popup.dismiss))
+            buttons.add_widget(Widget())
+            layout.add_widget(buttons)
+            popup.add_widget(layout)
+            popup.open()
 
 
 class AchievementsScreen(Screen):
