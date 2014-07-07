@@ -4,7 +4,7 @@ import re
 from rendezvous import SpecialValue
 
 class BaseStats(object):  # explicit subclass for 2.7 properties
-
+    
     """Track statistics for a single deck or suit.
     
     Attributes:

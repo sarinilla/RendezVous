@@ -628,6 +628,8 @@ class RendezVousApp(App):
 
     def get_suit_texture(self, suit):
         """Return the appropriate texture to display."""
+        if suit == "WINK":
+            return Image("atlas://gui/homescreen/wink").texture
         try:
             if suit:
                 region = self.loaded_deck.get_suit_texture(suit)

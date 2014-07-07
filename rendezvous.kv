@@ -143,9 +143,11 @@
                 text_size: self.size
                 markup: True
                 size_hint: (1, .25)
+                valign: "middle"
             Label:
                 text: root.achievement.description
                 text_size: self.size
+                valign: "top"
     Widget:
         size_hint: 1, .5
 
@@ -169,9 +171,11 @@
             text_size: self.size
             markup: True
             size_hint: (1, .25)
+            valign: "middle"
         Label:
             text: root.achievement.description
             text_size: self.size
+            valign: "top"
     BoxLayout:
         orientation: "vertical"
         size_hint: (2, 1)
@@ -188,9 +192,11 @@
                     text_size: self.size
                     markup: True
                     size_hint: (1, .25)
+                    valign: "middle"
                 Label:
                     text: root.reward.description if root.reward is not None else ""
                     text_size: self.size
+                    valign: "top"
 
 
 <DealerDisplay>:
@@ -198,7 +204,7 @@
         Rectangle:
             texture: app.get_dealer_texture(*root.get_dealer())
             size: min(self.size[0], self.size[1]), min(self.size[0], self.size[1])
-            pos: self.pos[0] + (root.size[0] - self.size[0]) / 2, self.pos[1]
+            pos: self.pos[0] + (self.size[0] - min(self.size[0], self.size[1])) / 2, self.pos[1]
 
 
 <WinnerScreen>:
@@ -539,31 +545,35 @@
         
 
 <DeckCardDisplay>:
-    orientation: "vertical"
-    canvas:
-        Color:
-            rgba: root.get_backdrop(root.blocked)
-        Rectangle:
-            size: self.size
-            pos: self.pos
-    CardDisplay:
-        card: root.card
-        color: root.get_shading(root.blocked)
-    Label:
-        size_hint: 1, .4
-        text: "[b]" + root.card.name + "[/b]"
-        markup: True
-        text_size: self.size
-        halign: "center"
-        valign: "middle"
-    Label:
-        size_hint: 1, .75
-        text: root.card.description
-        text_size: self.size
-        halign: "center"
-        valign: "top"
-    Button:
-        size_hint: 1, .25
-        text: root.button_text(root.blocked)
-        on_release: root.clicked()
+    do_scroll_x: False
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_y: None
+        size: root.size[0], root.size[1] * 2
+        canvas:
+            Color:
+                rgba: root.get_backdrop(root.blocked)
+            Rectangle:
+                size: self.size
+                pos: self.pos
+        CardDisplay:
+            card: root.card
+            color: root.get_shading(root.blocked)
+        Label:
+            size_hint: 1, .4
+            text: "[b]" + root.card.name + "[/b]"
+            markup: True
+            text_size: self.size
+            halign: "center"
+            valign: "middle"
+        Label:
+            size_hint: 1, .75
+            text: root.card.description
+            text_size: self.size
+            halign: "center"
+            valign: "top"
+        Button:
+            size_hint: 1, .25
+            text: root.button_text(root.blocked)
+            on_release: root.clicked()
 

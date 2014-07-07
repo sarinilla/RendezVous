@@ -156,8 +156,8 @@ def FileReader(filename):
         file.close()
 
 
-class Currency(object):  # explicit subclass for 2.7 property
-
+class Currency(object):  # required for properties in v2.7
+    
     """Some form of currency with which to purchase items."""
 
     def __init__(self, name, description, directory="player"):

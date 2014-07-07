@@ -132,10 +132,19 @@ class FinalScoreDisplay(BoxLayout):
         self.add_widget(announce)
         pwins = self.score.wins(PLAYER)
         dwins = self.score.wins(DEALER)
+        winner = len(pwins) > len(dwins)
         wins = BoxLayout()
-        for suit in pwins:
+        for i, suit in enumerate(pwins):
+            print(i, suit)
+            display = SuitDisplay(suit=suit)
+            Clock.schedule_once(display.flash, 1.0 * (i+1))
+            print("will flash", suit, "in", 1.0 * (i+1))
+            if winner:
+                Clock.schedule_once(display.flash,
+                                    1.0 * (len(pwins)+1))
+                print("will flash", suit, "again in", 1.0 * (len(pwins)+2))
             wins.add_widget(ScoreSurround(scores=self.score.by_suit(suit),
-                                          center_widget=SuitDisplay(suit=suit)))
+                                          center_widget=display))
         main_bar = ProgressBar(max=len(pwins + dwins), value=len(pwins))
         wins.add_widget(ScoreSurround(scores=(self.score.total(DEALER),
                                               self.score.total(PLAYER)),
