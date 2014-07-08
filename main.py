@@ -592,15 +592,22 @@ class RendezVousApp(App):
     def record_score(self, score):
         """Update meta-data at the end of each game."""
         self.statistics.record_game(self.loaded_deck.base_filename, score, PLAYER)
-        self.winks.earn(len(score.wins(PLAYER)))
+        self.winks.earn(len(score.wins(PLAYER)), "Win suits.")
         if len(score.wins(PLAYER)) > len(score.wins(DEALER)):
-            self.winks.earn(1)
+            self.winks.earn(1, "Win the game.")
+        achieved = self.achievements.check(score, PLAYER, self.statistics)
+        if achieved:
+            self.kisses.earn(len(achieved), "Game achievement(s).")
         self._load_currency()
-        return self.achievements.check(score, PLAYER, self.statistics)
+        return achieved
 
     def record_round(self, board):
         """Check for achievements at the end of each round."""
-        return self.achievements.check_round(board, PLAYER)
+        achieved = self.achievements.check_round(board, PLAYER)
+        if achieved:
+            self.kisses.earn(len(achieved), "Round achievement(s).")
+            self._load_currency()
+        return achieved
 
     # Manage deck images
 
