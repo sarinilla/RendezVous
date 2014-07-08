@@ -397,6 +397,7 @@
             HomeButton:
                 source: "atlas://gui/homescreen/kiss"
                 text: str(app.kisses)
+                on_release: root.manager.switcher('decks')
             HomeButton:
                 source: "atlas://gui/homescreen/achievements"
                 text: "Achievements"

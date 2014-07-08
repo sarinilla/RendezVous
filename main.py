@@ -11,6 +11,9 @@ from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager, FadeTransition, Screen
 from kivy.uix.settings import SettingBoolean, SettingsWithNoMenu
+from kivy.uix.popup import Popup
+from kivy.uix.label import Label
+from kivy.uix.widget import Widget
 from kivy.loader import Loader
 
 from rendezvous import GameSettings, Currency
@@ -584,7 +587,27 @@ class RendezVousApp(App):
                 update_deck(self.root.current_screen)
 
     def purchase_deck(self, deck_entry):
+        """Confirm the purchase of the given deck."""
+        popup = Popup(title=deck_entry.name,
+                      size_hint=(1, .5))
+        layout = BoxLayout(orientation="vertical")
+        layout.add_widget(Label(text="Are you sure you would like to purchase this deck for 10 kisses?",
+                                valign="middle", halign="center"))
+        buttons = BoxLayout()
+        buttons.add_widget(Widget())
+        buttons.add_widget(Button(text="YES", on_release=lambda x: self._purchase_deck(deck_entry, popup)))
+        buttons.add_widget(Button(text="no", on_release=popup.dismiss))
+        buttons.add_widget(Widget())
+        layout.add_widget(buttons)
+        popup.add_widget(layout)
+        popup.open()
+
+    def _purchase_deck(self, deck_entry, popup):
         """Purchase and load the given deck."""
+        popup.dismiss()
+        if not self.kisses.purchase(deck_entry.name, 10):
+            return
+        self._load_currency()
         self.deck_catalog.purchase(deck_entry)
         self.load_deck(deck_entry.base_filename)
         self.root.switcher('home')
