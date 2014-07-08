@@ -536,7 +536,7 @@ class Achievement:
                 return False
         return True
     
-class AchievementList:
+class AchievementList(object):
     """List of available and accomplished Achievements.
     
     Attributes:
