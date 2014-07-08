@@ -471,26 +471,45 @@
             title: "RendezVous"
             on_release: app.root.switcher('home')
         ActionButton:
+            text: app.winks and str(app.winks.balance)
+            background_down: self.background_normal
+            important: True
+        ActionButton:
+            icon: "atlas://gui/homescreen/wink"
+            text: "Winks"
+            background_down: self.background_normal
+            important: True
+        ActionButton:
+            text: app.kisses and str(app.kisses.balance)
+            background_down: self.background_normal
+            important: True
+        ActionButton:
+            icon: "atlas://gui/homescreen/kiss"
+            text: "Kisses"
+            background_down: self.background_normal
+            important: True
+        ActionButton:
             text: "GAME"
             on_release: app.root.switcher('main')
-        ActionButton:
-            text: "Cards"
-            on_release: app.root.switcher('cards')
+            important: True
         ActionButton:
             text: "Achievements"
             on_release: app.root.switcher('achieve')
         ActionButton:
             text: "Stats"
             on_release: app.root.switcher('stats')
+        ActionButton:
+            text: "Cards"
+            on_release: app.root.switcher('cards')
+        ActionButton:
+            text: "Decks"
+            on_release: app.root.switcher('decks')
+        ActionButton:
+            text: "Settings"
+            on_release: app.root.switcher('settings')
+        ActionButton:
+            text: "Help"
         ActionOverflow:
-            ActionButton:
-                text: "Decks"
-                on_release: app.root.switcher('decks')
-            ActionButton:
-                text: "Settings"
-                on_release: app.root.switcher('settings')
-            ActionButton:
-                text: "Help"
 
 
 ## Statistics - gui/screens/statistics.py ##
