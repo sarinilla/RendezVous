@@ -2,6 +2,9 @@ import unittest
 
 from gui.screens.deck import *
 from gui.screens.game import *
+from gui.screens.winner import *
+
+from rendezvous.achievements import Achievement
 
 
 ## Achievements ##

@@ -14,6 +14,7 @@ from kivy.uix.popup import Popup
 
 from rendezvous import GameSettings, SpecialSuit, EffectType
 from rendezvous.deck import Card
+from rendezvous.achievements import Achievement
 
 from gui import PLAYER, DEALER
 
@@ -40,16 +41,19 @@ class CardDisplay(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             touch.card = self.card
-            touch.push(attrs=["card"])
+            touch.display = self
+            touch.push(attrs=["card", "display"])
 
     def on_touch_up(self, touch):
         if not self.collide_point(*touch.pos):
             return
         try:
-            if 'card' in dir(touch) and touch.card != self.card:
-                App.get_running_app().root.card_dropped(self, touch.card)
-            else:
-                App.get_running_app().root.card_touched(self)
+            if 'card' in dir(touch):
+                if touch.display is not self:
+                    App.get_running_app().root.card_dropped(self, touch.card)
+                else:
+                    App.get_running_app().root.card_touched(self)
+                del touch.card
         except Exception as e:
             App.get_running_app().error(e, traceback.format_exc())
 
@@ -69,14 +73,12 @@ class SuitDisplay(Widget):
 
     def flash(self, *args, symbol="WINK"):
         """Show another symbol (default: WINK) briefly."""
-        print("flashing", self.suit, "to", symbol)
         self.backup = self.suit
         self.suit = symbol
         Clock.schedule_once(self._flash_over, 0.5)
 
     def _flash_over(self, *args):
         self.suit = self.backup
-        print("done flashing", self.suit)
         del self.backup
 
 
@@ -108,6 +110,9 @@ class ToolTipDisplay(BoxLayout):
                     self.card = touch.card
 
 
+## Other Components ##
+
+
 class HomeButton(Button):
 
     """Clickable icon with text beneath."""
@@ -120,6 +125,24 @@ class ConfirmPopup(Popup):
     """Confirm that the user can't play, and explain the results."""
 
     callback = ObjectProperty()
+
+class AchievementEarnedDisplay(BoxLayout):
+
+    """Show an Achievement earned this game."""
+
+    achievement = ObjectProperty(Achievement(' '))
+
+
+class UnlockDisplay(BoxLayout):
+
+    """Show an Achievement with an unlocked SpecialCard."""
+    
+    DUMMY_CARD = Card(" ", 0)
+    DUMMY_CARD.name = " "
+    DUMMY_CARD.description = " "
+
+    achievement = ObjectProperty(Achievement(' '))
+    reward = ObjectProperty(DUMMY_CARD, allownone=True)
 
 
 ## Game Components ##
@@ -320,6 +343,20 @@ class BoardDisplay(BoxLayout):
                 self.slots[i][j].card = None  # force update
                 self.slots[i][j].card = card
                 self.slots[i][j].waited = self.board._wait[i][j]
+        try:
+            self.dealer_hand.update()
+        except AttributeError:
+            pass
+
+    def show_dealer_hand(self, hand):
+        """Show the dealer's hand at the top of the screen."""
+        self.dealer_hand = HandDisplay(hand=hand)
+        self.add_widget(self.dealer_hand, len(self.children))
+
+    def hide_dealer_hand(self):
+        """Remove the dealer's hand display."""
+        self.remove_widget(self.dealer_hand)
+        del self.dealer_hand
 
     def highlight(self, color):
         """Update all highlight colors at once."""
@@ -356,6 +393,14 @@ class BoardDisplay(BoxLayout):
         self.board[PLAYER][i] = None
         self.slots[PLAYER][i].card = None
         return card
+
+    def find(self, display):
+        """Return the (player, index) of this display."""
+        for i, side in enumerate(self.slots):
+            try:
+                return i, self.slots[i].index(display)
+            except ValueError: pass
+        raise ValueError("CardDisplay not found on board.")
 
     def _find_display(self, card):
         """Return the slot holding this card."""
@@ -514,4 +559,20 @@ class ScoreDisplay(BoxLayout):
         for i, row in enumerate(self.rows):
             row.suit = self.scoreboard.suits[i]
 
+
+class AchievementIcon(Widget):
+
+    """Display an Achievement icon, and optionally flash it to a kiss."""
+
+    achievement = ObjectProperty()
+
+    def flash(self, *args, symbol="KISS"):
+        """Show another symbol (default: KISS) briefly."""
+        self.backup = self.achievement
+        self.achievement = symbol
+        Clock.schedule_once(self._flash_over, 0.5)
+
+    def _flash_over(self, *args):
+        self.achievement = self.backup
+        del self.backup
 

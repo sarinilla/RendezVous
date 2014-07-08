@@ -87,6 +87,14 @@
                 on_release: root.dismiss()
 
 
+<AchievementIcon>:
+    canvas:
+        Rectangle:
+            texture: app.get_achievement_texture(root.achievement)
+            size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
+            pos: self.pos[0], self.pos[1]
+
+
 ## Deck Catalog - gui/screens/deck.py ##
 
 <DeckDisplay>:
@@ -125,12 +133,9 @@
     Widget:
         size_hint: 1, .5
     BoxLayout:
-        Widget:
-            canvas:
-                Rectangle:
-                    texture: app.get_achievement_texture(root.achievement)
-                    size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
-                    pos: self.pos[0], self.pos[1]
+        AchievementIcon:
+            id: icon
+            achievement: root.achievement
         BoxLayout:
             orientation: "vertical"
             Label:
@@ -160,12 +165,9 @@
             markup: True
             text_size: self.size
             size_hint: (1, .25)
-        Widget:
-            canvas:
-                Rectangle:
-                    texture: app.get_achievement_texture(root.achievement)
-                    size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
-                    pos: self.pos[0], self.pos[1]
+        AchievementIcon:
+            id: icon
+            achievement: root.achievement
         Label:
             text: "[b]%s[/b]" % root.achievement.name
             text_size: self.size
@@ -248,6 +250,14 @@
                     text: "Continue"
                     on_press: root.manager.switcher('main')
                 Widget:
+
+
+<PowerupIcon>:
+    canvas:
+        Rectangle:
+            texture: app.powerups_texture and app.get_powerup_texture(root.powerup)
+            size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
+            pos: self.pos
 
 
 ## Tutorial Screens - gui/screens/tutorial.py ##
@@ -392,9 +402,11 @@
             HomeButton:
                 source: "atlas://gui/homescreen/wink"
                 text: str(app.winks)
+                on_release: root.manager.switcher('powerups')
             HomeButton:
                 source: "atlas://gui/homescreen/kiss"
                 text: str(app.kisses)
+                on_release: root.manager.switcher('decks')
             HomeButton:
                 source: "atlas://gui/homescreen/achievements"
                 text: "Achievements"
@@ -458,6 +470,45 @@
         size_hint_x: 1
 
 
+## Powerup Screen - gui/screen/powerups.py ##
+
+<PowerupDisplay>:
+    size_hint: 1, None
+    Widget:
+        canvas:
+            Rectangle:
+                texture: app.powerups_texture and app.get_powerup_texture(root.powerup)
+                size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
+                pos: self.pos
+        size_hint_x: 1.25
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_x: 4
+        Label:
+            text: "[b]%s[/b]" % root.powerup.name
+            text_size: self.size
+            markup: True
+            size_hint: (1, .5)
+        Label:
+            text: root.powerup.description
+            text_size: self.size
+            valign: "top"
+    Label:
+        size_hint_x: 1
+        text: "x%s" % root.count
+        halign: "center"
+        valign: "top"
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_x: 1
+        SuitDisplay:
+            suit: "WINK"
+        Label:
+            text: "%s winks" % root.powerup.price
+            halign: "center"
+            valign: "top"
+
+
 ## Action Bar - no source ##
 
 <ActionBar>:
@@ -468,26 +519,48 @@
             title: "RendezVous"
             on_release: app.root.switcher('home')
         ActionButton:
+            text: app.winks and str(app.winks.balance)
+            background_down: self.background_normal
+            important: True
+        ActionButton:
+            icon: "atlas://gui/homescreen/wink"
+            text: "Winks"
+            background_down: self.background_normal
+            important: True
+        ActionButton:
+            text: app.kisses and str(app.kisses.balance)
+            background_down: self.background_normal
+            important: True
+        ActionButton:
+            icon: "atlas://gui/homescreen/kiss"
+            text: "Kisses"
+            background_down: self.background_normal
+            important: True
+        ActionButton:
             text: "GAME"
             on_release: app.root.switcher('main')
+            important: True
         ActionButton:
-            text: "Cards"
-            on_release: app.root.switcher('cards')
+            text: "Powerups"
+            on_release: app.root.switcher('powerups')
         ActionButton:
             text: "Achievements"
             on_release: app.root.switcher('achieve')
         ActionButton:
             text: "Stats"
             on_release: app.root.switcher('stats')
+        ActionButton:
+            text: "Cards"
+            on_release: app.root.switcher('cards')
+        ActionButton:
+            text: "Decks"
+            on_release: app.root.switcher('decks')
+        ActionButton:
+            text: "Settings"
+            on_release: app.root.switcher('settings')
+        ActionButton:
+            text: "Help"
         ActionOverflow:
-            ActionButton:
-                text: "Decks"
-                on_release: app.root.switcher('decks')
-            ActionButton:
-                text: "Settings"
-                on_release: app.root.switcher('settings')
-            ActionButton:
-                text: "Help"
 
 
 ## Statistics - gui/screens/statistics.py ##

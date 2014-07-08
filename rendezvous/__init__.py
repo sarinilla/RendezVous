@@ -135,6 +135,26 @@ class AchieveType:
         return achievetype > cls.SCORE and not cls.per_round(achievetype)
 
 
+class PowerupType:
+    
+    """Types of Powerups to purchase and use."""
+    
+    SHOW_DEALER_HAND =  1  #: display the dealer's full hand
+    SHOW_DEALER_PLAY =  2  #: display the dealer's selected play
+    SWITCH_PLAY      =  3  #: you play for the dealer; he plays for you
+
+    GLOBAL_BUFF      = 11  #: buff all four of your cards
+    GLOBAL_DEBUFF    = 12  #: debuff all four of the dealer's cards
+    FLUSH_HAND       = 13  #: flush your hand
+    FLUSH_CARD       = 14  #: flush one card from your hand
+    WAIT_CARD        = 15  #: wait one card (yours or dealer's)
+    UNWAIT_CARD      = 16  #: remove wait on one card
+
+    REPLAY_TURN      = 21  #: go "back in time" to repeat a turn
+
+    PLAY_CARD        = 99  #: play a specific card from your "sleeve"
+
+
 def FileReader(filename):
 
     """Read [TAG]Value text files. Return a generator of (tag, value) pairs."""
