@@ -16,27 +16,30 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.loader import Loader
 
-from rendezvous import GameSettings, Currency
+from rendezvous import GameSettings, Currency, PowerupType, SpecialSuit
 from rendezvous.deck import DeckDefinition, Card, DeckCatalog, DeckCatalogEntry
 from rendezvous.gameplay import RendezVousGame
 from rendezvous.statistics import Statistics
 from rendezvous.achievements import AchievementList
+from rendezvous.powerups import Powerups
 
 from gui import DEALER, PLAYER
 from gui.components import BLANK, DARKEN
 from gui.components import ConfirmPopup
 from gui.screens.home import HomeScreen
-from gui.screens.game import GameScreen, WinnerScreen, RoundAchievementScreen
+from gui.screens.game import GameScreen, RoundAchievementScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
+from gui.screens.winner import WinnerScreen
 from gui.settings import SettingSlider, SettingAIDifficulty
-from gui.screens.achievements import AchievementsScreen
 from gui.screens.settings import SettingsScreen
 from gui.screens.deck import DeckCatalogScreen
 from gui.screens.cards import DeckEditScreen
 from gui.screens.statistics import StatisticsScreen
+from gui.screens.achievements import AchievementsScreen
+from gui.screens.powerups import PowerupScreen
 
 
-__version__ = '0.6.4'
+__version__ = '0.6.5'
 
 
 class RendezVousWidget(ScreenManager):
@@ -63,11 +66,13 @@ class RendezVousWidget(ScreenManager):
         self.game = RendezVousGame(deck=self.app.loaded_deck,
                                    achievements=self.app.achievements)
         self.game.new_game()
-        self._cards_played = []    #: hand indices played so far
-        self.achieved = []         #: Achievements earned this game
-        self.dealer_play = None    #: cards the dealer will play
-        self._in_progress = False  #: currently scoring a round?
-        self._end_of_round = False #: currently paused after scoring?
+        self._cards_played = []         #: hand indices played so far
+        self.achieved = []              #: Achievements earned this game
+        self.dealer_play = None         #: cards the dealer will play
+        self._in_progress = False       #: currently scoring a round?
+        self._end_of_round = False      #: currently paused after scoring?
+        self.powerup_next_click = None  #: applies on the next card select
+        self.powerups_in_use = []       #: applied this round
 
         # Prepare the screens
         self.home = HomeScreen(name='home')
@@ -81,6 +86,7 @@ class RendezVousWidget(ScreenManager):
         self.decks = DeckCatalogScreen(catalog=self.app.deck_catalog,
                                        name='decks')
         self.add_widget(self.decks)
+        self.add_widget(PowerupScreen(name='powerups'))
         # 'stats' and 'cards' will be generated new on each view
 
         # Prepare the tutorial (if needed)
@@ -100,6 +106,8 @@ class RendezVousWidget(ScreenManager):
 
     def switcher(self, screen):
         """Handle a request to switch screens."""
+        if isinstance(screen, Screen):
+            screen = screen.name
 
         # Switching FROM something important?
         if self.current == 'cards':
@@ -115,15 +123,16 @@ class RendezVousWidget(ScreenManager):
             self.app._save_sd_config()
 
         # Switching TO something important?
-        if isinstance(screen, Screen):
-            screen = screen.name
         if (screen == 'main' and self.game.round == 0):
                 self.play_again()
                 return
+        # ... screens that depend on a loaded texture
         elif screen == 'achieve' and self.app.deck_achievement_texture is None:
             return
+        elif screen == 'powerups' and self.app.powerups_texture is None:
+            return
+        # ... screens that are generated fresh each time
         elif screen == 'stats':
-            # Force update each time
             try: self.remove_widget(self.stats)
             except AttributeError: pass
             self.stats = StatisticsScreen(statistics=self.app.statistics,
@@ -173,6 +182,127 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.hand_display.update()
         self.current_screen.scoreboard.update()
 
+    def use_powerup(self, powerup):
+        self.main.close_tray()
+
+        # Only certain ones can be used between rounds
+        if powerup.type == PowerupType.WAIT_CARD:
+            self.powerup_next_click = powerup
+            return
+        elif powerup.type == PowerupType.REPLAY_TURN:
+            if self._end_of_round:
+                self.app.powerups.use(powerup)
+                self.replay_turn()
+            return
+        elif self._end_of_round:
+            cont = self.main.gameboard.next_round_prompted()
+            if not cont: return False
+
+        # Some are consumed on the next click
+        if powerup.type in (PowerupType.FLUSH_CARD, PowerupType.UNWAIT_CARD):
+            self.powerup_next_click = powerup
+            return
+
+        # Some are used right away and done with
+        self.app.powerups.use(powerup)
+        if powerup.type == PowerupType.FLUSH_HAND:
+            self.game.players[PLAYER].flush()
+            self.main.hand_display.update()
+            return
+
+        # Some require more action later
+        self.powerups_in_use.append(powerup)
+        if powerup.type == PowerupType.SHOW_DEALER_HAND:
+            self.main.gameboard.show_dealer_hand(self.game.players[DEALER])
+        elif powerup.type == PowerupType.SHOW_DEALER_PLAY:
+            if self.dealer_play is None:
+                self._get_dealer_play()
+            self._play_dealer(then_score=False)
+        elif powerup.type == PowerupType.SWITCH_PLAY:
+            self.switch_hands()
+            self._get_dealer_play()
+
+        # Some powerups' only action is later
+        #elif powerup.type in (PowerupType.GLOBAL_BUFF,
+        #                      PowerupType.GLOBAL_DEBUFF):
+        #    pass
+
+    def next_click_for_powerup(self, card_display):
+        """See if this is a powerup selection; return True to consume click."""
+        if self.powerup_next_click is None:
+            return False
+        powerup = self.powerup_next_click
+        self.powerup_next_click = None
+        
+        if powerup.type == PowerupType.WAIT_CARD:
+            if card_display.parent.parent == self.main.gameboard:
+                if card_display.card is not None and not card_display.waited:
+                    card_display.waited = True
+                    p, i = self.main.gameboard.find(card_display)
+                    self.game.board._wait[p][i] = True
+                    self.app.powerups.use(powerup)
+                    return True
+        elif powerup.type == PowerupType.FLUSH_CARD:
+            try:
+                i = self.main.hand_display.slots.index(card_display)
+            except ValueError:
+                return False
+            self.game.players[PLAYER].pop(i)
+            self.game.players[PLAYER].refill()
+            self.main.hand_display.update()
+            self.app.powerups.use(powerup)
+            return True
+        elif powerup.type == PowerupType.UNWAIT_CARD:
+            if card_display.waited:
+                card_display.waited = False
+                card_display.card = None
+                p, i = self.main.gameboard.find(card_display)
+                self.game.board._wait[p][i] = False
+                self.game.board.board[p][i] = None
+                self.app.powerups.use(powerup)
+                return True
+        return False
+
+    def prescore_powerups(self):
+        """Provide any necessary powerup boosts before scoring begins."""
+        for powerup in reversed(self.powerups_in_use):
+            if powerup.type == PowerupType.SWITCH_PLAY:
+                self.switch_hands()
+                self.dealer_play = None  # too soon!
+                self.powerups_in_use.remove(powerup)
+                self.main.hand_display.update()
+                self.main.gameboard.update()
+            elif powerup.type == PowerupType.GLOBAL_BUFF:
+                for card in self.game.board[PLAYER]:
+                    if card.suit != SpecialSuit.SPECIAL:
+                        card.value += powerup.value
+                self.main.gameboard.update()
+            elif powerup.type == PowerupType.GLOBAL_DEBUFF:
+                for card in self.game.board[DEALER]:
+                    if card.suit != SpecialSuit.SPECIAL:
+                        card.value -= powerup.value
+                self.main.gameboard.update()
+
+    def cleanup_powerups(self):
+        """Provide any cleanup action for Powerups at the end of a round."""
+        for powerup in self.powerups_in_use:
+            if powerup.type == PowerupType.SHOW_DEALER_HAND:
+                self.main.gameboard.hide_dealer_hand()
+        self.powerups_in_use = []
+
+    def switch_hands(self):
+        """Switch hands with the dealer."""
+        self.game.players[PLAYER], self.game.players[DEALER] = self.game.players[DEALER], self.game.players[PLAYER]
+        self.game.board.board[PLAYER], self.game.board.board[DEALER] = self.game.board.board[DEALER], self.game.board.board[PLAYER]
+        self.game.board._wait[PLAYER], self.game.board._wait[DEALER] = self.game.board._wait[DEALER], self.game.board._wait[PLAYER]
+        self.main.hand_display.hand = self.game.players[PLAYER]
+        try:
+            self.main.gameboard.dealer_hand.hand = self.game.players[DEALER]
+        except: pass
+        self.main.hand_display.update()
+        self.main.gameboard.update()
+        self._get_dealer_play()
+        
     def is_game_screen(self):
         return self.current == 'main' or self.current.startswith('tutorial')
 
@@ -186,7 +316,9 @@ class RendezVousWidget(ScreenManager):
             return
         if self.game.round == 0:  # game over!
             return
-        
+
+        if self.next_click_for_powerup(card_display):
+            return
         loc = card_display.parent
         if self._end_of_round:
             if loc is self.current_screen.hand_display:
@@ -215,6 +347,7 @@ class RendezVousWidget(ScreenManager):
           card -- Card in the display that was dragged originally
 
         """
+        self.powerup_next_click = None
         # No dragging during scoring (except to tooltip; handled separately)
         if self._in_progress: return
         elif not self.is_game_screen():
@@ -322,10 +455,14 @@ class RendezVousWidget(ScreenManager):
             self.dealer_play = self.game.players[DEALER].AI_hard(
                                     DEALER, self.game.board, self.game.score)
 
-    def _play_dealer(self):
+    def _play_dealer(self, then_score=True):
         """Place the dealer's selected cards on the board."""
         if GameSettings.AI_DIFFICULTY == 3:
-            self._get_dealer_play()
+            for powerup in self.powerups_in_use:
+                if powerup.type == PowerupType.SHOW_DEALER_PLAY:
+                    break
+            else:
+                self._get_dealer_play()
         if self.current == 'tutorial-hand':
             self.switch_to(SidebarTutorial(game=self.game,
                                            name='tutorial-board'))
@@ -336,15 +473,19 @@ class RendezVousWidget(ScreenManager):
         elif self.current == 'tutorial-tooltip':
             self.switch_to(GameScreen(game=self.game,
                                       name='tutorial-done'))
+        callback = self._specials if then_score else None
         self.current_screen.gameboard.play_dealer(self.dealer_play,
-                                                  callback=self._specials,
+                                                  callback=callback,
                                                   timer=GameSettings.SPEED)
         for card in self.dealer_play:
             self.game.players[DEALER].remove(card)
         self.dealer_play = None
+        self._backup_score = copy.deepcopy(self.game.score.scores)
+        self._backup_waits = copy.deepcopy(self.game.board._wait)
         
     def _specials(self):
         """Apply all specials."""
+        self.prescore_powerups()
         self.game.board.clear_wait()
         if self.current == 'tutorial-board':
             self._in_progress = False
@@ -364,7 +505,6 @@ class RendezVousWidget(ScreenManager):
 
     def _score(self):
         """Score the round."""
-        self._backup_score = copy.deepcopy(self.game.score.scores)
         self.current_screen.gameboard.score_round(
                 self.current_screen.scoreboard,
                 callback=self.prompt_for_next_round,
@@ -380,6 +520,25 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.scoreboard.update()
         Clock.schedule_once(lambda dt: self._specials(), GameSettings.SPEED)
 
+    def replay_turn(self):
+        """Replay the entire turn at the user's (powerup) request."""
+        self.powerups_in_use = []
+        self.game.board._wait = self._backup_waits
+        self.game.score.scores = self._backup_score
+        for i, hand in enumerate(self.game.players):
+            waits = self.game.board._wait[i].count(True)
+            hand.cards = hand.cards[:6-waits]
+            for j, card in enumerate(self.game.board[i]):
+                card.reset()
+                if not self.game.board._wait[i][j]:
+                    hand.cards.append(card)
+                    self.game.board[i][j] = None
+        self.main.hand_display.update()
+        self.main.gameboard.highlight(BLANK)
+        self.main.gameboard.update()
+        self.main.scoreboard.update()
+        self._get_dealer_play()
+
     def prompt_for_next_round(self):
         """Display the Replay and Continue buttons."""
         if self.game.round >= GameSettings.NUM_ROUNDS:
@@ -393,6 +552,7 @@ class RendezVousWidget(ScreenManager):
 
     def next_round(self):
         """Clear the board for the next round. Return whether to continue."""
+        self.cleanup_powerups()
         if self.current == 'tutorial-score':
             self.switch_to(TooltipTutorial(game=self.game,
                                            name='tutorial-continue'))
@@ -467,6 +627,7 @@ class RendezVousApp(App):
     loaded_deck = ObjectProperty()
     deck_texture = ObjectProperty(allownone=True)
     achievement_texture = ObjectProperty(allownone=True)
+    powerups_texture = ObjectProperty(allownone=True)
     winks = ObjectProperty()
     kisses = ObjectProperty()
 
@@ -489,6 +650,9 @@ class RendezVousApp(App):
         self.achievements = AchievementList(os.path.join(user_dir, "unlocked.txt"))
         loader = Loader.image(self.achievements.image_file)
         loader.bind(on_load=self._achievements_loaded)
+        self.powerups = Powerups(os.path.join(user_dir, "powerups.txt"))
+        loader = Loader.image(self.powerups.image_file)
+        loader.bind(on_load=self._powerups_loaded)
         self._loaded_decks = {}
         self.load_deck(GameSettings.CURRENT_DECK)
 
@@ -541,6 +705,11 @@ class RendezVousApp(App):
             self.deck_achievement_texture = loader.image.texture
             if self.root is not None:
                 self.root.update_achievements()
+
+    def _powerups_loaded(self, loader):
+        """Update the powerups image when it's finished loading."""
+        if loader.image.texture:
+            self.powerups_texture = loader.image.texture
 
     def build(self):
         return RendezVousWidget(app=self)
@@ -652,6 +821,14 @@ class RendezVousApp(App):
             self._load_currency()
         return achieved
 
+    def purchase_powerup(self, powerup):
+        """Attempt to purchase a powerup; return boolean success."""
+        if not self.winks.purchase(powerup, powerup.price):
+            return False
+        self.powerups.purchase(powerup)
+        self._load_currency()
+        return True
+
     # Manage deck images
 
     def get_texture(self, card):
@@ -704,6 +881,14 @@ class RendezVousApp(App):
             if self.achievements.deck_specific(achievement):
                 return self.deck_achievement_texture.get_region(*region)
             return self.achievement_texture.get_region(*region)
+        except:
+            return Texture.create()
+
+    def get_powerup_texture(self, powerup):
+        """Return the appropriate texture to display."""
+        try:
+            region = self.powerups.get_powerup_texture(powerup)
+            return self.powerups_texture.get_region(*region)
         except:
             return Texture.create()
 
