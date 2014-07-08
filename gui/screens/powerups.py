@@ -13,7 +13,7 @@ from kivy.uix.widget import Widget
 
 class PowerupDisplay(BoxLayout):
 
-    """Display one Powerup with its details."""
+    """Display one Powerup with its details for purchase."""
 
     powerup = ObjectProperty()
     count = NumericProperty()

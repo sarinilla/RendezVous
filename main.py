@@ -24,8 +24,9 @@ from gui import DEALER, PLAYER
 from gui.components import BLANK, DARKEN
 from gui.components import ConfirmPopup
 from gui.screens.home import HomeScreen
-from gui.screens.game import GameScreen, WinnerScreen, RoundAchievementScreen
+from gui.screens.game import GameScreen, RoundAchievementScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
+from gui.screens.winner import WinnerScreen
 from gui.settings import SettingSlider, SettingAIDifficulty
 from gui.screens.settings import SettingsScreen
 from gui.screens.deck import DeckCatalogScreen

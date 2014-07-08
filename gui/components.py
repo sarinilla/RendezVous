@@ -13,6 +13,7 @@ from kivy.uix.popup import Popup
 
 from rendezvous import GameSettings, SpecialSuit, EffectType
 from rendezvous.deck import Card
+from rendezvous.achievements import Achievement
 
 from gui import PLAYER, DEALER
 
@@ -102,6 +103,9 @@ class ToolTipDisplay(BoxLayout):
                     self.card = touch.card
 
 
+## Other Components ##
+
+
 class HomeButton(Button):
 
     """Clickable icon with text beneath."""
@@ -114,6 +118,24 @@ class ConfirmPopup(Popup):
     """Confirm that the user can't play, and explain the results."""
 
     callback = ObjectProperty()
+
+class AchievementEarnedDisplay(BoxLayout):
+
+    """Show an Achievement earned this game."""
+
+    achievement = ObjectProperty(Achievement(' '))
+
+
+class UnlockDisplay(BoxLayout):
+
+    """Show an Achievement with an unlocked SpecialCard."""
+    
+    DUMMY_CARD = Card(" ", 0)
+    DUMMY_CARD.name = " "
+    DUMMY_CARD.description = " "
+
+    achievement = ObjectProperty(Achievement(' '))
+    reward = ObjectProperty(DUMMY_CARD, allownone=True)
 
 
 ## Game Components ##
