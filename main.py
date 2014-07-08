@@ -18,6 +18,7 @@ from rendezvous.deck import DeckDefinition, Card, DeckCatalog, DeckCatalogEntry
 from rendezvous.gameplay import RendezVousGame
 from rendezvous.statistics import Statistics
 from rendezvous.achievements import AchievementList
+from rendezvous.powerups import Powerups
 
 from gui import DEALER, PLAYER
 from gui.components import BLANK, DARKEN
@@ -26,14 +27,15 @@ from gui.screens.home import HomeScreen
 from gui.screens.game import GameScreen, WinnerScreen, RoundAchievementScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 from gui.settings import SettingSlider, SettingAIDifficulty
-from gui.screens.achievements import AchievementsScreen
 from gui.screens.settings import SettingsScreen
 from gui.screens.deck import DeckCatalogScreen
 from gui.screens.cards import DeckEditScreen
 from gui.screens.statistics import StatisticsScreen
+from gui.screens.achievements import AchievementsScreen
+from gui.screens.powerups import PowerupScreen
 
 
-__version__ = '0.6.4'
+__version__ = '0.6.5'
 
 
 class RendezVousWidget(ScreenManager):
@@ -78,6 +80,7 @@ class RendezVousWidget(ScreenManager):
         self.decks = DeckCatalogScreen(catalog=self.app.deck_catalog,
                                        name='decks')
         self.add_widget(self.decks)
+        self.add_widget(PowerupScreen(name='powerups'))
         # 'stats' and 'cards' will be generated new on each view
 
         # Prepare the tutorial (if needed)
@@ -97,6 +100,8 @@ class RendezVousWidget(ScreenManager):
 
     def switcher(self, screen):
         """Handle a request to switch screens."""
+        if isinstance(screen, Screen):
+            screen = screen.name
 
         # Switching FROM something important?
         if self.current == 'cards':
@@ -110,15 +115,16 @@ class RendezVousWidget(ScreenManager):
                 hand.refill()
 
         # Switching TO something important?
-        if isinstance(screen, Screen):
-            screen = screen.name
         if (screen == 'main' and self.game.round == 0):
                 self.play_again()
                 return
+        # ... screens that depend on a loaded texture
         elif screen == 'achieve' and self.app.deck_achievement_texture is None:
             return
+        elif screen == 'powerups' and self.app.powerups_texture is None:
+            return
+        # ... screens that are generated fresh each time
         elif screen == 'stats':
-            # Force update each time
             try: self.remove_widget(self.stats)
             except AttributeError: pass
             self.stats = StatisticsScreen(statistics=self.app.statistics,
@@ -462,6 +468,7 @@ class RendezVousApp(App):
     loaded_deck = ObjectProperty()
     deck_texture = ObjectProperty(allownone=True)
     achievement_texture = ObjectProperty(allownone=True)
+    powerups_texture = ObjectProperty(allownone=True)
     winks = ObjectProperty()
     kisses = ObjectProperty()
 
@@ -483,6 +490,9 @@ class RendezVousApp(App):
         self.achievements = AchievementList(os.path.join(user_dir, "unlocked.txt"))
         loader = Loader.image(self.achievements.image_file)
         loader.bind(on_load=self._achievements_loaded)
+        self.powerups = Powerups(os.path.join(user_dir, "powerups.txt"))
+        loader = Loader.image(self.powerups.image_file)
+        loader.bind(on_load=self._powerups_loaded)
         self._loaded_decks = {}
         self.load_deck(GameSettings.CURRENT_DECK)
 
@@ -518,6 +528,11 @@ class RendezVousApp(App):
             self.deck_achievement_texture = loader.image.texture
             if self.root is not None:
                 self.root.update_achievements()
+
+    def _powerups_loaded(self, loader):
+        """Update the powerups image when it's finished loading."""
+        if loader.image.texture:
+            self.powerups_texture = loader.image.texture
 
     def build(self):
         return RendezVousWidget(app=self)
@@ -601,6 +616,15 @@ class RendezVousApp(App):
     def record_round(self, board):
         """Check for achievements at the end of each round."""
         return self.achievements.check_round(board, PLAYER)
+        self.winks.purchase
+
+    def purchase_powerup(self, powerup):
+        """Attempt to purchase a powerup; return boolean success."""
+        if not self.winks.purchase(powerup, powerup.price):
+            return False
+        self.powerups.purchase(powerup)
+        self._load_currency()
+        return True
 
     # Manage deck images
 
@@ -652,6 +676,14 @@ class RendezVousApp(App):
             if self.achievements.deck_specific(achievement):
                 return self.deck_achievement_texture.get_region(*region)
             return self.achievement_texture.get_region(*region)
+        except:
+            return Texture.create()
+
+    def get_powerup_texture(self, powerup):
+        """Return the appropriate texture to display."""
+        try:
+            region = self.powerups.get_powerup_texture(powerup)
+            return self.powerups_texture.get_region(*region)
         except:
             return Texture.create()
 

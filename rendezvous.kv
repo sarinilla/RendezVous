@@ -392,6 +392,7 @@
             HomeButton:
                 source: "atlas://gui/homescreen/wink"
                 text: str(app.winks)
+                on_release: root.manager.switcher('powerups')
             HomeButton:
                 source: "atlas://gui/homescreen/kiss"
                 text: str(app.kisses)
@@ -458,6 +459,45 @@
         size_hint_x: 1
 
 
+## Powerup Screen - gui/screen/powerups.py ##
+
+<PowerupDisplay>:
+    size_hint: 1, None
+    Widget:
+        canvas:
+            Rectangle:
+                texture: app.powerups_texture and app.get_powerup_texture(root.powerup)
+                size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
+                pos: self.pos
+        size_hint_x: 1.25
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_x: 4
+        Label:
+            text: "[b]%s[/b]" % root.powerup.name
+            text_size: self.size
+            markup: True
+            size_hint: (1, .5)
+        Label:
+            text: root.powerup.description
+            text_size: self.size
+            valign: "top"
+    Label:
+        size_hint_x: 1
+        text: "x%s" % root.count
+        halign: "center"
+        valign: "top"
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_x: 1
+        SuitDisplay:
+            suit: "WINK"
+        Label:
+            text: "%s winks" % root.powerup.price
+            halign: "center"
+            valign: "top"
+
+
 ## Action Bar - no source ##
 
 <ActionBar>:
@@ -470,6 +510,9 @@
         ActionButton:
             text: "GAME"
             on_release: app.root.switcher('main')
+        ActionButton:
+            text: "Powerups"
+            on_release: app.root.switcher('powerups')
         ActionButton:
             text: "Cards"
             on_release: app.root.switcher('cards')
