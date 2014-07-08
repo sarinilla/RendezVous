@@ -1,7 +1,12 @@
 from kivy.app import App
 from kivy.properties import ObjectProperty
+from kivy.metrics import dp
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.stacklayout import StackLayout
+from kivy.uix.widget import Widget
+from kivy.uix.popup import Popup
+from kivy.uix.modalview import ModalView
 
 from rendezvous import GameSettings
 
@@ -27,6 +32,33 @@ class RoundAchievementScreen(Screen):
             unlock = UnlockDisplay(achievement=achievement,
                                    reward=deck.get_special(achievement.reward))
             self.ids.carousel.add_widget(unlock)
+
+
+class PowerupIcon(Widget):
+
+    """Display one Powerup's icon for use."""
+
+    powerup = ObjectProperty()
+
+    def on_touch_up(self, touch):
+        """Use the powerup."""
+        if not self.collide_point(*touch.pos): return
+        App.get_running_app().use_powerup(powerup)
+
+
+class PowerupTray(ModalView):
+
+    """Displays Powerup icons for use during the game."""
+
+    def __init__(self, **kwargs):
+        ModalView.__init__(self, size_hint=(.15, 1), pos_hint={'right': 1},
+                           **kwargs)
+        app = App.get_running_app()
+        layout = StackLayout(padding=[dp(10)])
+        for powerup in app.powerups.purchased:
+            layout.add_widget(PowerupIcon(powerup=powerup,
+                                          size_hint=(1, None)))
+        self.add_widget(layout)
             
 
 class GameScreen(Screen):
@@ -75,3 +107,24 @@ class GameScreen(Screen):
     def update(self):
         self.gameboard.update()
         self.hand_display.update()
+        self._close_tray()
+
+    def open_tray(self):
+        self.powerup_tray = PowerupTray()
+        self.powerup_tray.open()
+
+    def _close_tray(self):
+        try:
+            self.powerup_tray.dismiss()
+        except: pass
+
+    def on_touch_down(self, touch):
+        #self._close_tray()  # already auto-dismissed
+        if touch.x > self.width * 3 / 4:
+            touch.grab(self)
+
+    def on_touch_up(self, touch):
+        if touch.grab_current is self:
+            touch.ungrab(self)
+            if touch.dx < 0 and touch.dx > -self.width / 2:
+                self.open_tray()
