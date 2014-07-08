@@ -43,7 +43,7 @@ class PowerupIcon(Widget):
     def on_touch_up(self, touch):
         """Use the powerup."""
         if not self.collide_point(*touch.pos): return
-        App.get_running_app().use_powerup(powerup)
+        App.get_running_app().root.use_powerup(self.powerup)
 
 
 class PowerupTray(ModalView):
@@ -107,24 +107,27 @@ class GameScreen(Screen):
     def update(self):
         self.gameboard.update()
         self.hand_display.update()
-        self._close_tray()
+        self.close_tray()
 
     def open_tray(self):
         self.powerup_tray = PowerupTray()
         self.powerup_tray.open()
 
-    def _close_tray(self):
+    def close_tray(self):
         try:
             self.powerup_tray.dismiss()
         except: pass
 
     def on_touch_down(self, touch):
-        #self._close_tray()  # already auto-dismissed
+        #self.close_tray()  # already auto-dismissed
         if touch.x > self.width * 3 / 4:
             touch.grab(self)
+        Screen.on_touch_down(self, touch)
 
     def on_touch_up(self, touch):
         if touch.grab_current is self:
             touch.ungrab(self)
-            if touch.dx < 0 and touch.dx > -self.width / 2:
+            if (touch.dx < 0 and touch.dx > -self.width / 2 and
+                touch.dy > -10 and touch.dy < 10):
                 self.open_tray()
+        Screen.on_touch_up(self, touch)
