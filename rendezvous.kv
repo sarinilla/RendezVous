@@ -87,6 +87,14 @@
                 on_release: root.dismiss()
 
 
+<AchievementIcon>:
+    canvas:
+        Rectangle:
+            texture: app.get_achievement_texture(root.achievement)
+            size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
+            pos: self.pos[0], self.pos[1]
+
+
 ## Deck Catalog - gui/screens/deck.py ##
 
 <DeckDisplay>:
@@ -125,12 +133,9 @@
     Widget:
         size_hint: 1, .5
     BoxLayout:
-        Widget:
-            canvas:
-                Rectangle:
-                    texture: app.get_achievement_texture(root.achievement)
-                    size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
-                    pos: self.pos[0], self.pos[1]
+        AchievementIcon:
+            id: icon
+            achievement: root.achievement
         BoxLayout:
             orientation: "vertical"
             Label:
@@ -160,12 +165,9 @@
             markup: True
             text_size: self.size
             size_hint: (1, .25)
-        Widget:
-            canvas:
-                Rectangle:
-                    texture: app.get_achievement_texture(root.achievement)
-                    size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
-                    pos: self.pos[0], self.pos[1]
+        AchievementIcon:
+            id: icon
+            achievement: root.achievement
         Label:
             text: "[b]%s[/b]" % root.achievement.name
             text_size: self.size

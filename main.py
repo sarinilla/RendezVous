@@ -496,10 +496,10 @@ class RendezVousApp(App):
         if directory is not None:
             self.user_dir = directory
         self.winks = Currency('wink',
-                     "In a secret RendezVous, a wink can tip your hand!",
+                     "In a secret rendezvous, a wink can tip your hand!",
                      self.user_dir)
         self.kisses = Currency('kiss',
-                      "When lovers RendezVous, a simple kiss is priceless.",
+                      "When lovers rendezvous, a simple kiss is priceless.",
                       self.user_dir)
 
     def _image_loaded(self, loader):
@@ -654,6 +654,8 @@ class RendezVousApp(App):
             
     def get_achievement_texture(self, achievement):
         """Return the appropriate texture to display."""
+        if str(achievement) == "KISS":
+            return Image("atlas://gui/homescreen/kiss").texture
         try:
             region = self.achievements.get_achievement_texture(achievement)
             if self.achievements.deck_specific(achievement):

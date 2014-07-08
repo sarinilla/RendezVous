@@ -503,3 +503,19 @@ class ScoreDisplay(BoxLayout):
             row.suit = self.scoreboard.suits[i]
 
 
+class AchievementIcon(Widget):
+
+    """Display an Achievement icon, and optionally flash it to a kiss."""
+
+    achievement = ObjectProperty()
+
+    def flash(self, *args, symbol="KISS"):
+        """Show another symbol (default: KISS) briefly."""
+        self.backup = self.achievement
+        self.achievement = symbol
+        Clock.schedule_once(self._flash_over, 0.5)
+
+    def _flash_over(self, *args):
+        self.achievement = self.backup
+        del self.backup
+

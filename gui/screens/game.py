@@ -180,10 +180,12 @@ class WinnerScreen(Screen):
             if achievement.reward is None:
                 ach = AchievementEarnedDisplay(achievement=achievement)
                 self.ids.carousel.add_widget(ach)
+                Clock.schedule_once(ach.ids.icon.flash, 1.0)
                 continue
             unlock = UnlockDisplay(achievement=achievement,
                                    reward=deck.get_special(achievement.reward))
             self.ids.carousel.add_widget(unlock)
+            Clock.schedule_once(unlock.ids.icon.flash, 1.0)
         self.ids.carousel.index = 1
         if achieved:
             Clock.schedule_once(lambda dt: self._advance(), 0.5)
@@ -204,7 +206,9 @@ class RoundAchievementScreen(Screen):
             if achievement.reward is None:
                 ach = AchievementEarnedDisplay(achievement=achievement)
                 self.ids.carousel.add_widget(ach)
+                Clock.schedule_once(ach.ids.icon.flash, 1.0)
                 continue
             unlock = UnlockDisplay(achievement=achievement,
                                    reward=deck.get_special(achievement.reward))
             self.ids.carousel.add_widget(unlock)
+            Clock.schedule_once(unlock.ids.icon.flash, 1.0)
