@@ -111,6 +111,8 @@ class RendezVousWidget(ScreenManager):
                     if str(card) in hand.deck.definition.blocked_cards:
                         hand.remove(card)
                 hand.refill()
+        elif self.current == 'settings':
+            self.app._save_sd_config()
 
         # Switching TO something important?
         if isinstance(screen, Screen):
@@ -471,6 +473,7 @@ class RendezVousApp(App):
     def __init__(self, **kwargs):
         """Load the deck image and create the RendezVousWidget."""
         App.__init__(self, **kwargs)
+        self._load_sd_config()
         self.icon = os.path.join("data", "RVlogo.ico")
         self.icon_png = os.path.join("data", "RVlogo.png")
         self.settings_cls = SettingsWithNoMenu
@@ -489,6 +492,23 @@ class RendezVousApp(App):
         self._loaded_decks = {}
         self.load_deck(GameSettings.CURRENT_DECK)
 
+    def _load_sd_config(self):
+        """Look for a saved config file if ours is gone."""
+        local_config = "rendezvous.ini"
+        sd_config = os.path.join(self.user_data_dir, "rendezvous.ini")
+        if os.path.isfile(sd_config):
+            import shutil
+            shutil.copyfile(sd_config, local_config)
+
+    def _save_sd_config(self):
+        """Save the config file to the normal data location."""
+        local_config = "rendezvous.ini"
+        if not os.path.isfile(local_config): return
+        if os.path.isdir(self.user_data_dir):
+            sd_config = os.path.join(self.user_data_dir, "rendezvous.ini")
+            import shutil
+            shutil.copyfile(local_config, sd_config)
+        
     def _preload_home_screen(self):
         """Prioritize loading of images for the home screen."""
         deck = self.deck_catalog[GameSettings.CURRENT_DECK]
