@@ -512,6 +512,7 @@ class RendezVousWidget(ScreenManager):
 
     def replay_scoring(self):
         """Replay the scoring sequence at the user's request."""
+        self._in_progress = True
         self.game.score.scores = self._backup_score
         for card in self.game.board:
             card.reset()
