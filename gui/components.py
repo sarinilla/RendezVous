@@ -115,6 +115,7 @@ class HomeButton(Button):
     """Clickable icon with text beneath."""
 
     source = StringProperty()
+    text_below = StringProperty()
 
 
 class ConfirmPopup(Popup):
