@@ -471,6 +471,7 @@
 
 
 ## Powerup Screen - gui/screen/powerups.py ##
+#:import PowerupType rendezvous.PowerupType
 
 <PowerupDisplay>:
     size_hint: 1, None
@@ -504,7 +505,7 @@
         SuitDisplay:
             suit: "WINK"
         Label:
-            text: "%s winks" % root.powerup.price
+            text: "%s winks" % root.powerup.price if root.powerup.type != PowerupType.PLAY_CARD else "varies"
             halign: "center"
             valign: "top"
 

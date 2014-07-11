@@ -69,9 +69,9 @@ class Powerups:
                  Powerup("Time Machine",
                          "Go back in time and play a round again!",
                          100, PowerupType.REPLAY_TURN),
-                 #Powerup("Up Your Sleeve",
-                 #        "",
-                 #        0, PowerupType.PLAY_CARD)
+                 Powerup("Up Your Sleeve",
+                         "Hide a card up your sleeve, and play it when you need it.",
+                         0, PowerupType.PLAY_CARD)
                  ]
 
     def __init__(self, player_file=None):
@@ -122,6 +122,9 @@ class Powerups:
             except OSError: pass
             return
         for (tag, value) in FileReader(self._purchased_file):
+            if tag == 'CARDS_TO_PLAY':
+                self.purchased['cards_to_play'] = value.split(', ')
+                continue
             powerup = self.find(tag)
             try:
                 self.purchased[powerup] += int(value)
@@ -134,6 +137,11 @@ class Powerups:
             self.purchased[powerup] += 1
         except KeyError:
             self.purchased[powerup] = 1
+        if powerup.type == PowerupType.PLAY_CARD:
+            try:
+                self.purchased['cards_to_play'].append(powerup.value)
+            except KeyError:
+                self.purchased['cards_to_play'] = [powerup.value]
         self._write()
 
     def use(self, powerup):
@@ -147,7 +155,11 @@ class Powerups:
         """Output the list of purchased powerups."""
         f = open(self._purchased_file, 'w')
         for powerup, count in self.purchased.items():
-            f.write('[%s]%s\n' % (powerup.name, count))
+            if powerup != 'cards_to_play':
+                f.write('[%s]%s\n' % (powerup.name, count))
+        if 'cards_to_play' in self.purchased:
+            f.write('[%s]%s\n' % ('cards_to_play',
+                                  ', '.join(self.purchased['cards_to_play'])))
         f.close()
             
         
