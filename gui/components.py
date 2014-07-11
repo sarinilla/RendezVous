@@ -42,6 +42,7 @@ class CardDisplay(Widget):
             touch.card = self.card
             touch.display = self
             touch.push(attrs=["card", "display"])
+            return True
 
     def on_touch_up(self, touch):
         if not self.collide_point(*touch.pos):

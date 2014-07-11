@@ -119,15 +119,17 @@ class GameScreen(Screen):
         except: pass
 
     def on_touch_down(self, touch):
-        #self.close_tray()  # already auto-dismissed
-        if touch.x > self.width * 3 / 4:
-            touch.grab(self)
-        Screen.on_touch_down(self, touch)
+        if Screen.on_touch_down(self, touch):
+            if 'card' in dir(touch) and touch.card is not None:
+                return True
+        if touch.sx > .75:
+            touch.start = touch.sx, touch.sy
+            touch.push(attrs=["start"])
 
     def on_touch_up(self, touch):
-        if touch.grab_current is self:
-            touch.ungrab(self)
-            if (touch.dx < 0 and touch.dx > -self.width / 2 and
-                touch.dy > -10 and touch.dy < 10):
+        if 'start' in dir(touch):
+            move_x, move_y = touch.sx - touch.start[0], touch.sy - touch.start[1]
+            if (move_x < 0 and move_y > -0.05 and move_y < 0.05):
                 self.open_tray()
-        Screen.on_touch_up(self, touch)
+        else:
+            Screen.on_touch_up(self, touch)
