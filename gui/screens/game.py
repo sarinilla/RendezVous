@@ -12,7 +12,7 @@ from rendezvous import GameSettings
 
 from gui import PLAYER, DEALER
 from gui.components import BoardDisplay, ScoreDisplay, HandDisplay
-from gui.components import RoundCounter, ToolTipDisplay
+from gui.components import RoundCounter, ToolTipDisplay, PowerupIcon
 from gui.components import AchievementEarnedDisplay, UnlockDisplay
 
 
@@ -34,11 +34,7 @@ class RoundAchievementScreen(Screen):
             self.ids.carousel.add_widget(unlock)
 
 
-class PowerupIcon(Widget):
-
-    """Display one Powerup's icon for use."""
-
-    powerup = ObjectProperty()
+class UsablePowerupIcon(PowerupIcon):
 
     def on_touch_up(self, touch):
         """Use the powerup."""
@@ -56,8 +52,8 @@ class PowerupTray(ModalView):
         app = App.get_running_app()
         layout = StackLayout(padding=[dp(10)])
         for powerup in app.powerups.purchased:
-            layout.add_widget(PowerupIcon(powerup=powerup,
-                                          size_hint=(1, None)))
+            layout.add_widget(UsablePowerupIcon(powerup=powerup,
+                                                size_hint=(1, None)))
         self.add_widget(layout)
             
 
