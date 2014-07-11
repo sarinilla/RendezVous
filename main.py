@@ -121,6 +121,8 @@ class RendezVousWidget(ScreenManager):
                 hand.refill()
         elif self.current == 'settings':
             self.app._save_sd_config()
+        elif self.current == 'main':
+            self.main.close_tray()
 
         # Switching TO something important?
         if (screen == 'main' and self.game.round == 0):
