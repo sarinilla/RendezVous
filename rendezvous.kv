@@ -361,7 +361,7 @@
                     size: min(root.size[0], root.size[1]*.7), min(root.size[0], root.size[1]*.7)
                     pos: root.pos[0] + (root.size[0] - min(root.size[0], root.size[1]*.7)) / 2, root.pos[1] + .3*root.size[1]# + (root.size[1]*.7 - min(root.size[0], root.size[1]*.7)) / 2
         Label:
-            text: root.text
+            text: root.text_below
             size: root.size[0], root.size[1] * .3
             text_size: self.size
             pos: root.pos
@@ -401,35 +401,35 @@
         BoxLayout:
             HomeButton:
                 source: "atlas://gui/homescreen/wink"
-                text: str(app.winks)
+                text_below: str(app.winks)
                 on_release: root.manager.switcher('powerups')
             HomeButton:
                 source: "atlas://gui/homescreen/kiss"
-                text: str(app.kisses)
+                text_below: str(app.kisses)
                 on_release: root.manager.switcher('decks')
             HomeButton:
                 source: "atlas://gui/homescreen/achievements"
-                text: "Achievements"
+                text_below: "Achievements"
                 on_release: root.manager.switcher('achieve')
             HomeButton:
                 source: "atlas://gui/homescreen/statistics"
-                text: "Statistics"
+                text_below: "Statistics"
                 on_release: root.manager.switcher('stats')
             HomeButton:
                 source: "atlas://gui/homescreen/decks"
-                text: "Decks"
+                text_below: "Decks"
                 on_release: root.manager.switcher('decks')
             HomeButton:
                 source: "atlas://gui/homescreen/cards"
-                text: "Cards"
+                text_below: "Cards"
                 on_release: root.manager.switcher('cards')
             HomeButton:
                 source: "atlas://gui/homescreen/settings"
-                text: "Settings"
+                text_below: "Settings"
                 on_release: root.manager.switcher('settings')
             HomeButton:
                 source: "atlas://gui/homescreen/help"
-                text: "Help"
+                text_below: "Help"
 
 
 ## Achievement Screen - gui/screens/achievement.py ##            

@@ -124,6 +124,8 @@ class RendezVousWidget(ScreenManager):
                 hand.refill()
         elif self.current == 'settings':
             self.app._save_sd_config()
+        elif self.current == 'main':
+            self.main.close_tray()
 
         # Switching TO something important?
         if (screen == 'main' and self.game.round == 0):
@@ -209,6 +211,9 @@ class RendezVousWidget(ScreenManager):
         # Some are used right away and done with
         self.app.powerups.use(powerup)
         if powerup.type == PowerupType.FLUSH_HAND:
+            for slot in self.current_screen.gameboard.slots[PLAYER]:
+                self.card_touched(slot)  # return to hand
+            self.main.gameboard.update()
             self.game.players[PLAYER].flush()
             self.main.hand_display.update()
             return
@@ -246,6 +251,7 @@ class RendezVousWidget(ScreenManager):
                     self.app.powerups.use(powerup)
                     return True
         elif powerup.type == PowerupType.FLUSH_CARD:
+            if card_display.card is None: return False
             try:
                 i = self.main.hand_display.slots.index(card_display)
             except ValueError:
@@ -520,6 +526,7 @@ class RendezVousWidget(ScreenManager):
 
     def replay_scoring(self):
         """Replay the scoring sequence at the user's request."""
+        self._in_progress = True
         self.game.score.scores = self._backup_score
         for card in self.game.board:
             card.reset()

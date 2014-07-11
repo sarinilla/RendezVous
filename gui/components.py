@@ -43,6 +43,7 @@ class CardDisplay(Widget):
             touch.card = self.card
             touch.display = self
             touch.push(attrs=["card", "display"])
+            return True
 
     def on_touch_up(self, touch):
         if not self.collide_point(*touch.pos):
@@ -118,6 +119,7 @@ class HomeButton(Button):
     """Clickable icon with text beneath."""
 
     source = StringProperty()
+    text_below = StringProperty()
 
 
 class ConfirmPopup(Popup):
@@ -195,7 +197,8 @@ class HandDisplay(BoxLayout):
         specials = 0
         for i, card in enumerate(self.hand):
             self.slots[i].card = None  # always force update
-            self.slots[i].card = card
+            if i not in self._played:
+                self.slots[i].card = card
             if card is not None and card.suit == SpecialSuit.SPECIAL:
                 specials += 1
         if specials + GameSettings.CARDS_ON_BOARD > GameSettings.CARDS_IN_HAND:
