@@ -143,6 +143,13 @@ class UnlockDisplay(BoxLayout):
     reward = ObjectProperty(DUMMY_CARD, allownone=True)
 
 
+class PowerupIcon(Widget):
+
+    """Display one Powerup's icon for use."""
+
+    powerup = ObjectProperty()
+
+
 ## Game Components ##
 
 class RoundCounter(Label):

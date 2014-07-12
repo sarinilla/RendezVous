@@ -501,6 +501,14 @@ class DeckDefinition:
                 return copy.copy(special)
         return None
 
+    def get_card(self, name):
+        """Return the named Card, or None."""
+        match = re.match(r'(.+) (\d+)', name)
+        if match is not None:
+            if match.group(1) in self.suits:
+                return Card(match.group(1), int(match.group(2)))
+        return self.get_special(name)
+
     def get_card_texture(self, card):
         """Return texture details for the given card."""
         return self._get_rect(*self._get_card_loc(card))

@@ -9,11 +9,13 @@ from kivy.graphics.texture import Texture
 from kivy.properties import ObjectProperty
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, FadeTransition, Screen
 from kivy.uix.settings import SettingBoolean, SettingsWithNoMenu
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
+from kivy.uix.carousel import Carousel
 from kivy.loader import Loader
 
 from rendezvous import GameSettings, Currency, PowerupType, SpecialSuit
@@ -36,10 +38,10 @@ from gui.screens.deck import DeckCatalogScreen
 from gui.screens.cards import DeckEditScreen
 from gui.screens.statistics import StatisticsScreen
 from gui.screens.achievements import AchievementsScreen
-from gui.screens.powerups import PowerupScreen
+from gui.screens.powerups import PowerupScreen, CardSelect
 
 
-__version__ = '0.6.5'
+__version__ = '0.6.6'
 
 
 class RendezVousWidget(ScreenManager):
@@ -203,6 +205,37 @@ class RendezVousWidget(ScreenManager):
         # Some are consumed on the next click
         if powerup.type in (PowerupType.FLUSH_CARD, PowerupType.UNWAIT_CARD):
             self.powerup_next_click = powerup
+            return
+
+        # One requires a secondary popup
+        if powerup.type == PowerupType.PLAY_CARD:
+            if isinstance(powerup.value, Card):
+                self.current_screen.gameboard.place_card(powerup.value)
+                self.app.powerups.use(powerup)
+                if self.game.board.is_full(PLAYER):
+                    self._finish_play()
+            else:
+                popup = Popup(title='Select a card to play:')
+                carousel = Carousel(direction='right')
+                cards = [self.app.loaded_deck.get_card(name)
+                         for name in self.app.powerups.cards()]
+                for i in range(0, len(cards), 10):
+                    layout = GridLayout(rows=2)
+                    for card in cards[i:i+10]:
+                        def play_sleeve_card(display, powerup, card, popup):
+                            popup.dismiss()
+                            powerup = copy.deepcopy(powerup)
+                            powerup.value = card
+                            card.from_powerup = powerup.name
+                            self.use_powerup(powerup)
+                        layout.add_widget(CardSelect(card=card,
+                                            callback=play_sleeve_card,
+                                            args=(powerup, card, popup)))
+                    for i in range(len(cards), i+10):
+                        layout.add_widget(CardSelect(card=None))
+                    carousel.add_widget(layout)
+                popup.add_widget(carousel)
+                popup.open()
             return
 
         # Some are used right away and done with
@@ -436,22 +469,36 @@ class RendezVousWidget(ScreenManager):
             card = self.current_screen.hand_display.get(card_or_display)
             self.current_screen.gameboard.place_card(card, index)
         if self.game.board.is_full(PLAYER):
-                failures = self.current_screen.gameboard.validate()
-                for fcard in failures:
-                    self.current_screen.hand_display.return_card(fcard)
-                if failures == []:
-                    self._in_progress = True
-                    self.current_screen.hand_display.confirm()
-                    self._play_dealer()
+            self._finish_play()
+
+    def _finish_play(self):
+        """Validate the play and complete the round."""
+        failures = self.current_screen.gameboard.validate()
+        for fcard in failures:
+            self._return_to_source(fcard)
+        if failures == []:
+            self._in_progress = True
+            self.current_screen.hand_display.confirm()
+            self._play_dealer()
 
     def _remove_from_board(self, card_display):
-        """Return a card from the board to the hand."""
+        """Return a card from the board to the hand (or powerup tray)."""
         if card_display not in self.current_screen.gameboard.slots[PLAYER]:
             return
         index = self.current_screen.gameboard.slots[PLAYER].index(card_display)
         if self.game.board._wait[PLAYER][index]: return
         card = self.current_screen.gameboard.remove_card(card_display)
-        self.current_screen.hand_display.return_card(card)
+        self._return_to_source(card)
+
+    def _return_to_source(self, card):
+        """Return a card previously played to its proper source."""
+        if 'from_powerup' in dir(card):
+            powerup = self.app.powerups.find(str(card.from_powerup))
+            powerup.value = card
+            self.app.powerups.purchase(powerup)
+            powerup.value = None
+        else:
+            self.current_screen.hand_display.return_card(card)
 
     def _get_dealer_play(self):
         if GameSettings.AI_DIFFICULTY == 1:
