@@ -27,8 +27,9 @@ class CardSelect(CardDisplay):
 
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
-            self.callback(self, *self.args)
-            return True
+            if self.callback is not None:
+                self.callback(self, *self.args)
+                return True
         return super(CardDisplay, self).on_touch_up(touch)
 
 

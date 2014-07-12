@@ -230,6 +230,8 @@ class RendezVousWidget(ScreenManager):
                         layout.add_widget(CardSelect(card=card,
                                             callback=play_sleeve_card,
                                             args=(powerup, card, popup)))
+                    for i in range(len(cards), i+10):
+                        layout.add_widget(CardSelect(card=None))
                     carousel.add_widget(layout)
                 popup.add_widget(carousel)
                 popup.open()
