@@ -9,6 +9,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.modalview import ModalView
 
 from rendezvous import GameSettings
+from rendezvous.powerups import Powerup
 
 from gui import PLAYER, DEALER
 from gui.components import BoardDisplay, ScoreDisplay, HandDisplay
@@ -52,8 +53,9 @@ class PowerupTray(ModalView):
         app = App.get_running_app()
         layout = StackLayout(padding=[dp(10)])
         for powerup in app.powerups.purchased:
-            layout.add_widget(UsablePowerupIcon(powerup=powerup,
-                                                size_hint=(1, None)))
+            if isinstance(powerup, Powerup):
+                layout.add_widget(UsablePowerupIcon(powerup=powerup,
+                                                    size_hint=(1, None)))
         self.add_widget(layout)
             
 
