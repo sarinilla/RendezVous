@@ -1,4 +1,5 @@
 import os
+import copy
 
 from rendezvous import PowerupType, FileReader
 
@@ -83,13 +84,14 @@ class Powerups:
         self._read_purchased()
 
     def __iter__(self):
-        return iter(self.available)
+        for powerup in self.available:
+            yield copy.deepcopy(powerup)
 
     def __len__(self):
         return len(self.available)
 
     def __getitem__(self, key):
-        return self.available[key]
+        return copy.deepcopy(self.available[key])
 
     def index(self, powerup):
         return self.available.index(powerup)
@@ -99,7 +101,7 @@ class Powerups:
         name = str(name).upper()
         for powerup in self.available:
             if powerup.name.upper() == name:
-                return powerup
+                return copy.deepcopy(powerup)
         raise ValueError("No such powerup: %s" % name)
 
     def count(self, powerup):
@@ -143,9 +145,9 @@ class Powerups:
             self.purchased[powerup] = 1
         if powerup.type == PowerupType.PLAY_CARD:
             try:
-                self.purchased['cards_to_play'].append(powerup.value)
+                self.purchased['cards_to_play'].append(str(powerup.value))
             except KeyError:
-                self.purchased['cards_to_play'] = [powerup.value]
+                self.purchased['cards_to_play'] = [str(powerup.value)]
         self._write()
 
     def use(self, powerup):

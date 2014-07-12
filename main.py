@@ -226,6 +226,7 @@ class RendezVousWidget(ScreenManager):
                             popup.dismiss()
                             powerup = copy.deepcopy(powerup)
                             powerup.value = card
+                            card.from_powerup = powerup.name
                             self.use_powerup(powerup)
                         layout.add_widget(CardSelect(card=card,
                                             callback=play_sleeve_card,
@@ -481,13 +482,19 @@ class RendezVousWidget(ScreenManager):
             self._play_dealer()
 
     def _remove_from_board(self, card_display):
-        """Return a card from the board to the hand."""
+        """Return a card from the board to the hand (or powerup tray)."""
         if card_display not in self.current_screen.gameboard.slots[PLAYER]:
             return
         index = self.current_screen.gameboard.slots[PLAYER].index(card_display)
         if self.game.board._wait[PLAYER][index]: return
         card = self.current_screen.gameboard.remove_card(card_display)
-        self.current_screen.hand_display.return_card(card)
+        if 'from_powerup' in dir(card):
+            powerup = self.app.powerups.find(str(card.from_powerup))
+            powerup.value = card
+            self.app.powerups.purchase(powerup)
+            powerup.value = None
+        else:
+            self.current_screen.hand_display.return_card(card)
 
     def _get_dealer_play(self):
         if GameSettings.AI_DIFFICULTY == 1:
