@@ -7,6 +7,7 @@ from kivy.uix.stacklayout import StackLayout
 from kivy.uix.widget import Widget
 from kivy.uix.popup import Popup
 from kivy.uix.modalview import ModalView
+from kivy.uix.scrollview import ScrollView
 
 from rendezvous import GameSettings
 from rendezvous.powerups import Powerup
@@ -51,12 +52,15 @@ class PowerupTray(ModalView):
         ModalView.__init__(self, size_hint=(.15, 1), pos_hint={'right': 1},
                            **kwargs)
         app = App.get_running_app()
-        layout = StackLayout(padding=[dp(10)])
+        scroller = ScrollView(do_scroll_x=False)
+        layout = StackLayout(padding=[dp(10)], size_hint_y=None)
+        layout.height = layout.width * len(app.powerups.purchased)
         for powerup in app.powerups.purchased:
             if isinstance(powerup, Powerup):
                 layout.add_widget(UsablePowerupIcon(powerup=powerup,
                                                     size_hint=(1, None)))
-        self.add_widget(layout)
+        scroller.add_widget(layout)
+        self.add_widget(scroller)
             
 
 class GameScreen(Screen):
