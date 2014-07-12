@@ -23,7 +23,7 @@ class CardSelect(CardDisplay):
     """CardDisplay with a specific callback on touch."""
 
     callback = ObjectProperty()
-    args = ListProperty()
+    args = ListProperty([])
 
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):

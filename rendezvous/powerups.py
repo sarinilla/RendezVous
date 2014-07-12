@@ -109,6 +109,10 @@ class Powerups:
         except KeyError:
             return 0
 
+    def cards(self):
+        """Return list of available cards for PLAY_CARD powerup."""
+        return self.purchased['cards_to_play']
+
     def get_powerup_texture(self, powerup):
         """Return (L, B, W, H) rectangle for the given Powerup."""
         index = self.available.index(powerup)
@@ -149,6 +153,10 @@ class Powerups:
         self.purchased[powerup] -= 1
         if self.purchased[powerup] == 0:
             del self.purchased[powerup]
+        if powerup.type == PowerupType.PLAY_CARD:
+            self.purchased['cards_to_play'].remove(str(powerup.value))
+            if not self.purchased['cards_to_play']:
+                del self.purchased['cards_to_play']
         self._write()
 
     def _write(self):
