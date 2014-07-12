@@ -475,7 +475,7 @@ class RendezVousWidget(ScreenManager):
         """Validate the play and complete the round."""
         failures = self.current_screen.gameboard.validate()
         for fcard in failures:
-            self.current_screen.hand_display.return_card(fcard)
+            self._return_to_source(fcard)
         if failures == []:
             self._in_progress = True
             self.current_screen.hand_display.confirm()
@@ -488,6 +488,10 @@ class RendezVousWidget(ScreenManager):
         index = self.current_screen.gameboard.slots[PLAYER].index(card_display)
         if self.game.board._wait[PLAYER][index]: return
         card = self.current_screen.gameboard.remove_card(card_display)
+        self._return_to_source(card)
+
+    def _return_to_source(self, card):
+        """Return a card previously played to its proper source."""
         if 'from_powerup' in dir(card):
             powerup = self.app.powerups.find(str(card.from_powerup))
             powerup.value = card
