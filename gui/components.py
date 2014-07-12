@@ -72,10 +72,12 @@ class SuitDisplay(Widget):
 
     suit = StringProperty()
 
-    def flash(self, *args, symbol="WINK"):
+    def flash(self, *args, **kwargs):
         """Show another symbol (default: WINK) briefly."""
+        if 'symbol' not in kwargs:
+            kwargs['symbol'] = 'WINK'
         self.backup = self.suit
-        self.suit = symbol
+        self.suit = kwargs['symbol']
         Clock.schedule_once(self._flash_over, 0.5)
 
     def _flash_over(self, *args):
@@ -576,10 +578,12 @@ class AchievementIcon(Widget):
 
     achievement = ObjectProperty()
 
-    def flash(self, *args, symbol="KISS"):
+    def flash(self, *args, **kwargs):
         """Show another symbol (default: KISS) briefly."""
+        if 'symbol' not in kwargs:
+            kwargs['symbol'] = 'KISS'
         self.backup = self.achievement
-        self.achievement = symbol
+        self.achievement = kwargs['symbol']
         Clock.schedule_once(self._flash_over, 0.5)
 
     def _flash_over(self, *args):
