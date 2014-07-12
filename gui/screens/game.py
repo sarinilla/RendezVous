@@ -7,12 +7,14 @@ from kivy.uix.stacklayout import StackLayout
 from kivy.uix.widget import Widget
 from kivy.uix.popup import Popup
 from kivy.uix.modalview import ModalView
+from kivy.uix.scrollview import ScrollView
 
 from rendezvous import GameSettings
+from rendezvous.powerups import Powerup
 
 from gui import PLAYER, DEALER
 from gui.components import BoardDisplay, ScoreDisplay, HandDisplay
-from gui.components import RoundCounter, ToolTipDisplay
+from gui.components import RoundCounter, ToolTipDisplay, PowerupIcon
 from gui.components import AchievementEarnedDisplay, UnlockDisplay
 
 
@@ -34,11 +36,7 @@ class RoundAchievementScreen(Screen):
             self.ids.carousel.add_widget(unlock)
 
 
-class PowerupIcon(Widget):
-
-    """Display one Powerup's icon for use."""
-
-    powerup = ObjectProperty()
+class UsablePowerupIcon(PowerupIcon):
 
     def on_touch_up(self, touch):
         """Use the powerup."""
@@ -54,11 +52,15 @@ class PowerupTray(ModalView):
         ModalView.__init__(self, size_hint=(.15, 1), pos_hint={'right': 1},
                            **kwargs)
         app = App.get_running_app()
-        layout = StackLayout(padding=[dp(10)])
+        scroller = ScrollView(do_scroll_x=False)
+        layout = StackLayout(padding=[dp(10)], size_hint_y=None)
+        layout.height = layout.width * len(app.powerups.purchased)
         for powerup in app.powerups.purchased:
-            layout.add_widget(PowerupIcon(powerup=powerup,
-                                          size_hint=(1, None)))
-        self.add_widget(layout)
+            if isinstance(powerup, Powerup):
+                layout.add_widget(UsablePowerupIcon(powerup=powerup,
+                                                    size_hint=(1, None)))
+        scroller.add_widget(layout)
+        self.add_widget(scroller)
             
 
 class GameScreen(Screen):
