@@ -65,7 +65,9 @@ class PowerupDisplay(BoxLayout):
         for i in range(0, len(deck), 10):
             layout = GridLayout(rows=2)
             for card in deck[i:i+10]:
-                layout.add_widget(CardSelect(card=card, callback=self._confirm_card, args=(card, popup)))
+                layout.add_widget(CardSelect(card=card,
+                                             callback=self._confirm_card,
+                                             args=(card, popup)))
             carousel.add_widget(layout)
         popup.add_widget(carousel)
         popup.open()
@@ -73,38 +75,38 @@ class PowerupDisplay(BoxLayout):
     def _confirm_card(self, display, card, selection_popup):
         """Confirm the selected card for PowerupType.PLAY_CARD."""
         self.powerup = copy.deepcopy(self.powerup)  # divorce from other stored versions
-        popup = Popup(title="%s: %s" % (self.powerup, card))
-        layout = BoxLayout(orientation="vertical")
         self.powerup.value = str(card)
         if card.suit == SpecialSuit.SPECIAL:
             self.powerup.price = 50
         else:
             self.powerup.price = card.value * 5
-        layout.add_widget(Label(text="Are you sure you would like to purchase this card for %s wink%s?"
-                                     % (self.powerup.price, "s" if self.powerup.price != 1 else ""),
-                                valign="middle", halign="center"))
-        layout.add_widget(ToolTipDisplay(card=card, size_hint=(1, 5)))
-        buttons = BoxLayout()
-        buttons.add_widget(Widget())
-        buttons.add_widget(Button(text="YES", on_release=lambda x: self.purchase(popup, selection_popup)))
-        buttons.add_widget(Button(text="no", on_release=popup.dismiss))
-        buttons.add_widget(Widget())
-        layout.add_widget(buttons)
-        popup.add_widget(layout)
-        popup.open()
+        self._confirmation_popup(title="%s: %s" % (self.powerup, card),
+                                 item_name="card", popups=[selection_popup],
+                                 info=ToolTipDisplay(card=card, size_hint=(1, 5)))
 
     def _confirm_purchase(self):
         """Ask the user to confirm the purchase."""
+        self._confirmation_popup(title=str(self.powerup))
+
+    def _confirmation_popup(self, title="Confirm Purchase?", item_name="powerup",
+                            currency="wink", info=None, popups=[]):
+        """Display a confirmation popup for a purchase."""
         app = App.get_running_app()
-        popup = Popup(title=str(self.powerup),
+        popup = Popup(title=title,
                       size_hint=(1, .5))
+        popups.append(popup)
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Label(text="Are you sure you would like to purchase this powerup for %s wink%s?"
-                                     % (self.powerup.price, "s" if self.powerup.price != 1 else ""),
-                                valign="middle", halign="center"))
+        layout.add_widget(Label(
+            text="Are you sure you would like to purchase this %s for %s %s%s?"
+                 % (item_name, self.powerup.price, currency,
+                    "s" if self.powerup.price != 1 else ""),
+            valign="middle", halign="center"))
+        if info is not None:
+            layout.add_widget(info)
         buttons = BoxLayout()
         buttons.add_widget(Widget())
-        buttons.add_widget(Button(text="YES", on_release=lambda x: self.purchase(popup)))
+        buttons.add_widget(Button(text="YES",
+                                  on_release=lambda x: self.purchase(*popups)))
         buttons.add_widget(Button(text="no", on_release=popup.dismiss))
         buttons.add_widget(Widget())
         layout.add_widget(buttons)
