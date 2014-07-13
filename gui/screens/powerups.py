@@ -15,7 +15,7 @@ from kivy.uix.carousel import Carousel
 
 from rendezvous import PowerupType, SpecialSuit
 
-from gui.components import CardDisplay, ToolTipDisplay
+from gui.components import CardDisplay, ToolTipDisplay, PowerupIcon
 
 
 class CardSelect(CardDisplay):
@@ -93,9 +93,11 @@ class PowerupDisplay(BoxLayout):
         """Display a confirmation popup for a purchase."""
         app = App.get_running_app()
         popup = Popup(title=title,
-                      size_hint=(1, .5))
+                      size_hint=(1, .5 if info is None else .75))
         popups.append(popup)
-        layout = BoxLayout(orientation="vertical")
+        sideways = BoxLayout()
+        sideways.add_widget(PowerupIcon(powerup=self.powerup, size_hint=(.25, 1)))
+        layout = BoxLayout(orientation="vertical", size_hint=(.75, 1))
         layout.add_widget(Label(
             text="Are you sure you would like to purchase this %s for %s %s%s?"
                  % (item_name, self.powerup.price, currency,
@@ -110,7 +112,8 @@ class PowerupDisplay(BoxLayout):
         buttons.add_widget(Button(text="no", on_release=popup.dismiss))
         buttons.add_widget(Widget())
         layout.add_widget(buttons)
-        popup.add_widget(layout)
+        sideways.add_widget(layout)
+        popup.add_widget(sideways)
         popup.open()
 
     def purchase(self, *popups):
