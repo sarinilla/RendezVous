@@ -254,6 +254,8 @@
 
 <PowerupIcon>:
     canvas:
+        Color:
+            rgba: root.color
         Rectangle:
             texture: app.powerups_texture and app.get_powerup_texture(root.powerup)
             size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])

@@ -6,7 +6,7 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.core.image import Image
 from kivy.graphics.texture import Texture
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, ListProperty
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -41,7 +41,7 @@ from gui.screens.achievements import AchievementsScreen
 from gui.screens.powerups import PowerupScreen, CardSelect
 
 
-__version__ = '0.6.6'
+__version__ = '0.6.7'
 
 
 class RendezVousWidget(ScreenManager):
@@ -55,6 +55,15 @@ class RendezVousWidget(ScreenManager):
       main        -- primary screen for gameplay
 
     """
+
+    powerup_next_click = ObjectProperty(allownone=True)
+    powerups_in_use = ListProperty()
+
+    def on_powerup_next_click(self, instance, value):
+        self.main.gameboard.show_next_click_powerup(value)
+
+    def on_powerups_in_use(self, instance, value):
+        self.main.gameboard.show_active_powerups(value)
 
     def __init__(self, **kwargs):
         """Arrange the widgets."""
@@ -273,7 +282,7 @@ class RendezVousWidget(ScreenManager):
         self.powerup_next_click = None
         
         if powerup.type == PowerupType.WAIT_CARD:
-            if card_display.parent.parent == self.main.gameboard:
+            if self._on_gameboard(card_display):
                 if card_display.card is not None and not card_display.waited:
                     card_display.waited = True
                     p, i = self.main.gameboard.find(card_display)
@@ -358,25 +367,35 @@ class RendezVousWidget(ScreenManager):
 
         if self.next_click_for_powerup(card_display):
             return
-        loc = card_display.parent
         if self._end_of_round:
-            if loc is self.current_screen.hand_display:
+            if self._in_hand(card_display):
                 cont = self.current_screen.gameboard.next_round_prompted()
                 if not cont:
                     return
                 # if not blocked, then go ahead and play this card also!
 
-            elif loc.parent is self.current_screen.gameboard:
+            elif self._on_gameboard(card_display):
                 self.current_screen.gameboard.rescore_prompted()
                 return
             
         if card_display.card is None: return
         
-        if loc is self.current_screen.hand_display:
+        if self._in_hand(card_display):
             self._place_on_board(card_display)
                     
-        elif loc.parent is self.current_screen.gameboard:
+        elif self._on_gameboard(card_display):
             self._remove_from_board(card_display)
+
+    def _on_gameboard(self, card_display):
+        """Return whether this display is part of the gameboard."""
+        for side in self.current_screen.gameboard.slots:
+            if card_display in side:
+                return True
+        return False
+
+    def _in_hand(self, card_display):
+        """Return whether this display is part of the player's hand."""
+        return card_display in self.current_screen.hand_display.slots
 
     def card_dropped(self, card_display, card):
         """Allow dropping cards onto EMPTY board slots, or arranging hand.
@@ -402,8 +421,7 @@ class RendezVousWidget(ScreenManager):
                 return
 
         # Dropping onto the gameboard?
-        loc = card_display.parent
-        if loc.parent is self.current_screen.gameboard:
+        if self._on_gameboard(card_display):
 
             # Never drop onto enemy slots (or held slots)
             if card_display not in self.current_screen.gameboard.slots[PLAYER]:
@@ -446,8 +464,9 @@ class RendezVousWidget(ScreenManager):
                     return
 
         # Dropping onto player's hand?
-        elif loc is self.current_screen.hand_display:
-            hand_index = self.current_screen.hand_display.slots.index(card_display)
+        elif self._in_hand(card_display):
+            loc = self.current_screen.hand_display
+            hand_index = loc.slots.index(card_display)
 
             # From the board (not held)
             if loc.is_played(card):
