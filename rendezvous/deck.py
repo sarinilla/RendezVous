@@ -82,6 +82,23 @@ class Card:
                     self.description += "  Buffed to %s." % self.value
                 else:
                     self.description += "  Debuffed to %s." % self.value
+
+        elif effect.effect == EffectType.MULTIPLY:
+            self.value = float(self.value) * effect.value
+            if effect.value > 1: self.value = int(self.value + 0.99)
+            else: self.value = int(self.value)
+            if effect.value == 2:
+                self.description += "  Doubled."
+            elif effect.value == 3:
+                self.description += "  Tripled."
+            elif effect.value == 0.5:
+                self.description += "  Halved."
+            elif effect.value > 1:
+                self.description += ("  Increased to %s%% (%s)."
+                                     % (int(effect.value * 100), self.value))
+            else:
+                self.description += ("  Reduced to %s%% (%s)."
+                                     % (int(effect.value * 100), self.value))
             
         elif effect.effect == EffectType.KISS:
             self.value = SpecialValue.KISS
@@ -98,8 +115,17 @@ class Card:
                 self.description += "  Reversed to %s." % self.value
                 
         elif effect.effect == EffectType.REPLACE:
-            self.suit = effect.value
-            self.description += "  Replaced suit with %s." % self.suit
+            if isinstance(effect.value, str):
+                self.suit = effect.value
+                self.description += "  Replaced suit with %s." % self.suit
+            elif isinstance(effect.value, int):
+                self.value = effect.value
+                self.description += "  Replaced value with %s." % self.value
+            else:
+                self.suit = effect.value.suit
+                self.value = effect.value.value
+                self.description += ("  Replaced by %s %s."
+                                     % (self.suit, self.value))
 
         elif effect.effect == EffectType.SWITCH:
             self.value = effect.value
@@ -451,6 +477,16 @@ class DeckDefinition:
             return Effect(EffectType.BUFF, int(words[1]))
         elif words[0] == "DEBUFF":
             return Effect(EffectType.BUFF, -int(words[1]))
+        elif words[0] == "DOUBLE":
+            return Effect(EffectType.MULTIPLY, 2)
+        elif words[0] == "TRIPLE":
+            return Effect(EffectType.MULTIPLY, 3)
+        elif words[0] == "MULTIPLY":
+            return Effect(EffectType.MULTIPLY, float(words[1]))
+        elif words[0] == "HALVE":
+            return Effect(EffectType.MULTIPLY, 0.5)
+        elif words[0] == "DIVIDE":
+            return Effect(EffectType.MULTIPLY, 1.0 / float(words[1]))
         elif words[0] == "WAIT":
             return Effect(EffectType.WAIT)
         elif words[0] == "LOSE":
@@ -462,13 +498,26 @@ class DeckDefinition:
         elif words[0] == "REVERSE":
             return Effect(EffectType.REVERSE)
         elif words[0] == "REPLACE":
-            try:
-                suit = self.suits[[s.upper() for s in self.suits].index(words[1])]
-            except ValueError:
-                warnings.warn("Invalid replacement suit: %s" % words[1],
+            suit = self._match_suit(' '.join(words[1:]))
+            value = None
+            if suit is None:
+                suit = self._match_suit(' '.join(words[1:-1]))
+                try: value = int(words[-1])
+                except ValueError: value = None
+            if suit is None:
+                try: value = int(words[1])
+                except ValueError: value = None
+                
+            if suit is None and value is None:
+                warnings.warn("Invalid replacement suit/value: %s" % ' '.join(words[1:]),
                               DeckSyntaxWarning)
                 return Effect()
-            return Effect(EffectType.REPLACE, suit)
+            elif value is None:
+                return Effect(EffectType.REPLACE, suit)
+            elif suit is None:
+                return Effect(EffectType.REPLACE, value)
+            else:
+                return Effect(EffectType.REPLACE, Card(suit, value))
         elif words[0] == "KISS":
             return Effect(EffectType.KISS)
         elif words[0] == "CLONE":
@@ -487,8 +536,13 @@ class DeckDefinition:
             return Effect(EffectType.RANDOMIZE, TargetField.ALL)
         else:
             warnings.warn("Invalid special card effect: %s" % words[0])
-        
 
+    def _match_suit(self, suit_name):
+        try:
+            return self.suits[[s.upper() for s in self.suits].index(suit_name)]
+        except ValueError:
+            return None
+        
     def cards(self, achievements=None, use_blocks=True, skip_specials=False):
         """Generator; return all card in the deck, unshuffled."""
         for suit in self.suits:

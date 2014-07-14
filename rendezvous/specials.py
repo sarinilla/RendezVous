@@ -322,6 +322,17 @@ class Effect:
                 return "Buff value by %s" % self.value
             else:
                 return "Debuff value by %s" % -self.value
+        elif self.effect == EffectType.MULTIPLY:
+            if self.value == 2:
+                return "Double value"
+            elif self.value == 3:
+                return "Triple value"
+            elif self.value == 0.5:
+                return "Halve value"
+            elif self.value > 1:
+                return "Increase value by %s%%" % int(self.value * 100)
+            else:
+                return "Reduce value to %s%%" % int(self.value * 100)
         elif self.effect == EffectType.KISS:
             return "KISS (both sides WIN)"
         elif self.effect == EffectType.WAIT:
@@ -331,7 +342,13 @@ class Effect:
         elif self.effect == EffectType.REVERSE:
             return "Reverse value (e.g. 1 becomes 10)"
         elif self.effect == EffectType.REPLACE:
-            return "Replace suit with %s" % self.value
+            if isinstance(self.value, str):
+                return "Replace suit with %s" % self.value
+            elif isinstance(self.value, int):
+                return "Replace value with %s" % self.value
+            else:
+                return ("Replace card with %s %s"
+                        % (self.value.suit, self.value.value))
         elif self.effect == EffectType.CLONE:
             return "All matching cards become clones of the first requirement found"
         elif self.effect == EffectType.FLUSH:
