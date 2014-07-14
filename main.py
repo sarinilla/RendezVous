@@ -894,11 +894,11 @@ class RendezVousApp(App):
             self._load_currency()
         return achieved
 
-    def purchase_powerup(self, powerup):
+    def purchase_powerup(self, powerup, count=1):
         """Attempt to purchase a powerup; return boolean success."""
-        if not self.winks.purchase(powerup, powerup.price):
+        if not self.winks.purchase(powerup, powerup.price * count):
             return False
-        self.powerups.purchase(powerup)
+        self.powerups.purchase(powerup, count)
         self._load_currency()
         return True
 

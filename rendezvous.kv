@@ -474,6 +474,7 @@
 
 ## Powerup Screen - gui/screen/powerups.py ##
 #:import PowerupType rendezvous.PowerupType
+#:import SpinBox gui.spinbox.SpinBox
 
 <ConfirmationPopup>:
     BoxLayout:
@@ -485,14 +486,26 @@
             orientation: "vertical"
             size_hint: .75, 1
             Label:
-                text: "Are you sure you would like to purchase this %s for %s %s%s?" % (root.item_name, root.powerup.price, root.currency, "s" if root.powerup.price != 1 else "") if root.powerup is not None else ""
+                text: "Are you sure you would like to purchase this %s for %s %s%s%s?" % (root.item_name, root.powerup.price, root.currency, "s" if root.powerup.price != 1 else "", " each" if root.count > 1 else "") if root.powerup is not None else ""
                 valign: "middle"
                 halign: "center"
+            Label:
+                text: "Total cost for [b]%s[/b] %s: [b]%s %s%s[/b]" % (root.count, root.powerup, root.powerup.price * root.count, root.currency, "s" if root.powerup.price * root.count != 1 else "") if root.powerup is not None else ""
+                markup: True
+                valign: "top"
+                halign: "center"
             BoxLayout:
+                size_hint: 1, .5
                 Widget:
                 Button:
                     text: "YES"
                     on_release: root.purchase()
+                SpinBox:
+                    id: counter
+                    minimum: 1
+                    maximum: 20
+                    value: 1
+                    on_value: root.update_count()
                 Button:
                     text: "no"
                     on_release: root.dismiss()

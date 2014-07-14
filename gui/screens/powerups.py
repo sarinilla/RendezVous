@@ -44,20 +44,24 @@ class ConfirmationPopup(Popup):
     info = ObjectProperty()
     popup_chain = ListProperty()
     callback = ObjectProperty()
+    count = NumericProperty(1)
 
     def __init__(self, **kwargs):
         Popup.__init__(self, **kwargs)
         if self.info is not None:
-            self.ids.main.add_widget(self.info, 1)
+            self.ids.main.add_widget(self.info, 2)
 
     def purchase(self, *args):
         """Charge the currency and finalize the purchase."""
         self.dismiss()
         for popup in self.popup_chain:
             popup.dismiss()
-        if App.get_running_app().purchase_powerup(self.powerup):
+        if App.get_running_app().purchase_powerup(self.powerup, self.count):
             if self.callback is not None:
-                self.callback()
+                self.callback(self.count)
+
+    def update_count(self):
+        self.count = self.ids.counter.value
 
 
 class PowerupDisplay(BoxLayout):
@@ -110,7 +114,7 @@ class PowerupDisplay(BoxLayout):
         popup = ConfirmationPopup(title="%s: %s" % (self.powerup, card),
                                   item_name="card", powerup=self.powerup,
                                   popup_chain=[selection_popup],
-                                  info=ToolTipDisplay(card=card, size_hint=(1, 5)),
+                                  info=ToolTipDisplay(card=card, size_hint=(1, 3)),
                                   callback=self._increment,
                                   size_hint=(1, .75))
         popup.open()
@@ -123,8 +127,8 @@ class PowerupDisplay(BoxLayout):
                                   size_hint=(1, .5))
         popup.open()
 
-    def _increment(self):
-        self.count += 1
+    def _increment(self, count=1):
+        self.count += count
 
     
 class PowerupScreen(Screen):

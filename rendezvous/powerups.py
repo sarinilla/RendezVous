@@ -137,17 +137,17 @@ class Powerups:
             except KeyError:
                 self.purchased[powerup] = int(value)
 
-    def purchase(self, powerup):
+    def purchase(self, powerup, count=1):
         """Purchase another copy of the given powerup."""
         try:
-            self.purchased[powerup] += 1
+            self.purchased[powerup] += count
         except KeyError:
-            self.purchased[powerup] = 1
+            self.purchased[powerup] = count
         if powerup.type == PowerupType.PLAY_CARD:
             try:
-                self.purchased['cards_to_play'].append(str(powerup.value))
+                self.purchased['cards_to_play'].extend([str(powerup.value)] * count)
             except KeyError:
-                self.purchased['cards_to_play'] = [str(powerup.value)]
+                self.purchased['cards_to_play'] = [str(powerup.value)] * count
         self._write()
 
     def use(self, powerup):
