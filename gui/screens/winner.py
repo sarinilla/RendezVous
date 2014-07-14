@@ -60,10 +60,10 @@ class FinalScoreDisplay(BoxLayout):
         wins = BoxLayout()
         for i, suit in enumerate(pwins):
             display = SuitDisplay(suit=suit)
-            Clock.schedule_once(display.flash, 1.0 * (i+1))
+            Clock.schedule_once(display.flash, 2.0 + 0.45 * (i+1))
             if winner:
                 Clock.schedule_once(display.flash,
-                                    1.0 * (len(pwins)+1))
+                                    2.5 + 0.45 * (len(pwins)+1))
             wins.add_widget(ScoreSurround(scores=self.score.by_suit(suit),
                                           center_widget=display))
         main_bar = ProgressBar(max=len(pwins + dwins), value=len(pwins))
