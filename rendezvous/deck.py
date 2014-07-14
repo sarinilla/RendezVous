@@ -315,12 +315,15 @@ class DeckDefinition:
         * SPECIAL-EFF tag options include:
           - BUFF -- followed by an integer value
           - DEBUFF -- followed by an integer value
+          - DOUBLE, TRIPLE, or HALVE
+          - MULTIPLY -- followed by a decimal value
+          - DIVIDE -- followed by a decimal value
           - WAIT
           - LOSE
           - WIN
           - SWITCH
           - REVERSE
-          - REPLACE -- followed by the name of a suit
+          - REPLACE -- followed by the name of a suit and/or a value
           - KISS
           - CLONE
           - FLUSH
