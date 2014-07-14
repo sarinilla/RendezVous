@@ -72,6 +72,41 @@ class TestSpecialEffects(unittest.TestCase):
         self.assertEqual(self.card.value, 3)
         self.assertEqual(self.card.description, "Test.  Debuffed to 3.")
 
+    def test_multiply(self):
+        """Test a value multiplication."""
+        self.card.apply(Effect(EffectType.MULTIPLY, 1.5))
+        self.assertEqual(self.card.suit, "My Suit")
+        self.assertEqual(self.card.value, 8)
+        self.assertEqual(self.card.description, "Test.  Increased to 150% (8).")
+
+    def test_double(self):
+        """Test a value double."""
+        self.card.apply(Effect(EffectType.MULTIPLY, 2))
+        self.assertEqual(self.card.suit, "My Suit")
+        self.assertEqual(self.card.value, 10)
+        self.assertEqual(self.card.description, "Test.  Doubled.")
+
+    def test_triple(self):
+        """Test a value double."""
+        self.card.apply(Effect(EffectType.MULTIPLY, 3))
+        self.assertEqual(self.card.suit, "My Suit")
+        self.assertEqual(self.card.value, 15)
+        self.assertEqual(self.card.description, "Test.  Tripled.")
+
+    def test_divide(self):
+        """Test a value division."""
+        self.card.apply(Effect(EffectType.MULTIPLY, 0.35))
+        self.assertEqual(self.card.suit, "My Suit")
+        self.assertEqual(self.card.value, 1)
+        self.assertEqual(self.card.description, "Test.  Reduced to 35% (1).")
+
+    def test_halve(self):
+        """Test a value halve."""
+        self.card.apply(Effect(EffectType.MULTIPLY, 0.5))
+        self.assertEqual(self.card.suit, "My Suit")
+        self.assertEqual(self.card.value, 2)
+        self.assertEqual(self.card.description, "Test.  Halved.")
+
     def test_buff_lose(self):
         """Verify that WIN/LOSE is not affected by buffs."""
         self.card.value = SpecialValue.LOSE
@@ -126,6 +161,20 @@ class TestSpecialEffects(unittest.TestCase):
         self.assertEqual(self.card.suit, "New Suit")
         self.assertEqual(self.card.value, 5)
         self.assertEqual(self.card.description, "Test.  Replaced suit with New Suit.")
+
+    def test_replace_value(self):
+        """Test a REPLACE value."""
+        self.card.apply(Effect(EffectType.REPLACE, 8))
+        self.assertEqual(self.card.suit, "My Suit")
+        self.assertEqual(self.card.value, 8)
+        self.assertEqual(self.card.description, "Test.  Replaced value with 8.")
+
+    def test_replace_both(self):
+        """Test a REPLACE both suit and value."""
+        self.card.apply(Effect(EffectType.REPLACE, Card("New Suit", 8)))
+        self.assertEqual(self.card.suit, "New Suit")
+        self.assertEqual(self.card.value, 8)
+        self.assertEqual(self.card.description, "Test.  Replaced by New Suit 8.")
 
     def test_switch(self):
         """Test a SWITCH (post-value-replacement)."""
@@ -199,8 +248,10 @@ class TestSpecialCard(unittest.TestCase):
         self.sc.apply(Effect(EffectType.BUFF, -2))
         self.sc.apply(Effect(EffectType.BUFF, SpecialValue.WIN))
         self.sc.apply(Effect(EffectType.BUFF, SpecialValue.LOSE))
+        self.sc.apply(Effect(EffectType.MULTIPLY, 2))
         self.sc.apply(Effect(EffectType.REVERSE))
         self.sc.apply(Effect(EffectType.REPLACE, "New Suit"))
+        self.sc.apply(Effect(EffectType.REPLACE, 15))
         self.sc.apply(Effect(EffectType.SWITCH, 10))
         self.sc.apply(Effect(EffectType.CLONE, Card("New Suit", 10)))
         self.assertEqual(self.sc.description, "Desc\nRequires: Nothing\nApplies to: ALL cards\nEffect: No effect")
@@ -342,6 +393,18 @@ class TestDeckDefinition(unittest.TestCase):
                          "Buff value by 3")
         self.assertEqual(str(self.dd._parse_effect("debuff 3")),
                          "Debuff value by 3")
+        self.assertEqual(str(self.dd._parse_effect("double")),
+                         "Double value")
+        self.assertEqual(str(self.dd._parse_effect("triple")),
+                         "Triple value")
+        self.assertEqual(str(self.dd._parse_effect("halve")),
+                         "Halve value")
+        self.assertEqual(str(self.dd._parse_effect("multiply 1.5")),
+                         "Increase value by 150%")
+        self.assertEqual(str(self.dd._parse_effect("multiply .25")),
+                         "Reduce value to 25%")
+        self.assertEqual(str(self.dd._parse_effect("divide 3")),
+                         "Reduce value to 33%")
         self.assertEqual(str(self.dd._parse_effect("wait")),
                          "Wait through the next turn")
         self.assertEqual(str(self.dd._parse_effect("lose")),
@@ -354,6 +417,10 @@ class TestDeckDefinition(unittest.TestCase):
                          "Reverse value (e.g. 1 becomes 10)")
         self.assertEqual(str(self.dd._parse_effect("replace Girlfriend")),
                          "Replace suit with Girlfriend")
+        self.assertEqual(str(self.dd._parse_effect("replace 1")),
+                         "Replace value with 1")
+        self.assertEqual(str(self.dd._parse_effect("replace Girlfriend 1")),
+                         "Replace card with Girlfriend 1")
         self.assertEqual(str(self.dd._parse_effect("kiss")),
                          "KISS (both sides WIN)")
         self.assertEqual(str(self.dd._parse_effect("clone")),

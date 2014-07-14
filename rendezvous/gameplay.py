@@ -384,7 +384,7 @@ class RendezVousGame:
         # Most effects are handled by the card itself
         if effect.effect in (EffectType.BUFF, EffectType.KISS,
                              EffectType.REVERSE, EffectType.REPLACE,
-                             EffectType.CLONE):
+                             EffectType.CLONE, EffectType.MULTIPLY):
             self.board[player][index].apply(effect)
 
         # Switch values with the opposing card on the board

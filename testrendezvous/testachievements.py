@@ -1,7 +1,9 @@
 import os
 import unittest
 
+from rendezvous import Alignment
 from rendezvous.deck import SpecialCard, Card
+from rendezvous.specials import Application
 from rendezvous.gameplay import Scoreboard, Gameboard
 from rendezvous.statistics import Statistics, BaseStats
 from rendezvous.achievements import *
@@ -315,6 +317,28 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.value, 100)
         self.assertEqual(self.a.description,
             "Finish a game with your score less than 100 in Two Words.")
+
+    def test_parse_two_suits(self):
+        self.a._parse_code("Boyfriend OR Girlfriend < 100")
+        self.assertEqual(self.a.type, AchieveType.SCORE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suits, ["Boyfriend", "Girlfriend"])
+        self.assertEqual(self.a.operator, Operator.LESS_THAN)
+        self.assertEqual(self.a.value, 100)
+        self.assertEqual(self.a.description,
+            "Finish a game with your score less than 100 in Boyfriend or Girlfriend.")
+
+    def test_parse_multiple_suits(self):
+        self.a._parse_code("Boyfriend OR Girlfriend OR Time < 100")
+        self.assertEqual(self.a.type, AchieveType.SCORE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suits, ["Boyfriend", "Girlfriend", "Time"])
+        self.assertEqual(self.a.operator, Operator.LESS_THAN)
+        self.assertEqual(self.a.value, 100)
+        self.assertEqual(self.a.description,
+            "Finish a game with your score less than 100 in Boyfriend, Girlfriend, or Time.")
         
     def test_parse_multiple_score(self):
         self.a._parse_code("SUIT1 < 200")
@@ -409,6 +433,20 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.description,
              "Play at least 4 cards with a value less than 5.")
 
+    def test_parse_master(self):
+        self.a._parse_code("Master SpecialCard")
+        self.assertEqual(self.a.type, AchieveType.MASTER)
+        self.assertEqual(self.a.suit, "SpecialCard")
+        self.assertEqual(self.a.description,
+            "Play the SpecialCard card to its fullest.")
+
+    def test_parse_master_odd_name(self):
+        self.a._parse_code("Master 2+2=5")
+        self.assertEqual(self.a.type, AchieveType.MASTER)
+        self.assertEqual(self.a.suit, "2+2=5")
+        self.assertEqual(self.a.description,
+            "Play the 2+2=5 card to its fullest.")
+
     def test_parse_multiple_round(self):
         self.a._parse_code("Use Specific")
         self.a._parse_code("Use Another")
@@ -426,6 +464,12 @@ class TestAchievement(unittest.TestCase):
         self.a = Achievement("Name", "Test Desc")
         self.a._parse_code("One Win")
         self.assertEqual(self.a.description, "Test Desc")
+
+    def test_append_description(self):
+        self.a = Achievement("Name", "Test Desc\n", code="One Win",
+                             append_description=True)
+        self.assertEqual(self.a.description,
+            "Test Desc\nWin a game in exactly one suit.")
         
         
 class DummyDeckDefinition:
@@ -802,6 +846,26 @@ class TestAchievementCheck(unittest.TestCase):
         self.score.scores = [[100, 300], [300, 300]]
         self.assertTrue(self.a.check(self.score, 0, self.stats))
 
+    def test_multiple_suits_neither(self):
+        self.a._parse_code("Boyfriend OR Girlfriend 200")
+        self.score.scores = [[100, 100], [300, 300]]
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+
+    def test_multiple_suits_first(self):
+        self.a._parse_code("Boyfriend OR Girlfriend 200")
+        self.score.scores = [[300, 100], [100, 100]]
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_multiple_suits_last(self):
+        self.a._parse_code("Boyfriend OR Girlfriend 200")
+        self.score.scores = [[100, 300], [100, 100]]
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_multiple_suits_both(self):
+        self.a._parse_code("Boyfriend OR Girlfriend 200")
+        self.score.scores = [[300, 300], [100, 100]]
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
 
 class TestAchievementCheckRound(unittest.TestCase):
 
@@ -820,6 +884,91 @@ class TestAchievementCheckRound(unittest.TestCase):
         self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
                             [Card("Boyfriend", 1)] +
                             [Card("Girlfriend", i+1) for i in range(3)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_master_none(self):
+        self.a._parse_code("MASTER Special")
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [Card("Boyfriend", i+1) for i in range(4)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_master_partial(self):
+        self.a._parse_code("MASTER Special")
+        special = SpecialCard("Special", "Desc", None,
+                              Application(alignment=Alignment.FRIENDLY,
+                                          suits="Boyfriend"),
+                              None)
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [special, Card("Boyfriend", 1)] +
+                            [Card("Girlfriend", i+1) for i in range(2)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+        
+    def test_master_true(self):
+        self.a._parse_code("MASTER Special")
+        special = SpecialCard("Special", "Desc", None,
+                              Application(alignment=Alignment.FRIENDLY,
+                                          suits="Boyfriend"),
+                              None)
+        self.board.board = [[Card("Girlfriend", i+1) for i in range(4)],
+                            [special] +
+                            [Card("Boyfriend", i+1) for i in range(3)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_master_enemy_false(self):
+        self.a._parse_code("MASTER Special")
+        special = SpecialCard("Special", "Desc", None,
+                              Application(alignment=Alignment.ENEMY,
+                                          suits="Boyfriend"),
+                              None)
+        self.board.board = [[special] +
+                            [Card("Boyfriend", i+1) for i in range(3)],
+                            [special] +
+                            [Card("Boyfriend", i+1) for i in range(3)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_master_enemy_true(self):
+        self.a._parse_code("MASTER Special")
+        special = SpecialCard("Special", "Desc", None,
+                              Application(alignment=Alignment.ENEMY,
+                                          suits="Boyfriend"),
+                              None)
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [special, Card("Girlfriend", 1)] +
+                            [Card("Boyfriend", i+1) for i in range(2)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_master_all_enemy(self):
+        self.a._parse_code("MASTER Special")
+        special = SpecialCard("Special", "Desc", None,
+                              Application(alignment=Alignment.ALL,
+                                          suits="Boyfriend"),
+                              None)
+        self.board.board = [[special] +
+                            [Card("Boyfriend", i+1) for i in range(3)],
+                            [special] +
+                            [Card("Boyfriend", i+1) for i in range(3)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_master_all_friendly(self):
+        self.a._parse_code("MASTER Special")
+        special = SpecialCard("Special", "Desc", None,
+                              Application(alignment=Alignment.ALL,
+                                          suits="Boyfriend"),
+                              None)
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [special, Card("Girlfriend", 1)] +
+                            [Card("Boyfriend", i+1) for i in range(2)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_master_all_true(self):
+        self.a._parse_code("MASTER Special")
+        special = SpecialCard("Special", "Desc", None,
+                              Application(alignment=Alignment.ALL,
+                                          suits="Boyfriend"),
+                              None)
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [special] +
+                            [Card("Boyfriend", i+1) for i in range(3)]]
         self.assertTrue(self.a.check_round(self.board, 1))
 
     def test_wait(self):

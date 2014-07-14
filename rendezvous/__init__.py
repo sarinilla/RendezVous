@@ -99,8 +99,8 @@ class EffectType:
                    #      VALUE: new value (substituted dynamically)
     REVERSE = 3    #: card value is reversed (1 becomes 10)
                    #      VALUE: N/A
-    REPLACE = 4    #: card suit is replaced with the one given
-                   #      VALUE: new suit
+    REPLACE = 4    #: card suit/value is replaced with the one given
+                   #      VALUE: new suit (str) OR value (int)
     KISS = 5       #: the card's match is kissed (both treated as a win)
                    #      VALUE: N/A
     CLONE = 6      #: the card is replaced by the first REQUIRED suit, value
@@ -109,6 +109,8 @@ class EffectType:
                    #      VALUE: N/A
     RANDOMIZE = 8  #: the card is replaced with a random suit and/or value
                    #      VALUE: choice of TargetField
+    MULTIPLY = 9   #: card value is multiplied by the given factor
+                   #      VALUE: desired factor
                  
 
 class AchieveType:
@@ -124,7 +126,8 @@ class AchieveType:
     
     ROUND = 8      ## marker to start round-based types
     USE = 9        #: use a specific card or suit
-    WAIT = 10      #: hold a specific card or suit
+    MASTER = 10    #: use a specific card to its fullest
+    WAIT = 11      #: hold a specific card or suit
 
     @classmethod
     def per_round(cls, achievetype):
@@ -162,9 +165,9 @@ def FileReader(filename):
     file = open(filename, 'r')
     try:
         for line in file:
-            if line == "\n":
-                continue
-            match = re.search('\[(.*)\](.*)', line.strip())
+            line = line.strip()
+            if not line: continue
+            match = re.search('\[(.*)\](.*)', line)
             if not match:
                 warnings.warn("Unexpected text in %s: %s" 
                                 % (filename, line),

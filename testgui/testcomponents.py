@@ -158,23 +158,23 @@ class TestBoardDisplay(unittest.TestCase):
         self.assertEqual(len(self.bd.slots), 2)
         self.assertEqual(len(self.bd.slots[0]), 4)
         self.assertEqual(len(self.bd.slots[1]), 4)
-        self.assertNotIn(self.bd._next_round_prompt, self.bd.children)
+        self.assertNotIn(self.bd._next_round_prompt, self.bd.main.children)
         
     def test_prompt(self):
         self.bd.prompt_for_next_round()
-        self.assertIn(self.bd._next_round_prompt, self.bd.children)
+        self.assertIn(self.bd._next_round_prompt, self.bd.main.children)
 
     @unittest.skip("No running app!")
     def test_next_round_prompted(self):
         self.bd.prompt_for_next_round()
         self.bd.next_round_prompted()
-        self.assertNotIn(self.bd._next_round_prompt, self.bd.children)
+        self.assertNotIn(self.bd._next_round_prompt, self.bd.main.children)
 
     @unittest.skip("No running app!")
     def test_replay_prompted(self):
         self.bd.prompt_for_next_round()
         self.bd.rescore_prompted()
-        self.assertNotIn(self.bd._next_round_prompt, self.bd.children)
+        self.assertNotIn(self.bd._next_round_prompt, self.bd.main.children)
 
     def test_update(self):
         self.bd.board[0][0] = Card("Suit", 1)

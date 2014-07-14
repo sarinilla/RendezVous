@@ -7,7 +7,7 @@ from rendezvous import AchieveType, AchievementSyntaxWarning, FileReader
 from rendezvous import SpecialSuit, SpecialValue, Operator, Alignment
 
 
-class AchievementCriterion:
+class AchievementCriterion(object):
     
     """A specific criterion that must be met to earn an Achievement.
 
@@ -15,7 +15,7 @@ class AchievementCriterion:
       type       -- one of the AchieveType enumerations
       count      -- number of games or cards that must meet the criterion
       alignment  -- one of the Alignment enumerations
-      suit       -- name of a suit or deck, or from SpecialSuit
+      suits      -- list of suit names, or deck, or from SpecialSuit
       operator   -- from Operator (< or >= or ==)
       value      -- value to compare the suit to, or from SpecialValue
 
@@ -29,6 +29,17 @@ class AchievementCriterion:
 
     def __init__(self, code):
         self._parse_code(code)
+
+    @property
+    def suit(self):
+        if len(self.suits) > 2:
+            return ', '.join(self.suits[:-1]) + ', or ' + self.suits[-1]
+        return ' or '.join(self.suits)
+
+    @suit.setter
+    def suit(self, value):
+        value = value.replace(",", " or ").replace(" OR ", " or ")
+        self.suits = value.split(" or ")
         
     def _parse_code(self, code_string):
         """Parse the requirements for this Achievement."""
@@ -67,14 +78,19 @@ class AchievementCriterion:
                 self.suit = SpecialSuit.ANY
 
         # Round Achievements
-        elif code.startswith("USE") or code.startswith("WAIT"):
-            match = re.match("(USE|WAIT)\s*(\d*)\s*(FRIENDLY|ENEMY)?\s*(.*?)\s*(([<>=]+)\s*(\d*))?\s*$", code)
-            self.type = (AchieveType.USE if match.group(1) == "USE"
-                         else AchieveType.WAIT)
+        elif (code.startswith("USE") or code.startswith("MASTER")
+                                     or code.startswith("WAIT")):
+            match = re.match("(USE|MASTER|WAIT)\s*(\d+\s)?\s*(FRIENDLY|ENEMY)?\s*(.*?)\s*(([<>=]+)\s*(\d*))?\s*$", code)
+            if match.group(1) == "USE":
+                self.type = AchieveType.USE
+            elif match.group(1) == "MASTER":
+                self.type = AchieveType.MASTER
+            else:
+                self.type = AchieveType.WAIT
             
             try:
                 self.count = int(match.group(2))
-            except ValueError:
+            except:
                 self.count = 1
                 
             if "ENEMY" in code:
@@ -83,6 +99,9 @@ class AchievementCriterion:
                 self.alignment = Alignment.FRIENDLY
 
             self.suit = remove_caps(match.group(4))
+            if self.type == AchieveType.MASTER:
+                i = code.index(match.group(4))
+                self.suit = remove_caps(code[i:].strip())
             if not self.suit:
                 self.suit = SpecialSuit.ANY
 
@@ -130,7 +149,7 @@ class AchievementCriterion:
             if match.group(3):
                 self.suit = match.group(3)
                 if not self.suit.startswith("SUIT"):
-                    self.suit = remove_caps(self.suit)
+                    self.suit = remove_caps(match.group(3))
             
             self.operator = Operator.AT_LEAST
             if match.group(4):
@@ -189,6 +208,16 @@ class AchievementCriterion:
 
         def suitindex(suit):
             """Translate a SUIT#."""
+            if ' or ' in suit:
+                suit = suit.replace(',', ' or ')
+                suits = suit.split(' or ')
+                for i in range(suits.count('')):
+                    suits.remove('')
+                outputs = [suitindex(s).strip() for s in suits]
+                if len(outputs) > 2:
+                    return ', '.join(outputs[:-1]) + ', or ' + outputs[-1]
+                else:
+                    return ' or '.join(outputs)
             if not suit.upper().startswith("SUIT"):
                 return suit
             try:
@@ -204,12 +233,22 @@ class AchievementCriterion:
             else:
                 return "%sth suit" % i
 
-        def statsuit():
+        def statsuit(suit=self.suit):
             """Translate self.suit for a Statistics Achievement."""
-            if self.suit == SpecialSuit.ANY:
+            if suit == SpecialSuit.ANY:
                 return ""
-            elif self.suit.upper().startswith("SUIT"):
-                return " in the %s" % suitindex(self.suit)
+            elif "SUIT" in suit:
+                if len(self.suits) == 1:
+                    return " in the %s" % suitindex(self.suit)
+                outputs = []
+                for suit in self.suits:
+                    if suit.startswith("SUIT"):
+                        outputs.append("the %s" % suitindex(suit))
+                    else:
+                        outputs.append(suit)
+                if len(outputs) > 2:
+                    return 'with ' + ', '.join(outputs[:-1]) + ', or ' + outputs[-1]
+                return 'with ' + ' or '.join(outputs)
             else:
                 return " with %s" % self.suit
             
@@ -281,6 +320,11 @@ class AchievementCriterion:
             else:
                 return ("%s at least %s %ss%s"
                         % (play, self.count, card, value))
+        elif self.type == AchieveType.MASTER:
+            play = ("Play" if self.alignment == Alignment.FRIENDLY
+                    else "Have the dealer play")
+            return ("%s the %s card to its fullest"
+                    % (play, self.suit))
         elif self.type == AchieveType.WAIT:
             hold = ("Hold" if self.alignment == Alignment.ENEMY
                     else "Have the dealer hold")
@@ -329,10 +373,11 @@ class AchievementCriterion:
             return False
 
         substats = stats.base
-        if self.suit in stats.decks:
-            substats = stats.decks[self.suit]
-        elif self.suit in stats.suits:
-            substats = stats.suits[self.suit]
+        for suit in self.suits:
+            if suit in stats.decks:
+                substats = stats.decks[suit]
+            elif suit in stats.suits:
+                substats = stats.suits[suit]
         if self.type == AchieveType.PLAY:
             return substats.played >= self.count
         elif self.type == AchieveType.WIN:
@@ -379,22 +424,26 @@ class AchievementCriterion:
                                self._get_target(score, player_index))
         else:  # single suit
             index = -1
-            if self.suit in score.suits:
-                index = score.suits.index(self.suit)
-                if not self._check(score[player_index][index], 
-                                   score[player_index-1][index],
-                                   self._get_target(score, player_index)):
-                    return False
-            elif self.suit.upper().startswith("SUIT"):
-                index = int(self.suit[4:]) - 1
-                if not self._check(score[player_index][index], 
-                                   score[player_index-1][index],
-                                   self._get_target(score, player_index)):
-                    return False
+            found = False
+            for suit in self.suits:
+                if suit in score.suits:
+                    index = score.suits.index(suit)
+                    if self._check(score[player_index][index], 
+                                       score[player_index-1][index],
+                                       self._get_target(score, player_index)):
+                        found = True
+                elif suit.upper().startswith("SUIT"):
+                    index = int(suit[4:]) - 1
+                    if self._check(score[player_index][index], 
+                                       score[player_index-1][index],
+                                       self._get_target(score, player_index)):
+                        found = True
+            if not found:
+                return False
             if self.count > 0:  # not ONLY?
                 return True
             for i, suit in enumerate(score.suits):
-                if i == index: continue
+                if suit in self.suits: continue
                 if self._check(score[player_index][i],
                                score[player_index-1][i],
                                self._get_target(score, player_index)):
@@ -417,7 +466,19 @@ class AchievementCriterion:
             if self.value > 0:
                 if not self._check(card.value, card.value, self.value):
                     continue
-            if self.type == AchieveType.USE or board._wait[side][i]:
+            if self.type == AchieveType.MASTER:
+                if card.name.upper() != self.suit.upper():
+                    continue
+                if card.application.has_alignment(Alignment.FRIENDLY):
+                    if len(card.application.filter(Alignment.FRIENDLY,
+                                                   board[player_index])) != 3:
+                        return False
+                if card.application.has_alignment(Alignment.ENEMY):
+                    if len(card.application.filter(Alignment.ENEMY,
+                                                   board[player_index-1])) != 4:
+                        return False
+                return True
+            elif self.type == AchieveType.USE or board._wait[side][i]:
                 count += 1
                 if count >= self.count:
                     return True
@@ -468,10 +529,12 @@ class Achievement:
     
     """
     
-    def __init__(self, name, description='', reward=None, code=''):
+    def __init__(self, name, description='', reward=None, code='',
+                 append_description=False):
         self.name = name
         self.description = description
-        self._override_description = self.description != ''
+        self._override_description = self.description
+        self._append_description = append_description
         self.reward = reward
         self.criteria = []
         if isinstance(code, list):
@@ -506,8 +569,9 @@ class Achievement:
         self.criteria.append(AchievementCriterion(code))
                 
         # Auto-update description
-        if not self._override_description:
-            self.description = self._describe()
+        self.description = self._override_description
+        if not self.description or self._append_description:
+            self.description += self._describe()
             
     def _describe(self):
         """Automatically generate a human-readable description."""
@@ -562,6 +626,14 @@ class AchievementList(object):
       Achievement, then the [ACH-REWARD] tag should be blank, like this:
       
       [ACH-REWARD]
+
+      The description will be generated automatically if one is not given.
+      To prompt the automatic description to be generated and appended to
+      the one specified, include a blank ACH-DESC code after the one given,
+      like this:
+
+      [ACH-DESC]The first part of my cool Achievement description.
+      [ACH-DESC]
       
       
     Requirement Code Syntax:
@@ -606,6 +678,8 @@ class AchievementList(object):
       Round Requirements:
         * Command:
           - USE  -- play the given card or combination
+          - MASTER -- play the given card to its fullest
+                      (i.e. it applies to as many cards as possible)
           - WAIT -- hold the given card or combination to the next round
         * Number of cards that must meet the requirements in a single round
           (default: 1)
@@ -736,21 +810,28 @@ class AchievementList(object):
         
     def _read_available(self, array, filename):
         """Populate self.available with all available Achievements."""
-        name = description = code = ""
+        name = description = ""
+        codes = []
+        append_description = False
         for (tag, value) in FileReader(filename):
             if tag == "ACH-NAME":
                 name = value
             elif tag == "ACH-DESC":
-                description = value
+                if description:
+                    description += "\n"
+                description += value
+                if not value:
+                    append_description = True
             elif tag == "ACH-CODE":
-                code = value
+                codes.append(value)
             elif tag == "ACH-REWARD":
-                if not (name and description + code):
-                    warnings.warn("Incomplete achievement definition:\nName: %s\nDescription: %s\nCode: %s\nReward: %s" % (name, description, code, value), AchievementSyntaxWarning)
+                if not (name and description + ''.join(codes)):
+                    warnings.warn("Incomplete achievement definition:\nName: %s\nDescription: %s\nCode: %s\nReward: %s" % (name, description, ' and '.join(codes), value), AchievementSyntaxWarning)
                 if not value:
                     value = None
-                array.append(Achievement(name, description, value, code))
-                name = description = code = ""
+                array.append(Achievement(name, description, value, codes, append_description))
+                name = description = ""
+                codes = []
             else:
                 warnings.warn("Unknown tag in achievement file: %s" % tag,
                               AchievementSyntaxWarning)

@@ -466,6 +466,16 @@ class TestEffect(unittest.TestCase):
                          "Automatically WIN")
         self.assertEqual(str(Effect(EffectType.BUFF, SpecialValue.LOSE)),
                          "Automatically LOSE")
+        self.assertEqual(str(Effect(EffectType.MULTIPLY, 2)),
+                         "Double value")
+        self.assertEqual(str(Effect(EffectType.MULTIPLY, 3)),
+                         "Triple value")
+        self.assertEqual(str(Effect(EffectType.MULTIPLY, 4)),
+                         "Increase value by 400%")
+        self.assertEqual(str(Effect(EffectType.MULTIPLY, .5)),
+                         "Halve value")
+        self.assertEqual(str(Effect(EffectType.MULTIPLY, .2)),
+                         "Reduce value to 20%")
         self.assertEqual(str(Effect(EffectType.KISS)),
                          "KISS (both sides WIN)")
         self.assertEqual(str(Effect(EffectType.WAIT)),
@@ -476,6 +486,10 @@ class TestEffect(unittest.TestCase):
                          "Reverse value (e.g. 1 becomes 10)")
         self.assertEqual(str(Effect(EffectType.REPLACE, "NewSuit")),
                          "Replace suit with NewSuit")
+        self.assertEqual(str(Effect(EffectType.REPLACE, 10)),
+                         "Replace value with 10")
+        self.assertEqual(str(Effect(EffectType.REPLACE, Card("NewSuit", 10))),
+                         "Replace card with NewSuit 10")
         self.assertEqual(str(Effect(EffectType.CLONE)),
                          "All matching cards become clones of the first requirement found")
         self.assertEqual(str(Effect(EffectType.FLUSH)),
