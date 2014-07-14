@@ -135,7 +135,7 @@ class RendezVousWidget(ScreenManager):
                     if str(card) in hand.deck.definition.blocked_cards:
                         hand.remove(card)
                 hand.refill()
-        elif self.current == 'settings':
+        elif self.current == 'settings' or self.current == 'decks':
             self.app._save_sd_config()
         elif self.current == 'main':
             self.main.close_tray()
