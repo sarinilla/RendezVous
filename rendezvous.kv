@@ -634,13 +634,13 @@
             suit: str(root.best_suit(root.deck, root.statistics))
             size: dp(10), dp(10)
         Label:
-            text: "Best suit: %s" % root.best_suit(root.deck, root.statistics)
+            text: "Worst suit: %s" % root.worst_suit(root.deck, root.statistics)
         Widget:
     BoxLayout:
         size_hint: 1, .5
         Widget:
         Label:
-            text: "Worst suit: %s" % root.worst_suit(root.deck, root.statistics)
+            text: "Best suit: %s" % root.best_suit(root.deck, root.statistics)
         SuitDisplay:
             suit: str(root.worst_suit(root.deck, root.statistics))
             size: dp(10), dp(10)
