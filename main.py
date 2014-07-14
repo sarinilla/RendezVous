@@ -6,12 +6,12 @@ from kivy.app import App
 from kivy.config import Config
 from kivy.core.image import Image
 from kivy.graphics.texture import Texture
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, ListProperty
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, FadeTransition, Screen
-from kivy.uix.settings import SettingBoolean, SettingsWithNoMenu
+from kivy.uix.settings import SettingBoolean, SettingsWithNoMenu, SettingTitle
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
@@ -32,7 +32,7 @@ from gui.screens.home import HomeScreen
 from gui.screens.game import GameScreen, RoundAchievementScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 from gui.screens.winner import WinnerScreen
-from gui.settings import SettingSlider, SettingAIDifficulty
+from gui.settings import SettingSlider, SettingAIDifficulty, SettingButton
 from gui.screens.settings import SettingsScreen
 from gui.screens.deck import DeckCatalogScreen
 from gui.screens.cards import DeckEditScreen
@@ -41,7 +41,7 @@ from gui.screens.achievements import AchievementsScreen
 from gui.screens.powerups import PowerupScreen, CardSelect
 
 
-__version__ = '0.6.6'
+__version__ = '0.7.0'
 
 
 class RendezVousWidget(ScreenManager):
@@ -56,6 +56,15 @@ class RendezVousWidget(ScreenManager):
 
     """
 
+    powerup_next_click = ObjectProperty(allownone=True)
+    powerups_in_use = ListProperty()
+
+    def on_powerup_next_click(self, instance, value):
+        self.main.gameboard.show_next_click_powerup(value)
+
+    def on_powerups_in_use(self, instance, value):
+        self.main.gameboard.show_active_powerups(value)
+
     def __init__(self, **kwargs):
         """Arrange the widgets."""
         ScreenManager.__init__(self, transition=FadeTransition(), **kwargs)
@@ -68,7 +77,6 @@ class RendezVousWidget(ScreenManager):
         self.game = RendezVousGame(deck=self.app.loaded_deck,
                                    achievements=self.app.achievements)
         self.game.new_game()
-        self._cards_played = []         #: hand indices played so far
         self.achieved = []              #: Achievements earned this game
         self.dealer_play = None         #: cards the dealer will play
         self._in_progress = False       #: currently scoring a round?
@@ -93,11 +101,17 @@ class RendezVousWidget(ScreenManager):
 
         # Prepare the tutorial (if needed)
         if self.app.achievements.achieved == []:
-            self.switch_to(MainBoardTutorial(game=self.game,
-                                             name='tutorial-hand'))
-            self.current_screen.tutorial.title = "Welcome to RendezVous!"
-            self.current_screen.tutorial.text = "This tutorial will walk you through your first game, introducing key concepts along the way. RendezVous is easy to play, but you will find the strategies to be endless!\n\nYour hand is displayed below. Each round, you will pick 4 cards to play, then your hand will be refilled to 10 again. Go ahead and pick your first four cards now.\n\n(Higher values are better!)"
-            self.current_screen.tutorial.footer = "SELECT 4 CARDS BELOW"
+            self._start_tutorial()
+
+    def _start_tutorial(self):
+        for hand in self.game.players:
+            hand.deck.suits_only()
+            hand.flush()
+        self.switch_to(MainBoardTutorial(game=self.game,
+                                         name='tutorial-hand'))
+        self.current_screen.tutorial.title = "Welcome to RendezVous!"
+        self.current_screen.tutorial.text = "This tutorial will walk you through your first game, introducing key concepts along the way. RendezVous is easy to play, but you will find the strategies to be endless!\n\nYour hand is displayed below. Each round, you will pick 4 cards to play, then your hand will be refilled to 10 again. Go ahead and pick your first four cards now.\n\n(Higher values are better!)"
+        self.current_screen.tutorial.footer = "SELECT 4 CARDS BELOW"
 
     def rebuild_decks(self):
         """Rebuild the deck catalog screen (e.g. after catalog update)."""
@@ -273,7 +287,7 @@ class RendezVousWidget(ScreenManager):
         self.powerup_next_click = None
         
         if powerup.type == PowerupType.WAIT_CARD:
-            if card_display.parent.parent == self.main.gameboard:
+            if self._on_gameboard(card_display):
                 if card_display.card is not None and not card_display.waited:
                     card_display.waited = True
                     p, i = self.main.gameboard.find(card_display)
@@ -358,25 +372,35 @@ class RendezVousWidget(ScreenManager):
 
         if self.next_click_for_powerup(card_display):
             return
-        loc = card_display.parent
         if self._end_of_round:
-            if loc is self.current_screen.hand_display:
+            if self._in_hand(card_display):
                 cont = self.current_screen.gameboard.next_round_prompted()
                 if not cont:
                     return
                 # if not blocked, then go ahead and play this card also!
 
-            elif loc.parent is self.current_screen.gameboard:
+            elif self._on_gameboard(card_display):
                 self.current_screen.gameboard.rescore_prompted()
                 return
             
         if card_display.card is None: return
         
-        if loc is self.current_screen.hand_display:
+        if self._in_hand(card_display):
             self._place_on_board(card_display)
                     
-        elif loc.parent is self.current_screen.gameboard:
+        elif self._on_gameboard(card_display):
             self._remove_from_board(card_display)
+
+    def _on_gameboard(self, card_display):
+        """Return whether this display is part of the gameboard."""
+        for side in self.current_screen.gameboard.slots:
+            if card_display in side:
+                return True
+        return False
+
+    def _in_hand(self, card_display):
+        """Return whether this display is part of the player's hand."""
+        return card_display in self.current_screen.hand_display.slots
 
     def card_dropped(self, card_display, card):
         """Allow dropping cards onto EMPTY board slots, or arranging hand.
@@ -402,8 +426,7 @@ class RendezVousWidget(ScreenManager):
                 return
 
         # Dropping onto the gameboard?
-        loc = card_display.parent
-        if loc.parent is self.current_screen.gameboard:
+        if self._on_gameboard(card_display):
 
             # Never drop onto enemy slots (or held slots)
             if card_display not in self.current_screen.gameboard.slots[PLAYER]:
@@ -446,8 +469,9 @@ class RendezVousWidget(ScreenManager):
                     return
 
         # Dropping onto player's hand?
-        elif loc is self.current_screen.hand_display:
-            hand_index = self.current_screen.hand_display.slots.index(card_display)
+        elif self._in_hand(card_display):
+            loc = self.current_screen.hand_display
+            hand_index = loc.slots.index(card_display)
 
             # From the board (not held)
             if loc.is_played(card):
@@ -665,6 +689,7 @@ class RendezVousWidget(ScreenManager):
         self.achieved = []
         self.main.gameboard.highlight(None)
         self.main.gameboard.update()
+        self.main.hand_display._played = []
         self.main.hand_display.update()
         self.main.scoreboard.update()
         self.main.round_counter.round_number = 1
@@ -672,6 +697,36 @@ class RendezVousWidget(ScreenManager):
         self.remove_widget(self._winner)
         self._in_progress = False
         self._end_of_round = False
+
+    def replay_tutorial(self):
+        popup = Popup(title="Replay Tutorial?", size_hint=(1, .5))
+        layout = BoxLayout(orientation="vertical")
+        layout.add_widget(Label(text="Would you like to repeat the tutorial experience?",
+                                valign="middle", halign="center"))
+        if GameSettings.NUM_ROUNDS != 20:
+            layout.add_widget(Label(text="[b]Number of Rounds[/b] will be reset to [b]20[/b].",
+                                    markup=True,
+                                    valign="middle", halign="center"))
+        buttons = BoxLayout()
+        buttons.add_widget(Widget())
+        buttons.add_widget(Button(text="YES",
+                                  on_release=lambda *a: self._replay_tutorial(popup)))
+        buttons.add_widget(Button(text="no",
+                                  on_release=popup.dismiss))
+        buttons.add_widget(Widget())
+        layout.add_widget(buttons)
+        popup.add_widget(layout)
+        popup.open()
+
+    def _replay_tutorial(self, popup):
+        popup.dismiss()
+        GameSettings.NUM_ROUNDS = 20
+        self.game.new_game()
+        self.achieved = []
+        self.dealer_play = None
+        self._in_progress = False
+        self._end_of_round = False
+        self._start_tutorial()
 
 
 class RendezVousApp(App):
@@ -875,11 +930,11 @@ class RendezVousApp(App):
             self._load_currency()
         return achieved
 
-    def purchase_powerup(self, powerup):
+    def purchase_powerup(self, powerup, count=1):
         """Attempt to purchase a powerup; return boolean success."""
-        if not self.winks.purchase(powerup, powerup.price):
+        if not self.winks.purchase(powerup, powerup.price * count):
             return False
-        self.powerups.purchase(powerup)
+        self.powerups.purchase(powerup, count)
         self._load_currency()
         return True
 
@@ -964,6 +1019,9 @@ class RendezVousApp(App):
     def build_config(self, config):
         """Automatically read the config file."""
         config.read(self.get_application_config())
+        try: config.add_section('Resets')
+        except: pass
+        config.set('Resets', 'REPLAY_TUTORIAL', 0)
 
     def on_config_change(self, config, section, key, value):
         """Handle special config cases."""
@@ -972,6 +1030,9 @@ class RendezVousApp(App):
             self.root.main.round_counter.max_round = int(value)
         elif key == 'SHOW_PRIVATE':
             self.root.rebuild_decks()
+        elif key == 'REPLAY_TUTORIAL':
+            if self.root is not None:
+                self.root.replay_tutorial()
 
     def build_settings(self, settings):
         """Load the JSON file with settings details."""
@@ -981,9 +1042,12 @@ class RendezVousApp(App):
         try:
             settings.register_type('slider', SettingSlider)
             settings.register_type('customAI', SettingAIDifficulty)
+            settings.register_type('button', SettingButton)
             settings.add_json_panel('Game Settings', self.config,
                                     data="\n".join(fp.readlines()))
             if self.deck_catalog.private:
+                settings.interface.current_panel.add_widget(
+                    SettingTitle(title="Debugging"))
                 settings.interface.current_panel.add_widget(
                     SettingBoolean(panel=settings.interface.current_panel,
                                    title="Show Private Decks",

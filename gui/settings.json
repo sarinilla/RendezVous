@@ -1,4 +1,7 @@
 [
+    { "type": "title",
+      "title": "Customize Your Game" },
+
     { "type": "slider",
       "title": "Animation Speed",
       "desc": "Delay during an animation sequence, in seconds.",
@@ -17,5 +20,14 @@
       "desc": "Difficulty of your opponent's strategy.",
       "section": "DEFAULT",
       "key": "AI_DIFFICULTY",
-      "options": ["Dumb Luck", "Artificial Intelligence", "Brilliantly Evil"] }
+      "options": ["Dumb Luck", "Artificial Intelligence", "Brilliantly Evil"] },
+
+    { "type": "title",
+      "title": "Play It Again" },
+
+    { "type": "button",
+      "title": "Replay Tutorial",
+      "desc": "Play through the tutorial game again.",
+      "section": "Resets",
+      "key": "REPLAY_TUTORIAL" }
 ]

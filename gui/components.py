@@ -8,6 +8,9 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.stacklayout import StackLayout
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.popup import Popup
 
@@ -150,6 +153,7 @@ class PowerupIcon(Widget):
     """Display one Powerup's icon for use."""
 
     powerup = ObjectProperty()
+    color = ListProperty((1, 1, 1, 1))
 
 
 ## Game Components ##
@@ -282,7 +286,7 @@ class HandDisplay(BoxLayout):
         self._played = []
 
 
-class BoardDisplay(BoxLayout):
+class BoardDisplay(FloatLayout):
 
     """Show the 4x2 Gameboard.
 
@@ -303,7 +307,8 @@ class BoardDisplay(BoxLayout):
 
     def __init__(self, **kwargs):
         """Set up the CardDisplays."""
-        BoxLayout.__init__(self, orientation="vertical", **kwargs)
+        FloatLayout.__init__(self, **kwargs)
+        self.main = BoxLayout(orientation="vertical", pos_hint={'x':0, 'y':0})
         self.slots = []
         for i in range(len(self.board)):  # for card in board iterates all sides
             layout = BoxLayout()
@@ -313,29 +318,68 @@ class BoardDisplay(BoxLayout):
                 side_slots.append(display)
                 layout.add_widget(display)
             self.slots.append(side_slots)
-            self.add_widget(layout)
+            self.main.add_widget(layout)
+        self.add_widget(self.main)
 
         # Prep the next round prompt widget for later
         self._next_round_prompt = BoxLayout(size_hint=(1, .125))
         self._next_round_prompt.add_widget(Button(text="Replay",
-                                            on_release=self.rescore_prompted))
+                                           on_release=self.rescore_prompted))
         self._next_round_prompt.add_widget(Widget())  # spacer
         self._next_round_prompt.add_widget(Button(text="Continue",
-                                            on_release=self.next_round_prompted))
+                                           on_release=self.next_round_prompted))
+
+        # Prep for powerup overlays
+        self.powerup_anchor = AnchorLayout(anchor_x='right', anchor_y='top',
+                                           size_hint=(1, 1),
+                                           pos_hint={'x':0, 'y':0})
+        self.add_widget(self.powerup_anchor)
+
+    def show_next_click_powerup(self, powerup):
+        """Display a large overlay of the powerup to select."""
+        try: self.remove_widget(self.powerup_overlay_single)
+        except: pass
+        if powerup is None:
+            self.highlight(BLANK)
+        else:
+            self.highlight(DARKEN)
+            self.powerup_overlay_single = PowerupIcon(powerup=powerup,
+                                                      color=(1, 1, 1, .3),
+                                                      size_hint=(.6, .6),
+                                                      pos_hint={'x':.2, 'y':.2})
+            self.add_widget(self.powerup_overlay_single)
+
+    def show_active_powerups(self, powerups):
+        """Display a series of active powerup icons."""
+        try: self.powerup_anchor.remove_widget(self.powerup_overlay_tray)
+        except: pass
+        if not powerups:
+            return
+        self.powerup_overlay_tray = tray = StackLayout(size_hint_y=0.1)
+        for powerup in powerups:
+            tray.add_widget(PowerupIcon(powerup=powerup,
+                                        color=(1, 1, 1, .5),
+                                        size_hint=(None, 1)))
+        tray.width = tray.height * len(powerups)
+        from kivy.graphics import Color, Rectangle
+        with tray.canvas.before:
+            Color((1, 0, 0, 1))
+            Rectangle(size=tray.size, pos=tray.pos)
+        self.powerup_anchor.add_widget(self.powerup_overlay_tray)
 
     def prompt_for_next_round(self):
         """Prompt the user to continue, or replay the scoring sequence."""
-        try: self.add_widget(self._next_round_prompt)
+        try: self.main.add_widget(self._next_round_prompt)
         except: pass
 
     def next_round_prompted(self, *args):
         """Continue to the next round on the user's command."""
-        self.remove_widget(self._next_round_prompt)
+        self.main.remove_widget(self._next_round_prompt)
         return App.get_running_app().root.next_round()
 
     def rescore_prompted(self, *args):
         """Replay the scoring animation on the user's command."""
-        self.remove_widget(self._next_round_prompt)
+        self.main.remove_widget(self._next_round_prompt)
         App.get_running_app().root.replay_scoring()
 
     def update(self):
@@ -353,11 +397,11 @@ class BoardDisplay(BoxLayout):
     def show_dealer_hand(self, hand):
         """Show the dealer's hand at the top of the screen."""
         self.dealer_hand = HandDisplay(hand=hand)
-        self.add_widget(self.dealer_hand, len(self.children))
+        self.main.add_widget(self.dealer_hand, len(self.children))
 
     def hide_dealer_hand(self):
         """Remove the dealer's hand display."""
-        self.remove_widget(self.dealer_hand)
+        self.main.remove_widget(self.dealer_hand)
         del self.dealer_hand
 
     def highlight(self, color):

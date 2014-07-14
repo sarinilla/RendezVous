@@ -3,6 +3,7 @@ from kivy.compat import text_type
 from kivy.core.window import Window
 from kivy.properties import ObjectProperty, NumericProperty
 from kivy.uix.settings import SettingNumeric, SettingSpacer, SettingOptions
+from kivy.uix.settings import SettingItem
 from kivy.uix.slider import Slider
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
@@ -49,3 +50,12 @@ class SettingAIDifficulty(SettingOptions):
     def _set_option(self, instance):
         self.value = text_type(self.options.index(instance.text)+1)
         self.popup.dismiss()
+
+
+class SettingButton(SettingItem):
+
+    def on_release(self):
+        if self.value == "1":
+            self.value = "2"
+        else:
+            self.value = "1"

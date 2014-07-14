@@ -183,6 +183,14 @@ class Deck:
         random.shuffle(self._cards)
         self._next = self._draw()
 
+    def suits_only(self, shuffle=True):
+        """Include only the suit cards. All cards will return next shuffle."""
+        self._cards = list(self.definition.cards(use_blocks=False,
+                                                 skip_specials=True))
+        if shuffle:
+            random.shuffle(self._cards)
+        self._next = self._draw()
+
     def _draw(self):
         """Generator; return each card in the current deck."""
         for card in self._cards:
@@ -481,12 +489,13 @@ class DeckDefinition:
             warnings.warn("Invalid special card effect: %s" % words[0])
         
 
-    def cards(self, achievements=None, use_blocks=True):
+    def cards(self, achievements=None, use_blocks=True, skip_specials=False):
         """Generator; return all card in the deck, unshuffled."""
         for suit in self.suits:
             for value in self.values:
                 if not use_blocks or "%s %s" % (suit, value) not in self.blocked_cards:
                     yield Card(suit, value)
+        if skip_specials: return
         for special in self.specials:
             if achievements is None or achievements.unlocked(special):
                 if not use_blocks or special.name not in self.blocked_cards:
