@@ -7,7 +7,7 @@ from rendezvous import AchieveType, AchievementSyntaxWarning, FileReader
 from rendezvous import SpecialSuit, SpecialValue, Operator, Alignment
 
 
-class AchievementCriterion:
+class AchievementCriterion(object):
     
     """A specific criterion that must be met to earn an Achievement.
 
@@ -15,7 +15,7 @@ class AchievementCriterion:
       type       -- one of the AchieveType enumerations
       count      -- number of games or cards that must meet the criterion
       alignment  -- one of the Alignment enumerations
-      suit       -- name of a suit or deck, or from SpecialSuit
+      suits      -- list of suit names, or deck, or from SpecialSuit
       operator   -- from Operator (< or >= or ==)
       value      -- value to compare the suit to, or from SpecialValue
 
@@ -29,6 +29,17 @@ class AchievementCriterion:
 
     def __init__(self, code):
         self._parse_code(code)
+
+    @property
+    def suit(self):
+        if len(self.suits) > 2:
+            return ', '.join(self.suits[:-1]) + ', or ' + self.suits[-1]
+        return ' or '.join(self.suits)
+
+    @suit.setter
+    def suit(self, value):
+        value = value.replace(",", " or ").replace(" OR ", " or ")
+        self.suits = value.split(" or ")
         
     def _parse_code(self, code_string):
         """Parse the requirements for this Achievement."""
@@ -69,7 +80,7 @@ class AchievementCriterion:
         # Round Achievements
         elif (code.startswith("USE") or code.startswith("MASTER")
                                      or code.startswith("WAIT")):
-            match = re.match("(USE|MASTER|WAIT)\s*(\d*)\s*(FRIENDLY|ENEMY)?\s*(.*?)\s*(([<>=]+)\s*(\d*))?\s*$", code)
+            match = re.match("(USE|MASTER|WAIT)\s*(\d+\s)?\s*(FRIENDLY|ENEMY)?\s*(.*?)\s*(([<>=]+)\s*(\d*))?\s*$", code)
             if match.group(1) == "USE":
                 self.type = AchieveType.USE
             elif match.group(1) == "MASTER":
@@ -79,7 +90,7 @@ class AchievementCriterion:
             
             try:
                 self.count = int(match.group(2))
-            except ValueError:
+            except:
                 self.count = 1
                 
             if "ENEMY" in code:
@@ -88,6 +99,9 @@ class AchievementCriterion:
                 self.alignment = Alignment.FRIENDLY
 
             self.suit = remove_caps(match.group(4))
+            if self.type == AchieveType.MASTER:
+                i = code.index(match.group(4))
+                self.suit = remove_caps(code[i:].strip())
             if not self.suit:
                 self.suit = SpecialSuit.ANY
 
@@ -135,7 +149,7 @@ class AchievementCriterion:
             if match.group(3):
                 self.suit = match.group(3)
                 if not self.suit.startswith("SUIT"):
-                    self.suit = remove_caps(self.suit)
+                    self.suit = remove_caps(match.group(3))
             
             self.operator = Operator.AT_LEAST
             if match.group(4):
@@ -194,6 +208,16 @@ class AchievementCriterion:
 
         def suitindex(suit):
             """Translate a SUIT#."""
+            if ' or ' in suit:
+                suit = suit.replace(',', ' or ')
+                suits = suit.split(' or ')
+                for i in range(suits.count('')):
+                    suits.remove('')
+                outputs = [suitindex(s).strip() for s in suits]
+                if len(outputs) > 2:
+                    return ', '.join(outputs[:-1]) + ', or ' + outputs[-1]
+                else:
+                    return ' or '.join(outputs)
             if not suit.upper().startswith("SUIT"):
                 return suit
             try:
@@ -209,12 +233,22 @@ class AchievementCriterion:
             else:
                 return "%sth suit" % i
 
-        def statsuit():
+        def statsuit(suit=self.suit):
             """Translate self.suit for a Statistics Achievement."""
-            if self.suit == SpecialSuit.ANY:
+            if suit == SpecialSuit.ANY:
                 return ""
-            elif self.suit.upper().startswith("SUIT"):
-                return " in the %s" % suitindex(self.suit)
+            elif "SUIT" in suit:
+                if len(self.suits) == 1:
+                    return " in the %s" % suitindex(self.suit)
+                outputs = []
+                for suit in self.suits:
+                    if suit.startswith("SUIT"):
+                        outputs.append("the %s" % suitindex(suit))
+                    else:
+                        outputs.append(suit)
+                if len(outputs) > 2:
+                    return 'with ' + ', '.join(outputs[:-1]) + ', or ' + outputs[-1]
+                return 'with ' + ' or '.join(outputs)
             else:
                 return " with %s" % self.suit
             
@@ -339,10 +373,11 @@ class AchievementCriterion:
             return False
 
         substats = stats.base
-        if self.suit in stats.decks:
-            substats = stats.decks[self.suit]
-        elif self.suit in stats.suits:
-            substats = stats.suits[self.suit]
+        for suit in self.suits:
+            if suit in stats.decks:
+                substats = stats.decks[suit]
+            elif suit in stats.suits:
+                substats = stats.suits[suit]
         if self.type == AchieveType.PLAY:
             return substats.played >= self.count
         elif self.type == AchieveType.WIN:
@@ -389,22 +424,26 @@ class AchievementCriterion:
                                self._get_target(score, player_index))
         else:  # single suit
             index = -1
-            if self.suit in score.suits:
-                index = score.suits.index(self.suit)
-                if not self._check(score[player_index][index], 
-                                   score[player_index-1][index],
-                                   self._get_target(score, player_index)):
-                    return False
-            elif self.suit.upper().startswith("SUIT"):
-                index = int(self.suit[4:]) - 1
-                if not self._check(score[player_index][index], 
-                                   score[player_index-1][index],
-                                   self._get_target(score, player_index)):
-                    return False
+            found = False
+            for suit in self.suits:
+                if suit in score.suits:
+                    index = score.suits.index(suit)
+                    if self._check(score[player_index][index], 
+                                       score[player_index-1][index],
+                                       self._get_target(score, player_index)):
+                        found = True
+                elif suit.upper().startswith("SUIT"):
+                    index = int(suit[4:]) - 1
+                    if self._check(score[player_index][index], 
+                                       score[player_index-1][index],
+                                       self._get_target(score, player_index)):
+                        found = True
+            if not found:
+                return False
             if self.count > 0:  # not ONLY?
                 return True
             for i, suit in enumerate(score.suits):
-                if i == index: continue
+                if suit in self.suits: continue
                 if self._check(score[player_index][i],
                                score[player_index-1][i],
                                self._get_target(score, player_index)):

@@ -317,6 +317,28 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.value, 100)
         self.assertEqual(self.a.description,
             "Finish a game with your score less than 100 in Two Words.")
+
+    def test_parse_two_suits(self):
+        self.a._parse_code("Boyfriend OR Girlfriend < 100")
+        self.assertEqual(self.a.type, AchieveType.SCORE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suits, ["Boyfriend", "Girlfriend"])
+        self.assertEqual(self.a.operator, Operator.LESS_THAN)
+        self.assertEqual(self.a.value, 100)
+        self.assertEqual(self.a.description,
+            "Finish a game with your score less than 100 in Boyfriend or Girlfriend.")
+
+    def test_parse_multiple_suits(self):
+        self.a._parse_code("Boyfriend OR Girlfriend OR Time < 100")
+        self.assertEqual(self.a.type, AchieveType.SCORE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.suits, ["Boyfriend", "Girlfriend", "Time"])
+        self.assertEqual(self.a.operator, Operator.LESS_THAN)
+        self.assertEqual(self.a.value, 100)
+        self.assertEqual(self.a.description,
+            "Finish a game with your score less than 100 in Boyfriend, Girlfriend, or Time.")
         
     def test_parse_multiple_score(self):
         self.a._parse_code("SUIT1 < 200")
@@ -417,6 +439,13 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.suit, "SpecialCard")
         self.assertEqual(self.a.description,
             "Play the SpecialCard card to its fullest.")
+
+    def test_parse_master_odd_name(self):
+        self.a._parse_code("Master 2+2=5")
+        self.assertEqual(self.a.type, AchieveType.MASTER)
+        self.assertEqual(self.a.suit, "2+2=5")
+        self.assertEqual(self.a.description,
+            "Play the 2+2=5 card to its fullest.")
 
     def test_parse_multiple_round(self):
         self.a._parse_code("Use Specific")
@@ -815,6 +844,26 @@ class TestAchievementCheck(unittest.TestCase):
     def test_suit_index_true(self):
         self.a._parse_code("SUIT2 200")
         self.score.scores = [[100, 300], [300, 300]]
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_multiple_suits_neither(self):
+        self.a._parse_code("Boyfriend OR Girlfriend 200")
+        self.score.scores = [[100, 100], [300, 300]]
+        self.assertFalse(self.a.check(self.score, 0, self.stats))
+
+    def test_multiple_suits_first(self):
+        self.a._parse_code("Boyfriend OR Girlfriend 200")
+        self.score.scores = [[300, 100], [100, 100]]
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_multiple_suits_last(self):
+        self.a._parse_code("Boyfriend OR Girlfriend 200")
+        self.score.scores = [[100, 300], [100, 100]]
+        self.assertTrue(self.a.check(self.score, 0, self.stats))
+
+    def test_multiple_suits_both(self):
+        self.a._parse_code("Boyfriend OR Girlfriend 200")
+        self.score.scores = [[300, 300], [100, 100]]
         self.assertTrue(self.a.check(self.score, 0, self.stats))
 
 
