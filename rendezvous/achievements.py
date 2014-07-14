@@ -810,7 +810,8 @@ class AchievementList(object):
         
     def _read_available(self, array, filename):
         """Populate self.available with all available Achievements."""
-        name = description = code = ""
+        name = description = ""
+        codes = []
         append_description = False
         for (tag, value) in FileReader(filename):
             if tag == "ACH-NAME":
@@ -822,14 +823,15 @@ class AchievementList(object):
                 if not value:
                     append_description = True
             elif tag == "ACH-CODE":
-                code = value
+                codes.append(value)
             elif tag == "ACH-REWARD":
-                if not (name and description + code):
-                    warnings.warn("Incomplete achievement definition:\nName: %s\nDescription: %s\nCode: %s\nReward: %s" % (name, description, code, value), AchievementSyntaxWarning)
+                if not (name and description + ''.join(codes)):
+                    warnings.warn("Incomplete achievement definition:\nName: %s\nDescription: %s\nCode: %s\nReward: %s" % (name, description, ' and '.join(codes), value), AchievementSyntaxWarning)
                 if not value:
                     value = None
-                array.append(Achievement(name, description, value, code, append_description))
-                name = description = code = ""
+                array.append(Achievement(name, description, value, codes, append_description))
+                name = description = ""
+                codes = []
             else:
                 warnings.warn("Unknown tag in achievement file: %s" % tag,
                               AchievementSyntaxWarning)
