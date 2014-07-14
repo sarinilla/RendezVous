@@ -2,6 +2,7 @@ import copy
 
 from kivy.app import App
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
+from kivy.properties import StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -31,6 +32,32 @@ class CardSelect(CardDisplay):
                 self.callback(self, *self.args)
                 return True
         return super(CardDisplay, self).on_touch_up(touch)
+
+
+class ConfirmationPopup(Popup):
+
+    """Confirm a purchase, and select the quantity."""
+
+    powerup = ObjectProperty()
+    item_name = StringProperty("powerup")
+    currency = StringProperty("wink")
+    info = ObjectProperty()
+    popup_chain = ListProperty()
+    callback = ObjectProperty()
+
+    def __init__(self, **kwargs):
+        Popup.__init__(self, **kwargs)
+        if self.info is not None:
+            self.ids.main.add_widget(self.info, 1)
+
+    def purchase(self, *args):
+        """Charge the currency and finalize the purchase."""
+        self.dismiss()
+        for popup in self.popup_chain:
+            popup.dismiss()
+        if App.get_running_app().purchase_powerup(self.powerup):
+            if self.callback is not None:
+                self.callback()
 
 
 class PowerupDisplay(BoxLayout):
@@ -80,48 +107,24 @@ class PowerupDisplay(BoxLayout):
             self.powerup.price = 50
         else:
             self.powerup.price = card.value * 5
-        self._confirmation_popup(title="%s: %s" % (self.powerup, card),
-                                 item_name="card", popups=[selection_popup],
-                                 info=ToolTipDisplay(card=card, size_hint=(1, 5)))
+        popup = ConfirmationPopup(title="%s: %s" % (self.powerup, card),
+                                  item_name="card", powerup=self.powerup,
+                                  popup_chain=[selection_popup],
+                                  info=ToolTipDisplay(card=card, size_hint=(1, 5)),
+                                  callback=self._increment,
+                                  size_hint=(1, .75))
+        popup.open()
 
     def _confirm_purchase(self):
         """Ask the user to confirm the purchase."""
-        self._confirmation_popup(title=str(self.powerup))
-
-    def _confirmation_popup(self, title="Confirm Purchase?", item_name="powerup",
-                            currency="wink", info=None, popups=[]):
-        """Display a confirmation popup for a purchase."""
-        app = App.get_running_app()
-        popup = Popup(title=title,
-                      size_hint=(1, .5 if info is None else .75))
-        popups.append(popup)
-        sideways = BoxLayout()
-        sideways.add_widget(PowerupIcon(powerup=self.powerup, size_hint=(.25, 1)))
-        layout = BoxLayout(orientation="vertical", size_hint=(.75, 1))
-        layout.add_widget(Label(
-            text="Are you sure you would like to purchase this %s for %s %s%s?"
-                 % (item_name, self.powerup.price, currency,
-                    "s" if self.powerup.price != 1 else ""),
-            valign="middle", halign="center"))
-        if info is not None:
-            layout.add_widget(info)
-        buttons = BoxLayout()
-        buttons.add_widget(Widget())
-        buttons.add_widget(Button(text="YES",
-                                  on_release=lambda x: self.purchase(*popups)))
-        buttons.add_widget(Button(text="no", on_release=popup.dismiss))
-        buttons.add_widget(Widget())
-        layout.add_widget(buttons)
-        sideways.add_widget(layout)
-        popup.add_widget(sideways)
+        popup = ConfirmationPopup(title=str(self.powerup),
+                                  powerup=self.powerup,
+                                  callback=self._increment,
+                                  size_hint=(1, .5))
         popup.open()
 
-    def purchase(self, *popups):
-        """Charge the currency and finalize the purchase."""
-        for popup in popups:
-            popup.dismiss()
-        if App.get_running_app().purchase_powerup(self.powerup):
-            self.count += 1
+    def _increment(self):
+        self.count += 1
 
     
 class PowerupScreen(Screen):
