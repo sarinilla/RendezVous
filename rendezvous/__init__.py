@@ -165,9 +165,9 @@ def FileReader(filename):
     file = open(filename, 'r')
     try:
         for line in file:
-            if line == "\n":
-                continue
-            match = re.search('\[(.*)\](.*)', line.strip())
+            line = line.strip()
+            if not line: continue
+            match = re.search('\[(.*)\](.*)', line)
             if not match:
                 warnings.warn("Unexpected text in %s: %s" 
                                 % (filename, line),
