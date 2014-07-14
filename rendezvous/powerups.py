@@ -34,7 +34,7 @@ class Powerups:
                  Powerup("Psychic Pass",
                          "Peek at the dealer's selected cards!",
                          150, PowerupType.SHOW_DEALER_PLAY),
-                 Powerup("Playing for Each Other",
+                 Powerup("Table Spin",
                          "You pick the dealer's cards, and he will pick yours.",
                          50, PowerupType.SWITCH_PLAY),
                  Powerup("Super Buff",
