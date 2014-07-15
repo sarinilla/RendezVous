@@ -22,6 +22,12 @@
       "key": "AI_DIFFICULTY",
       "options": ["Dumb Luck", "Artificial Intelligence", "Brilliantly Evil"] },
 
+    { "type": "background",
+      "title": "Background",
+      "desc": "The background of the game area.",
+      "section": "DEFAULT",
+      "key": "BACKGROUND" },
+
     { "type": "title",
       "title": "Play It Again" },
 

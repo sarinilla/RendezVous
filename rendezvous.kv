@@ -18,6 +18,8 @@
 
 <SuitDisplay>:
     canvas:
+        Color:
+            rgba: 1, 1, 1, 1
         Rectangle:
             texture: app.deck_texture and app.get_suit_texture(root.suit)
             pos: self.pos[0] + (self.size[0] - min(self.size[0], self.size[1])) / 2, self.pos[1] + (self.size[1] - min(self.size[0], self.size[1])) / 2
@@ -38,10 +40,31 @@
 
 <RoundCounter>:
     text: "Round %s of %s" % (root.round_number, root.max_round)
+    canvas:
+        Color:
+            rgba: 0, 0, 0, .25
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+
+<ScoreDisplay>:
+    canvas:
+        Color:
+            rgba: 0, 0, 0, .25
+        Rectangle:
+            size: self.size
+            pos: self.pos
 
 
 <ToolTipDisplay>:
     on_card: scroller.scroll_y = 1
+    canvas:
+        Color:
+            rgba: 0, 0, 0, .25
+        Rectangle:
+            size: self.size
+            pos: self.pos
     ScrollView:
         id: scroller
         do_scroll_x: False
@@ -89,6 +112,8 @@
 
 <AchievementIcon>:
     canvas:
+        Color:
+            rgba: 1, 1, 1, 1
         Rectangle:
             texture: app.get_achievement_texture(root.achievement)
             size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])
@@ -126,7 +151,16 @@
         Widget:
 
 
-## Win Screens - gui/screens/game.py ##            
+## Win Screens - gui/screens/game.py ##  
+
+<GameScreen>:
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            texture: app.background
+            size: self.size
+            pos: self.pos
 
 <AchievementEarnedDisplay>:
     orientation: "vertical"
@@ -203,6 +237,8 @@
 
 <DealerDisplay>:
     canvas:
+        Color:
+            rgba: 1, 1, 1, 1
         Rectangle:
             texture: app.get_dealer_texture(*root.get_dealer())
             size: min(self.size[0], self.size[1]), min(self.size[0], self.size[1])
@@ -343,6 +379,25 @@
             Button:
                 text: "Cancel"
                 on_release: root.setting._dismiss()
+
+<BackgroundDisplay>:
+    orientation: "vertical"
+    size_hint_y: None
+    size: self.size[0], self.size[0]
+    Widget:
+        canvas:
+            Color:
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                texture: app.background_catalog and app.get_bg_thumbnail(root.filename[:3])
+                size: min(self.size[0], self.size[1] * 5 / 3), min(self.size[1], self.size[0] * 3 / 5)
+                pos: self.pos[0] + (self.size[0] - min(self.size[0], self.size[1] * 5 / 3)) / 2, self.pos[1]
+    Label:
+        size_hint: (1, .2)
+        text: '[b]' + root.filename[3:-4] + '[/b]'
+        markup: True
+        valign: "middle"
+        halign: "center"
 
 
 ## Home Screen - gui/screens/home.py ##
@@ -516,6 +571,8 @@
     size_hint: 1, None
     Widget:
         canvas:
+            Color:
+                rgba: 1, 1, 1, 1
             Rectangle:
                 texture: app.powerups_texture and app.get_powerup_texture(root.powerup)
                 size: min(self.size[0], self.size[1]), min(self.size[1], self.size[0])

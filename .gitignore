@@ -2,6 +2,8 @@
 player/
 *.ini
 data/decks/Private*
+data/decks/*
+data/backgrounds/*
 
 #################
 ## Eclipse
