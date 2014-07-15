@@ -813,7 +813,6 @@ class RendezVousApp(App):
 
     def _background_loaded(self, loader):
         """Update the background texture when it's finished loading."""
-        print('loaded')
         if loader.image.texture:
             self.background = loader.image.texture
 
@@ -852,6 +851,7 @@ class RendezVousApp(App):
 
     def load_background(self, filename):
         """Load the named background."""
+        GameSettings.BACKGROUND = filename
         if not os.path.isfile(filename):
             filename = os.path.join("data", "backgrounds", filename)
         loader = Loader.image(filename)
