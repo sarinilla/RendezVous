@@ -624,8 +624,12 @@ class DeckDefinition:
                 return (5, index)
             else:
                 return (6, index - 11)
+        elif card.value > 18:
+            return (7, 10)
         elif card.value > 10:
             return (7, 3 + card.value - 11)
+        elif card.value < -8:
+            return (8, 10)
         elif card.value < 1:
             return (8, 2 - card.value)
         else:

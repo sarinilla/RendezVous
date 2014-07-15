@@ -33,6 +33,7 @@ from gui.screens.game import GameScreen, RoundAchievementScreen
 from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 from gui.screens.winner import WinnerScreen
 from gui.settings import SettingSlider, SettingAIDifficulty, SettingButton
+from gui.settings import BackgroundPicker
 from gui.screens.settings import SettingsScreen
 from gui.screens.deck import DeckCatalogScreen
 from gui.screens.cards import DeckEditScreen
@@ -734,6 +735,8 @@ class RendezVousApp(App):
     """Main RendezVous App, with deck loaded."""
 
     loaded_deck = ObjectProperty()
+    background = ObjectProperty(allownone=True)
+    background_catalog = ObjectProperty(allownone=True)
     deck_texture = ObjectProperty(allownone=True)
     achievement_texture = ObjectProperty(allownone=True)
     powerups_texture = ObjectProperty(allownone=True)
@@ -757,17 +760,24 @@ class RendezVousApp(App):
         self._load_currency(user_dir)
         self.statistics = Statistics(os.path.join(user_dir, "stats.txt"))
         self.achievements = AchievementList(os.path.join(user_dir, "unlocked.txt"))
+        self._loaded_decks = {}
+        self.load_deck(GameSettings.CURRENT_DECK)
+        self.load_background(GameSettings.BACKGROUND)
         loader = Loader.image(self.achievements.image_file)
         loader.bind(on_load=self._achievements_loaded)
         self.powerups = Powerups(os.path.join(user_dir, "powerups.txt"))
         loader = Loader.image(self.powerups.image_file)
         loader.bind(on_load=self._powerups_loaded)
-        self._loaded_decks = {}
-        self.load_deck(GameSettings.CURRENT_DECK)
+        loader = Loader.image(os.path.join("data", "Backgrounds.png"))
+        loader.bind(on_load=self._backgrounds_loaded)
+
+
+    # Persistent configuration
 
     def _load_sd_config(self):
         """Look for a saved config file if ours is gone."""
         local_config = "rendezvous.ini"
+        if os.path.isfile(local_config): return
         sd_config = os.path.join(self.user_data_dir, "rendezvous.ini")
         if os.path.isfile(sd_config):
             import shutil
@@ -781,6 +791,9 @@ class RendezVousApp(App):
             sd_config = os.path.join(self.user_data_dir, "rendezvous.ini")
             import shutil
             shutil.copyfile(local_config, sd_config)
+
+
+    # Loading
         
     def _preload_home_screen(self):
         """Prioritize loading of images for the home screen."""
@@ -797,6 +810,11 @@ class RendezVousApp(App):
         self.kisses = Currency('kiss',
                       "When lovers rendezvous, a simple kiss is priceless.",
                       self.user_dir)
+
+    def _background_loaded(self, loader):
+        """Update the background texture when it's finished loading."""
+        if loader.image.texture:
+            self.background = loader.image.texture
 
     def _image_loaded(self, loader):
         """Update the deck image when it's finished loading."""
@@ -820,8 +838,24 @@ class RendezVousApp(App):
         if loader.image.texture:
             self.powerups_texture = loader.image.texture
 
+    def _backgrounds_loaded(self, loader):
+        """Update the background catalog when it's finished loading."""
+        if loader.image.texture:
+            self.background_catalog = loader.image.texture
+
     def build(self):
         return RendezVousWidget(app=self)
+
+
+    # Customization
+
+    def load_background(self, filename):
+        """Load the named background."""
+        GameSettings.BACKGROUND = filename
+        if not os.path.isfile(filename):
+            filename = os.path.join("data", "backgrounds", filename)
+        loader = Loader.image(filename)
+        loader.bind(on_load=self._background_loaded)
 
     def load_deck(self, deck_base):
         """Prepare the given deck for play."""
@@ -884,6 +918,9 @@ class RendezVousApp(App):
             if self.root.current[:7] == 'tutorial':
                 update_deck(self.root.current_screen)
 
+
+    # Game Features
+
     def purchase_deck(self, deck_entry):
         """Confirm the purchase of the given deck."""
         popup = Popup(title=deck_entry.name,
@@ -937,6 +974,7 @@ class RendezVousApp(App):
         self.powerups.purchase(powerup, count)
         self._load_currency()
         return True
+
 
     # Manage deck images
 
@@ -1001,6 +1039,16 @@ class RendezVousApp(App):
         except:
             return Texture.create()
 
+    def get_bg_thumbnail(self, index):
+        """Return the appropriate region of the background catalog."""
+        index = int(index)
+        region = (102 * int((index-1) / 16),
+                  1024 - 64 * (int((index-1) % 16) + 1), 101, 63)
+        try:
+            return self.background_catalog.get_region(*region)
+        except:
+            return Texture.create()
+
 
     # Allow automatic pause and resume when switching apps
     
@@ -1043,6 +1091,7 @@ class RendezVousApp(App):
             settings.register_type('slider', SettingSlider)
             settings.register_type('customAI', SettingAIDifficulty)
             settings.register_type('button', SettingButton)
+            settings.register_type('background', BackgroundPicker)
             settings.add_json_panel('Game Settings', self.config,
                                     data="\n".join(fp.readlines()))
             if self.deck_catalog.private:

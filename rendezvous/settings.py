@@ -65,6 +65,8 @@ class GameSettings(object):  # 2.x requires explicit new-style classes
             doc="Abstract setting to be implemented by the GUI")
     SHOW_PRIVATE = Setting(False, typ=bool,
             doc="Include decks marked private in the catalog?")
+    BACKGROUND = Setting("001RendezVous.png", typ=str,
+            doc="Selected background image base filename")
 
     def __init__(self, filename="rendezvous.ini"):
         self.config = configparser.SafeConfigParser()
@@ -81,7 +83,7 @@ class GameSettings(object):  # 2.x requires explicit new-style classes
             if name[:2] == "__": continue
             elif callable(getattr(self, name)): continue
             value = str(getattr(self, name))
-            if (not self.config.has_option(self.section, name) or
+            if ((not self.config.has_option(self.section, name)) or
                 self.config.get(self.section, name) != value):
                     self.config.set(self.section, name, value)
                     updated = True
