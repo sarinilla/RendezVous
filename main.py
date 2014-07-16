@@ -5,6 +5,7 @@ from kivy.clock import Clock
 from kivy.app import App
 from kivy.config import Config
 from kivy.core.image import Image
+from kivy.graphics import Color, Rectangle
 from kivy.graphics.texture import Texture
 from kivy.properties import ObjectProperty, ListProperty
 from kivy.uix.button import Button
@@ -737,6 +738,7 @@ class RendezVousApp(App):
     loaded_deck = ObjectProperty()
     background = ObjectProperty(allownone=True)
     background_catalog = ObjectProperty(allownone=True)
+    backgrounds = ListProperty()  # purchased
     deck_texture = ObjectProperty(allownone=True)
     achievement_texture = ObjectProperty(allownone=True)
     powerups_texture = ObjectProperty(allownone=True)
@@ -763,6 +765,7 @@ class RendezVousApp(App):
         self._loaded_decks = {}
         self.load_deck(GameSettings.CURRENT_DECK)
         self.load_background(GameSettings.BACKGROUND)
+        self._read_backgrounds()
         loader = Loader.image(self.achievements.image_file)
         loader.bind(on_load=self._achievements_loaded)
         self.powerups = Powerups(os.path.join(user_dir, "powerups.txt"))
@@ -810,6 +813,26 @@ class RendezVousApp(App):
         self.kisses = Currency('kiss',
                       "When lovers rendezvous, a simple kiss is priceless.",
                       self.user_dir)
+
+    def _read_backgrounds(self):
+        """Read backgrounds from the file."""
+        filename = os.path.join(self.user_dir, 'backgrounds.txt')
+        if not os.path.isfile(filename):
+            self.backgrounds = [GameSettings.BACKGROUND]
+            return
+        temp = []
+        f = open(filename, 'r')
+        for filename in f.readlines():
+            temp.append(filename.strip())
+        f.close()
+        self.backgrounds = temp
+
+    def on_backgrounds(self, *args):
+        """Automatically update the backgrounds file."""
+        f = open(os.path.join(self.user_dir, 'backgrounds.txt'), 'w')
+        for filename in self.backgrounds:
+            f.write('%s\n' % filename)
+        f.close()
 
     def _background_loaded(self, loader):
         """Update the background texture when it's finished loading."""
@@ -921,12 +944,67 @@ class RendezVousApp(App):
 
     # Game Features
 
+    def purchase_background(self, filename, popup_):
+        """Confirm the purchase of the given background."""
+        if filename in self.backgrounds:
+            popup_.dismiss()
+            return self.load_background(filename)
+        
+        popup = Popup(title=filename[3:-4] + " Background")
+        preview = BoxLayout(orientation="vertical")
+        with preview.canvas.before:
+            Color(1, 1, 1, 1)
+            self.pr = Rectangle(source=os.path.join("data", "backgrounds",
+                                                    filename))
+        def update_popup(instance, value):
+            self.pr.pos = instance.pos
+            self.pr.size = instance.size
+        preview.bind(pos=update_popup, size=update_popup)
+        
+        layout = BoxLayout(orientation="vertical", size_hint=(5, 2))
+        with layout.canvas.before:
+            Color(0, 0, 0, .25)
+            self.lr = Rectangle()
+        def update_layout(instance, value):
+            self.lr.pos = instance.pos
+            self.lr.size = instance.size
+        layout.bind(pos=update_layout, size=update_layout)
+        
+        layout.add_widget(Label(text="Are you sure you would like to purchase this background for 5 kisses?",
+                                valign="middle", halign="center",
+                                size_hint=(1, 4)))
+        buttons = BoxLayout()
+        buttons.add_widget(Widget())
+        buttons.add_widget(Button(text="YES", on_release=lambda x: self._purchase_background(filename, (popup_, popup))))
+        buttons.add_widget(Button(text="no", on_release=popup.dismiss))
+        buttons.add_widget(Widget())
+        layout.add_widget(buttons)
+        sideways = BoxLayout()
+        sideways.add_widget(Widget())
+        sideways.add_widget(layout)
+        sideways.add_widget(Widget())
+        preview.add_widget(Widget())
+        preview.add_widget(sideways)
+        preview.add_widget(Widget())
+        popup.add_widget(preview)
+        popup.open()
+
+    def _purchase_background(self, filename, popups):
+        """Purchase and load the given background."""
+        for popup in popups:
+            popup.dismiss()
+        if not self.kisses.purchase(filename[3:-4], 5):
+            return
+        self._load_currency()
+        self.backgrounds.append(filename)
+        self.load_background(filename)
+
     def purchase_deck(self, deck_entry):
         """Confirm the purchase of the given deck."""
         popup = Popup(title=deck_entry.name,
                       size_hint=(1, .5))
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Label(text="Are you sure you would like to purchase this deck for 10 kisses?",
+        layout.add_widget(Label(text="Are you sure you would like to purchase this deck for 15 kisses?",
                                 valign="middle", halign="center"))
         buttons = BoxLayout()
         buttons.add_widget(Widget())
@@ -940,7 +1018,7 @@ class RendezVousApp(App):
     def _purchase_deck(self, deck_entry, popup):
         """Purchase and load the given deck."""
         popup.dismiss()
-        if not self.kisses.purchase(deck_entry.name, 10):
+        if not self.kisses.purchase(deck_entry.name, 15):
             return
         self._load_currency()
         self.deck_catalog.purchase(deck_entry)
@@ -956,6 +1034,8 @@ class RendezVousApp(App):
         achieved = self.achievements.check(score, PLAYER, self.statistics)
         if achieved:
             self.kisses.earn(len(achieved), "Game achievement(s).")
+            self.kisses.earn(len([a for a in achieved if a.reward is None]),
+                             "Extra achievement rewards.")
         self._load_currency()
         return achieved
 
@@ -964,6 +1044,8 @@ class RendezVousApp(App):
         achieved = self.achievements.check_round(board, PLAYER)
         if achieved:
             self.kisses.earn(len(achieved), "Round achievement(s).")
+            self.kisses.earn(len([a for a in achieved if a.reward is None]),
+                             "Extra achievement rewards.")
             self._load_currency()
         return achieved
 

@@ -46,7 +46,7 @@
 
 [SPECIAL-NAME]Training
 [SPECIAL-DESC]
-[SPECIAL-REQ]Min 1 Spy
+[SPECIAL-REQ]Min 1 Spy OR Counterspy
 [SPECIAL-APP]Friendly Spy
 [SPECIAL-APP]Friendly Counterspy
 [SPECIAL-EFF]Buff 2

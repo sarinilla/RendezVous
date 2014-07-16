@@ -832,6 +832,7 @@ class AchievementList(object):
                 array.append(Achievement(name, description, value, codes, append_description))
                 name = description = ""
                 codes = []
+                append_description = False
             else:
                 warnings.warn("Unknown tag in achievement file: %s" % tag,
                               AchievementSyntaxWarning)
