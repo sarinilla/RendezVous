@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from rendezvous import Alignment
+from rendezvous import GameSettings, Alignment
 from rendezvous.deck import SpecialCard, Card
 from rendezvous.specials import Application
 from rendezvous.gameplay import Scoreboard, Gameboard
@@ -1100,7 +1100,7 @@ class TestAchievementList(unittest.TestCase):
         
     def test_init(self):
         self.assertEqual(repr(self.a.available[0]), 
-                         "Achievement('RendezVous Beginner', 'Play a game of RendezVous.', 'Reinforcements')")
+                         "Achievement('RendezVous Beginner', 'Play a game of RendezVous with Standard.', 'Reinforcements')")
         self.assertEqual(len(self.a.available), 24)
         self.assertEqual(self.a.achieved, [])
         self.assertTrue(os.path.isfile("test_unlock.test"))
@@ -1151,6 +1151,48 @@ class TestAchievementList(unittest.TestCase):
         """Verify unlocked SpecialCards not associated with an Achievement."""
         self.a.achieve("RendezVous Student")
         self.assertTrue(self.a.unlocked("Invalid SpecialCard"))
+
+
+class TestPerfectGame(unittest.TestCase):
+    
+    def setUp(self):
+        """Load the default Achievements for testing."""
+        self.a = AchievementList("test_unlock.test")
+        self.s = Scoreboard(DummyDeckDefinition())
+        self.backup = GameSettings.NUM_ROUNDS
+
+    def tearDown(self):
+        GameSettings.NUM_ROUNDS = self.backup
+
+    def test_perfect_game_false(self):
+        """Verify that Perfect Game is not awarded prematurely."""
+        GameSettings.NUM_ROUNDS = 20
+        self.s.scores = [[300, 100], [100, 300]]
+        self.assertEqual(self.a._check_perfect_game(1, self.s), [])
+        
+    def test_perfect_game_short(self):
+        """Verify that Perfect Game is not awarded for a short game."""
+        GameSettings.NUM_ROUNDS = 10
+        self.s.scores = [[-10, -10], [20, 20]]
+        self.assertEqual(self.a._check_perfect_game(1, self.s), [])
+        
+    def test_perfect_game_tie(self):
+        """Verify that Perfect Game doesn't count a perfect tie."""
+        GameSettings.NUM_ROUNDS = 20
+        self.s.scores = [[0, 0], [0, 0]]
+        self.assertEqual(self.a._check_perfect_game(1, self.s), [])
+        
+    def test_perfect_game_true(self):
+        """Verify that Perfect Game is awarded when earned."""
+        GameSettings.NUM_ROUNDS = 20
+        self.s.scores = [[-10, -10], [20, 20]]
+        self.assertNotEqual(self.a._check_perfect_game(1, self.s), [])
+        
+    def test_perfect_game_with_tie(self):
+        """Verify that a tied suit doesn't preclude Perfect Game."""
+        GameSettings.NUM_ROUNDS = 20
+        self.s.scores = [[0, -10], [0, 20]]
+        self.assertNotEqual(self.a._check_perfect_game(1, self.s), [])
 
 
 if __name__ == "__main__":

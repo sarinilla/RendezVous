@@ -5,6 +5,7 @@ import warnings
 
 from rendezvous import AchieveType, AchievementSyntaxWarning, FileReader
 from rendezvous import SpecialSuit, SpecialValue, Operator, Alignment
+from rendezvous import GameSettings
 
 
 class AchievementCriterion(object):
@@ -744,7 +745,7 @@ class AchievementList(object):
         achievement = self[achievement]  # find by name if needed
         if achievement not in self.achieved:
             self.achieved.append(achievement.name)
-            self._check_special()
+            self.achieved.extend(self._check_secret_rendezvous())
             try:
                 f = open(self._unlocked_file, 'a')
                 f.write('[ACH-NAME]%s\n' % achievement.name)
@@ -760,7 +761,8 @@ class AchievementList(object):
                 if achievement.check(score, player_index, stats):
                     reached.append(self.achieve(achievement))
         if reached:
-            reached.extend(self._check_special())
+            reached.extend(self._check_special(player_index, score=score,
+                                               stats=stats))
         return reached
         
     def check_round(self, board, player_index):
@@ -771,11 +773,16 @@ class AchievementList(object):
                 if achievement.check_round(board, player_index):
                     reached.append(self.achieve(achievement))
         if reached:
-            reached.extend(self._check_special())
+            reached.extend(self._check_special(player_index, board=board))
         return reached
 
-    def _check_special(self):
-        """Check for the special Secret Rendezvous Achievement."""
+    def _check_special(self, player_index, board=None, score=None, stats=None):
+        """Check for uncoded special achievements."""
+        return (self._check_secret_rendezvous() +
+                self._check_perfect_game(player_index, score))
+
+    def _check_secret_rendezvous(self):
+        """Award Secret Rendezvous if all cards unlocked in a custom deck."""
         if "Secret RendezVous" in self.achieved:
             return []
         if "Standard" in self.deck_image_file:
@@ -785,6 +792,24 @@ class AchievementList(object):
                 if achievement not in self.achieved:
                     return []
         return [self["Secret RendezVous"]]
+
+    def _check_perfect_game(self, player_index, score):
+        """Award Perfect Game for a 20-round game with no lost matches."""
+        if score is None:  # checking a round
+            return []
+        if "Perfect Game" in self.achieved:
+            return []
+        if GameSettings.NUM_ROUNDS < 20:
+            return []
+        for dealer_score in score.scores[player_index-1]:
+            if dealer_score > 0:
+                return []
+        dealer_score = score.total(player_index-1)
+        if dealer_score >= 0:
+            return []
+        if score.total(player_index) != int(2 * abs(dealer_score)):
+            return []
+        return [self["Perfect Game"]]
 
     def deck_specific(self, achievement):
         """Return boolean indicating whether achievement is deck-specific."""
