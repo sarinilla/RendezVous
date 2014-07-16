@@ -85,8 +85,7 @@ class BackgroundDisplay(BoxLayout):
 
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
-            App.get_running_app().load_background(self.filename)
-            self.popup.dismiss()
+            App.get_running_app().purchase_background(self.filename, self.popup)
             return True
         super(BackgroundDisplay, self).on_touch_up(touch)
 
