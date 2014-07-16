@@ -926,7 +926,7 @@ class RendezVousApp(App):
         popup = Popup(title=deck_entry.name,
                       size_hint=(1, .5))
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Label(text="Are you sure you would like to purchase this deck for 10 kisses?",
+        layout.add_widget(Label(text="Are you sure you would like to purchase this deck for 15 kisses?",
                                 valign="middle", halign="center"))
         buttons = BoxLayout()
         buttons.add_widget(Widget())
@@ -940,7 +940,7 @@ class RendezVousApp(App):
     def _purchase_deck(self, deck_entry, popup):
         """Purchase and load the given deck."""
         popup.dismiss()
-        if not self.kisses.purchase(deck_entry.name, 10):
+        if not self.kisses.purchase(deck_entry.name, 15):
             return
         self._load_currency()
         self.deck_catalog.purchase(deck_entry)
@@ -956,6 +956,8 @@ class RendezVousApp(App):
         achieved = self.achievements.check(score, PLAYER, self.statistics)
         if achieved:
             self.kisses.earn(len(achieved), "Game achievement(s).")
+            self.kisses.earn(len([a for a in achieved if a.reward is None]),
+                             "Extra achievement rewards.")
         self._load_currency()
         return achieved
 
@@ -964,6 +966,8 @@ class RendezVousApp(App):
         achieved = self.achievements.check_round(board, PLAYER)
         if achieved:
             self.kisses.earn(len(achieved), "Round achievement(s).")
+            self.kisses.earn(len([a for a in achieved if a.reward is None]),
+                             "Extra achievement rewards.")
             self._load_currency()
         return achieved
 
