@@ -1,17 +1,17 @@
 [ACH-NAME]High Scorer
-[ACH-CODE]800
-[ACH-REWARD]
-
-[ACH-NAME]Quadruple Digits
-[ACH-CODE]1000
+[ACH-CODE]400
 [ACH-REWARD]
 
 [ACH-NAME]Stellar Scorer
-[ACH-CODE]1400
+[ACH-CODE]600
+[ACH-REWARD]
+
+[ACH-NAME]Amazing!
+[ACH-CODE]800
 [ACH-REWARD]
 
 [ACH-NAME]Perfect Game
-[ACH-CODE]1600
+[ACH-DESC]Finish a 20-round game without losing a match.
 [ACH-REWARD]
 
 [ACH-NAME]Specializer
