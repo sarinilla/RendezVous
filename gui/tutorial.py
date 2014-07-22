@@ -195,9 +195,16 @@ class TutorialActionItemScreen(TutorialScreen):
         self.action_prompt = Label(text='[b]%s[/b]' % self.action_item.upper(),
                                    markup=True,
                                    valign="middle", halign="center",
-                                   size_hint=(.75, .2),
-                                   pos_hint={'x':0, 'y':.8})
+                                   size_hint=(.8, .1),
+                                   pos_hint={'x':0, 'y':.85})
         self.float.add_widget(self.action_prompt)
+        Clock.schedule_once(self._draw_background)
+
+    def _draw_background(self, *args):
+        with self.action_prompt.canvas.before:
+            Color(0, 0, 0, .75)
+            Rectangle(size=self.action_prompt.size,
+                      pos=self.action_prompt.pos)
 
     def on_action_item(self, *args):
         self.action_prompt.text = self.action_item
