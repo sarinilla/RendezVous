@@ -1,7 +1,8 @@
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
-from kivy.properties import StringProperty, ObjectProperty, NumericProperty, ListProperty
+from kivy.properties import StringProperty, ObjectProperty, NumericProperty
+from kivy.properties import BooleanProperty, ListProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -27,7 +28,7 @@ class SpeechBubble(Label):
         Clock.unschedule(self._next_word)
         self.words_left = self.full_text.split()
         self.text = self.words_left.pop(0)
-        Clock.schedule_interval(self._next_word, 0.5)
+        Clock.schedule_interval(self._next_word, 0.4)
 
     def _next_word(self, *args):
         if not self.words_left:
@@ -42,20 +43,25 @@ class TutorialDealer(Widget):
 
     dealer_index = NumericProperty()
     text = ListProperty()
+    reverse = BooleanProperty(False)
     callback = ObjectProperty()
 
     def __init__(self, **kwargs):
         Widget.__init__(self, **kwargs)
         self.layout = BoxLayout()
         self.dealer = Widget()
-        self.layout.add_widget(self.dealer)
+        Clock.schedule_once(self._show_dealer)
         self.bubble = SpeechBubble(full_text=self.text.pop(0), size_hint=(.3, 1))
-        self.layout.add_widget(self.bubble)
+        if self.reverse:
+            self.layout.add_widget(self.bubble)
+            self.layout.add_widget(self.dealer)
+        else:
+            self.layout.add_widget(self.dealer)
+            self.layout.add_widget(self.bubble)
         self.add_widget(self.layout)
-        self.bind(size=self.layout.setter('size'))
-        Clock.schedule_once(self._layout)
+        self.bind(size=self.layout.setter('size'), pos=self.layout.setter('pos'))
 
-    def _layout(self, *args):
+    def _show_dealer(self, *args):
         with self.dealer.canvas:
             Color(1, 1, 1, 1)
             Rectangle(texture=App.get_running_app().get_dealer_texture(
@@ -262,7 +268,7 @@ class TutorialSpecialCard(TutorialScreen):
         self.float.add_widget(TutorialDealer(dealer_index=3,
                                              text=self.text,
                                              size_hint=(.8, .8),
-                                             pos=(0, 0),
+                                             pos_hint={'x':.1, 'y':0},
                                              callback=self.advance))
 
 
@@ -297,26 +303,40 @@ class TutorialScoreboard(TutorialScreen):
         """Show the dealer text."""
         self._highlight(self.scoreboard)
         self.float.add_widget(TutorialDealer(dealer_index=2,
+                                             text=self.text,
+                                             size_hint=(.8, .8),
+                                             callback=self.advance))
+
+
+class TutorialScoringHighlights(TutorialScreen):
+
+    text = ["As the round is scored, the highlighting will help you see who won each match-up."]
+
+    next_tutorial = TutorialScoreboard
+    
+    def draw_tutorial(self, *args):
+        """Show the dealer text."""
+        self._highlight(self.gameboard)
+        self.manager._reset_scoring()
+        self.manager._score(then_prompt=False)
+        self.float.add_widget(TutorialDealer(dealer_index=2,
                                              reverse=True,
                                              text=self.text,
                                              size_hint=(.8, .8),
-                                             pos=(0, 0),
+                                             pos_hint={'x':.2, 'y':0},
                                              callback=self.advance))
 
 
 class TutorialScoringReplay(TutorialScreen):
 
     text = ["A win earns you 10 points in the suit you played, and 10 points in the dealer's suit.",
-            "A loss costs you 10 points in your suit only.",
-            "As the round is scored, the highlighting will help you see who won each match-up."]
+            "A loss costs you 10 points in your suit only."]
 
-    next_tutorial = TutorialScoreboard
+    next_tutorial = TutorialScoringHighlights
     
     def draw_tutorial(self, *args):
         """Replay the scoring sequence behind the dealer text."""
         self._highlight(self.scoreboard)
-        self.manager._reset_scoring()
-        self.manager._score(then_prompt=False)
         self.float.add_widget(TutorialDealer(dealer_index=2,
                                              text=self.text,
                                              size_hint=(.8, .8),
@@ -361,7 +381,7 @@ class TutorialDealerPlay(TutorialScreen):
                                              reverse=True,
                                              text=self.text,
                                              size_hint=(.8, .8),
-                                             pos=(0, 0),
+                                             pos_hint={'x':.2, 'y':0},
                                              callback=self.advance))
 
     def advance(self, *args):
@@ -386,7 +406,7 @@ class TutorialDealerTurn(TutorialScreen):
                                              reverse=True,
                                              text=self.text,
                                              size_hint=(.8, .8),
-                                             pos=(0, 0),
+                                             pos_hint={'right': 1},
                                              callback=self.advance))
 
     def advance(self, *args):
