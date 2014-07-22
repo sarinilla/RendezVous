@@ -23,6 +23,13 @@ class SpeechBubble(Label):
     def __init__(self, **kwargs):
         Label.__init__(self, markup=True, valign="top", halign="left", **kwargs)
         self.bind(size=self.setter('text_size'))
+        Clock.schedule_once(self._draw)
+
+    def _draw(self, *args):
+        with self.canvas.before:
+            Color(0, 0, 0, .75)
+            Rectangle(size=(self.size[0]+20, self.size[1]+20),
+                      pos=(self.pos[0]-10, self.pos[1]-10))
 
     def on_full_text(self, *args):
         Clock.unschedule(self._next_word)
@@ -51,7 +58,9 @@ class TutorialDealer(Widget):
         self.layout = BoxLayout()
         self.dealer = Widget()
         Clock.schedule_once(self._show_dealer)
-        self.bubble = SpeechBubble(full_text=self.text.pop(0), size_hint=(.3, 1))
+        self.bubble = SpeechBubble(full_text=self.text.pop(0),
+                                   size_hint=(.3, .6),
+                                   pos_hint={'top': 1})
         if self.reverse:
             self.layout.add_widget(self.bubble)
             self.layout.add_widget(self.dealer)
