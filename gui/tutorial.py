@@ -271,7 +271,7 @@ class TutorialSpecialCard(TutorialScreen):
             "In addition to the five normal suits, you will sometimes get special cards in your hand.",
             "These can only be played when certain conditions are met.",
             "Many of them have the power to affect the other cards you play, or even the dealer's cards.",
-            "You drew a special card!",
+            "You drew the special card!",
             "Drag your new special card onto the tooltip display below the scoreboard to read about what it does and how to use it."]
 
     next_tutorial = TutorialSpecialCardDrag

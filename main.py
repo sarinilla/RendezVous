@@ -1,5 +1,6 @@
 import os
 import copy
+import random
 
 from kivy.clock import Clock
 from kivy.app import App
@@ -113,7 +114,7 @@ class RendezVousWidget(ScreenManager):
 
     def plant_special(self):
         """Replace special cards in deck, and place one into the hand."""
-        special = self.app.loaded_deck.specials[1]
+        special = random.choice(self.app.loaded_deck.specials[:5])
         special = self.app.loaded_deck.get_special(special.name)  # copy
         self.game.players[PLAYER].cards[8] = special
         self.game.players[PLAYER].deck.shuffle()
