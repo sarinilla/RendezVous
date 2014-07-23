@@ -41,7 +41,7 @@ from gui.screens.cards import DeckEditScreen
 from gui.screens.statistics import StatisticsScreen
 from gui.screens.achievements import AchievementsScreen
 from gui.screens.powerups import PowerupScreen, CardSelect
-from gui.tutorial import TutorialScreen, FirstTutorialScreen
+from gui.tutorial import GameTutorialScreen, FirstTutorialScreen, TutorialGameOver
 
 
 __version__ = '0.8.0'
@@ -213,7 +213,7 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.scoreboard.update()
 
     def use_powerup(self, powerup):
-        self.main.close_tray()
+        self.current_screen.close_tray()
 
         # Only certain ones can be used between rounds
         if powerup.type == PowerupType.WAIT_CARD:
@@ -372,7 +372,7 @@ class RendezVousWidget(ScreenManager):
         return (self.current == 'main' or self._in_tutorial())
 
     def _in_tutorial(self):
-        return isinstance(self.current_screen, TutorialScreen)
+        return isinstance(self.current_screen, GameTutorialScreen)
 
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
@@ -591,7 +591,7 @@ class RendezVousWidget(ScreenManager):
 
     def _reset_scoring(self):
         """Reset for another round of scoring."""
-        self.game.score.scores = self._backup_score
+        self.game.score.scores = copy.deepcopy(self._backup_score)
         for card in self.game.board:
             card.reset()
         self.current_screen.gameboard.highlight(BLANK)
@@ -607,8 +607,8 @@ class RendezVousWidget(ScreenManager):
     def replay_turn(self):
         """Replay the entire turn at the user's (powerup) request."""
         self.powerups_in_use = []
-        self.game.board._wait = self._backup_waits
-        self.game.score.scores = self._backup_score
+        self.game.board._wait = copy.deepcopy(self._backup_waits)
+        self.game.score.scores = copy.deepcopy(self._backup_score)
         for i, hand in enumerate(self.game.players):
             waits = self.game.board._wait[i].count(True)
             hand.cards = hand.cards[:6-waits]
@@ -646,8 +646,14 @@ class RendezVousWidget(ScreenManager):
                 return
         if game_over:
             self.achieved += self.app.record_score(self.game.score)
-            self._winner = WinnerScreen(self.game.score, self.achieved,
-                                        name='winner')
+            if self._in_tutorial():
+                self._winner = TutorialGameOver(score=self.game.score,
+                                                achieved=self.achieved,
+                                                name='winner')
+            else:
+                self._winner = WinnerScreen(self.game.score,
+                                            self.achieved,
+                                            name='winner')
             self.switch_to(self._winner)
             self.achieved = []
             self.game.round = 0  # mark GAME OVER to trigger replay

@@ -91,7 +91,7 @@ class Powerups:
         return len(self.available)
 
     def __getitem__(self, key):
-        return copy.deepcopy(self.available[key])
+        return self.find(key)
 
     def index(self, powerup):
         return self.available.index(powerup)
@@ -139,6 +139,7 @@ class Powerups:
 
     def purchase(self, powerup, count=1):
         """Purchase another copy of the given powerup."""
+        powerup = self.find(powerup)
         try:
             self.purchased[powerup] += count
         except KeyError:
@@ -152,6 +153,7 @@ class Powerups:
 
     def use(self, powerup):
         """Mark one copy of the given powerup used."""
+        powerup = self.find(powerup)
         self.purchased[powerup] -= 1
         if self.purchased[powerup] == 0:
             del self.purchased[powerup]

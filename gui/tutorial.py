@@ -11,8 +11,12 @@ from kivy.uix.widget import Widget
 from kivy.uix.floatlayout import FloatLayout
 
 
+from gui import PLAYER, DEALER
+from gui.components import RED, GREEN
 from gui.components import RoundCounter, ScoreDisplay, ToolTipDisplay
 from gui.components import HandDisplay, BoardDisplay
+from gui.screens.winner import WinnerScreen
+from gui.powerups import PowerupsAvailable
 
 
 class SpeechBubble(Label):
@@ -68,13 +72,60 @@ class DealerImage(Widget):
     def _place_rect(self, *args):
         self.rect.size = min(*self.size), min(*self.size)
         self.rect.pos = self.pos
+
+
+class ScreenWithDealer(Screen):
+
+    """Allows a dealer with a speech bubble to pop up over the screen content.
+
+    Requires a FloatLayout called self.float!
+
+    """
+    
+    text = []
+
+    def show_dealer(self, dealer_index, reverse=False, offset=(0, 0),
+                    start=None, animate=True):
+        if start is None:
+            start = (-500, 0) if not reverse else (self.size[0] + 500, 0)
+        self.dealer = DealerImage(dealer_index=dealer_index,
+                                  size_hint=(.5, .8),
+                                  pos=start)
+        self.float.add_widget(self.dealer)
+        target_x = self.size[0] / 2 if reverse else 0
+        if animate:
+            anim = Animation(x=offset[0] + target_x, y=offset[1])
+            anim.bind(on_complete=lambda *a: self._show_speech(reverse))
+            anim.start(self.dealer)
+        else:
+            self.dealer.pos = (offset[0] + target_x, offset[1])
+            Clock.schedule_once(lambda *a: self._show_speech(reverse))
+
+    def _show_speech(self, reverse):
+        if self.text == []: return
+        delta_x = self.dealer.width if not reverse else -self.dealer.width * 3 / 5
+        self.bubble = SpeechBubble(full_text=self.text.pop(0),
+                                   size_hint=(.3, .4),
+                                   pos=(self.dealer.pos[0] + delta_x,
+                                        self.dealer.pos[1] + self.dealer.height / 2))
+        self.float.add_widget(self.bubble)
+
+    def on_touch_up(self, touch):
+        try: self.bubble
+        except AttributeError:
+            return super(ScreenWithDealer, self).on_touch_up(touch)
+        if self.bubble.words_left != []:
+            self.bubble.finish()
+        elif self.text != []:
+            self.bubble.full_text = self.text.pop(0)
+        else:
+            self.advance()
         
 
-class TutorialScreen(Screen):
+class GameTutorialScreen(Screen):
     
     """Provides common features for Tutorial Screens."""
 
-    text = []
     next_tutorial = None
 
     def __init__(self, **kwargs):
@@ -134,43 +185,6 @@ class TutorialScreen(Screen):
         """Draw additional tutorial items."""
         pass
 
-    def show_dealer(self, dealer_index, reverse=False, offset=(0, 0),
-                    start=None, animate=True):
-        if start is None:
-            start = (-500, 0) if not reverse else (self.size[0] + 500, 0)
-        self.dealer = DealerImage(dealer_index=dealer_index,
-                                  size_hint=(.5, .8),
-                                  pos=start)
-        self.float.add_widget(self.dealer)
-        target_x = self.size[0] / 2 if reverse else 0
-        if animate:
-            anim = Animation(x=offset[0] + target_x, y=offset[1])
-            anim.bind(on_complete=lambda *a: self._show_speech(reverse))
-            anim.start(self.dealer)
-        else:
-            self.dealer.pos = (offset[0] + target_x, offset[1])
-            Clock.schedule_once(lambda *a: self._show_speech(reverse))
-
-    def _show_speech(self, reverse):
-        if self.text == []: return
-        delta_x = self.dealer.width if not reverse else -self.dealer.width * 3 / 5
-        self.bubble = SpeechBubble(full_text=self.text.pop(0),
-                                   size_hint=(.3, .4),
-                                   pos=(self.dealer.pos[0] + delta_x,
-                                        self.dealer.pos[1] + self.dealer.height / 2))
-        self.float.add_widget(self.bubble)
-
-    def on_touch_up(self, touch):
-        try: self.bubble
-        except AttributeError:
-            return super(TutorialScreen, self).on_touch_up(touch)
-        if self.bubble.words_left != []:
-            self.bubble.finish()
-        elif self.text != []:
-            self.bubble.full_text = self.text.pop(0)
-        else:
-            self.advance()
-
     def update(self):
         """Prepare the screen to be shown."""
         self.gameboard.update()
@@ -196,7 +210,11 @@ class TutorialScreen(Screen):
         return True
 
 
-class TutorialActionItemScreen(TutorialScreen):
+class TutorialScreen(GameTutorialScreen, ScreenWithDealer):
+    pass
+
+
+class TutorialActionItemScreen(GameTutorialScreen):
 
     """Show the normal game screen, with a text bar across the top."""
 
@@ -225,12 +243,283 @@ class TutorialActionItemScreen(TutorialScreen):
         return False
 
 
+class AnalyzeScore:
+
+    """Provides methods for analyzing the current score.
+
+    Requires access to the ScoreDisplay as self.scoreboard!
+
+    """
+
+    def result(self):
+        """Return the current gap in winning suits (player's - dealer's)."""
+        return (len(self.scoreboard.scoreboard.wins(PLAYER)) -
+                len(self.scoreboard.scoreboard.wins(DEALER)))
+
+    def _lead(self, suit_index):
+        """Return the current score gap for the suit (player's - dealer's)."""
+        return (self.scoreboard.scoreboard.scores[PLAYER][suit_index] -
+                self.scoreboard.scoreboard.scores[DEALER][suit_index])
+    
+    def closest_win(self):
+        """Return the (suit, lead) of the narrowest current win."""
+        best = (None, None)
+        for i, suit in enumerate(self.scoreboard.scoreboard.suits):
+            lead = self._lead(i)
+            if lead <= 0: continue
+            if best[1] is None or lead < best[1]:
+                best = (suit, lead)
+        return best
+
+    def best_win(self):
+        """Return the (suit, lead) of the strongest current win."""
+        best = (None, None)
+        for i, suit in enumerate(self.scoreboard.scoreboard.suits):
+            lead = self._lead(i)
+            if lead <= 0: continue
+            if best[1] is None or lead > best[1]:
+                best = (suit, lead)
+        return best
+
+    def worst_loss(self):
+        """Return the (suit, lead) of the strongest current loss."""
+        best = (None, None)
+        for i, suit in enumerate(self.scoreboard.scoreboard.suits):
+            lead = self._lead(i)
+            if lead >= 0: continue
+            if best[1] is None or lead < best[1]:
+                best = (suit, lead)
+        return best
+
+    def closest_loss(self):
+        """Return the (suit, lead) of the closest current loss."""
+        best = (None, None)
+        for i, suit in enumerate(self.scoreboard.scoreboard.suits):
+            lead = self._lead(i)
+            if lead >= 0: continue
+            if best[1] is None or lead > best[1]:
+                best = (suit, lead)
+        return best
+
+    def tied_suit(self):
+        """Return the name of a tied suit."""
+        for i, suit in enumerate(self.scoreboard.scoreboard.suits):
+            if self._lead(i) == 0:
+                return suit
+        return None
+            
+
+
 ##  Begin Tutorial Screens (in reverse order)  ##
 
 
-class TutorialFinishGame(TutorialActionItemScreen):
+class TutorialGameOver(WinnerScreen, ScreenWithDealer):
+
+    # text is auto-filled
+
+    def __init__(self, **kwargs):
+        """Generate text and display it."""
+        super(TutorialGameOver, self).__init__(**kwargs)
+        self.float = self.ids.float  # rename for ScreenWithDealer
+        self._analyze()
+        Clock.schedule_once(lambda *a: self.show_dealer(dealer_index=1, reverse=True))
+
+    def advance(self, *args):
+        self.float.remove_widget(self.dealer)
+        self.float.remove_widget(self.bubble)
+        # stay on this screen
+
+    def _analyze(self):
+
+        """Generate text based on the final score."""
+
+        # Win/lose/draw
+        pwins = len(self.score.wins(PLAYER))
+        dwins = len(self.score.wins(DEALER))
+        if pwins > dwins:
+            self.text.append("Aww, you beat me!")
+        elif pwins < dwins:
+            self.text.append("Gotcha this time!")
+        else:
+            self.text.append("Ooh, we tied!")
+
+        # Comment on winks earned
+        if pwins > dwins:
+            self.text.append("You earned %s winks for this game - one for each suit, plus one more for winning the game!" % (pwins + 1))
+        elif pwins > 0:
+            self.text.append("You earned %s winks for this game - one for each suit you won.")
+        else:
+            self.text.append("You didn't win any suits this game, so you didn't earn any winks this time - keep trying!")
+            self.text.append("If you would like to repeat the tutorial, you can access it any time from the Settings icon!")
+
+        # Comment on kisses earned
+        kisses = len(self.achieved) if self.achieved is not None else 0
+        if kisses > 0:
+            self.text.extend(["You earned %s kisses for unlocking Achievements during the game!" % kisses,
+                              "You can use your kisses to unlock backgrounds, or even new decks to play with.",
+                              "Swipe left and right to look through your Achievements, or to see the final score."])
+        else:
+            self.text.extend(["You didn't unlock any new Achievements this time.",
+                              "You can use the Achievements icon on the home screen to view all of the goals you can shoot for!",
+                              "Achievements grant you kisses, which you can use to unlock backgrounds, or even new decks to play with."])
+
+
+class TutorialFinishGame(PowerupsAvailable, TutorialActionItemScreen):
+
+    action_item = "Finish it up!"
+
+    def draw_tutorial(self, *args):
+        """Advance the round and wait for the game to end."""
+        self.gameboard.next_round_prompted()
+        super(TutorialFinishGame, self).draw_tutorial(*args)
+
+    # manager will advance automatically when the game's over!
+
+
+class TutorialEndGame(TutorialScreen, AnalyzeScore):
+
+    text = ["Your time is almost up - only a few rounds left in this game!",
+            "Take a look at your suit scores and see what you can do to improve your odds.",
+            "Remember, you have to win more suits than your opponent does in order to win the game!",
+            "You will earn extra winks for winning even more suits."]
+            #Score-specific text will be added dynamically
+
+    next_tutorial = TutorialFinishGame
+
+    def draw_tutorial(self, *args):
+        """Show dealer text with additional lines."""
+        self._highlight(self.scoreboard)
+        self._analyze_score()
+        self.show_dealer(dealer_index=4)
+
+    def _analyze_score(self):
+
+        """Provide specific guidance for the current situation."""
+
+        # Win/lose/draw
+        result = self.result()
+        if result > 0:
+            self.text.append("Great work - you are winning so far!")
+        elif result < 0:
+            self.text.append("Uh-oh, right now you are losing...")
+        else:
+            self.text.append("Looks like you're tied right now.")
+
+        # Look for a close win
+        close_win = self.closest_win()
+        if result >= 0 and close_win[0] is not None:
+            if close_win[1] < 50:
+                self.text.append("Be careful not to lose points in the %s suit so you can hold your lead!" % close_win[0])
+
+        # Look for a suit to target
+        close_loss = self.closest_loss()
+        contested = self.tied_suit()
+        target = close_loss[0]
+        if target is None or close_loss[1] < -30:
+            target = contested
+        if target is None:
+            target = close_win[0]
+
+        # Look for a suit to sacrifice
+        sacrifice = self.worst_loss()
+        if sacrifice[1] is None or sacrifice[1] > -30:
+            sacrifice = self.best_win()
+            if sacrifice[1] is not None and sacrifice[1] < 60:
+                sacrifice = (None, None)
+
+        # Suggest the sacrifice and/or target
+        if sacrifice[0] is not None and target is not None:
+            self.text.append("You might consider sacrificing points in the %s suit to gain an advantage in %s." % (sacrifice[0], target))
+        elif target is not None:
+            self.text.append("See if you can use your special cards to catch up in the %s suit!" % target)
+                                
+
+
+class TutorialPlayToEndgame(PowerupsAvailable, TutorialActionItemScreen):
 
     action_item = "Play on!"
+
+    next_tutorial = TutorialEndGame
+
+    def draw_tutorial(self, *args):
+        """Start the next round immediately."""
+        self.gameboard.next_round_prompted()
+        super(TutorialPlayToEndgame, self).draw_tutorial(*args)
+
+    def next_round(self, num, game_over):
+        """Move forward after round 15."""
+        if num == 16:
+            self.advance()
+            return True
+        return False
+
+
+class TutorialPowerupsDone(TutorialScreen):
+
+    text = ["Great work!",
+            "After the game, you can click the Powerups icon on the home screen to browse all of the powerups available.",
+            "You might have to save up a while to make a purchase..."]
+
+    next_tutorial = TutorialPlayToEndgame
+
+    def draw_tutorial(self, *args):
+        """Show the dealer text."""
+        self._fade(self.main)
+        self.show_dealer(dealer_index=3, reverse=True)
+
+
+class TutorialDragPowerups(PowerupsAvailable, TutorialActionItemScreen):
+
+    action_item = "Swipe from the right"
+
+    next_tutorial = TutorialPowerupsDone
+
+    def draw_tutorial(self, *args):
+        """Watch for a powerup to be used."""
+        self.manager.bind(powerups_in_use=self.advance)
+        self.gameboard.next_round_prompted()
+        super(TutorialDragPowerups, self).draw_tutorial(*args)
+
+    def advance(self, *args):
+        """Don't try to advance twice (on powerup cleanup)."""
+        if self.manager is None: return
+        super(TutorialDragPowerups, self).advance(*args)
+        
+
+class TutorialPowerups(TutorialScreen):
+
+    text = ["[b]Powerups[/b] are another way to press your advantage.",
+            "You can buy powerups using the winks you earn at the end of a game.",
+            "I’ve given you a simple Super Buff powerup to get you started.",
+            "This powerup will raise the value of each card you play by 2 points.",
+            "Swipe from the right to open your powerup tray and put it to use!"]
+
+    next_tutorial = TutorialDragPowerups
+
+    def draw_tutorial(self, *args):
+        """Award the powerup and explain it."""
+        self.manager.app.powerups.purchase("Super Buff")
+        self._fade(self.main)
+        self.show_dealer(dealer_index=3, reverse=True)
+
+
+class TutorialPlayWithSpecials(TutorialActionItemScreen):
+
+    action_item = "Play on, using special cards to your advantage..."
+
+    next_tutorial = TutorialPowerups
+
+    def draw_tutorial(self, *args):
+        """Start a new round immediately."""
+        self.gameboard.next_round_prompted()
+        super(TutorialPlayWithSpecials, self).draw_tutorial(*args)
+
+    def next_round(self, num, game_over):
+        """Move forward after round 10."""
+        if num == 11:
+            self.advance()
+            return True
+        return False
 
 
 class TutorialSpecialCardDragged(TutorialScreen):
@@ -239,12 +528,12 @@ class TutorialSpecialCardDragged(TutorialScreen):
             "The best cards are unlocked by completing RendezVous Achievements.",
             "When you unlock a custom deck, it will come with its own unique Special Cards!"]
 
-    next_tutorial = TutorialFinishGame
+    next_tutorial = TutorialPlayWithSpecials
 
     def draw_tutorial(self, *args):
         """Show the dealer text."""
         self._fade(self.main)
-        self.show_dealer(dealer_index=3)
+        self.show_dealer(dealer_index=2)
 
 
 class TutorialSpecialCardDrag(TutorialActionItemScreen):
@@ -254,6 +543,7 @@ class TutorialSpecialCardDrag(TutorialActionItemScreen):
     ready = False
 
     def draw_tutorial(self, *args):
+        """Highlight the tooltip area blue."""
         with self.tooltip.canvas.before:
             Color(0, 0, 1, .75)
             Rectangle(size=self.tooltip.size, pos=self.tooltip.pos)
@@ -264,9 +554,11 @@ class TutorialSpecialCardDrag(TutorialActionItemScreen):
         super(TutorialSpecialCardDrag, self).draw_tutorial(*args)
         
     def _dragged(self, *args):
+        """Ready to move forward as soon as the card is dragged."""
         self.ready = True
 
     def card_touched(self):
+        """Move forward on the first touch after dragging the card up."""
         if self.ready:
             self.advance()
         return True
@@ -274,8 +566,7 @@ class TutorialSpecialCardDrag(TutorialActionItemScreen):
 
 class TutorialSpecialCard(TutorialScreen):
 
-    text = ["[b]Introducing Special Cards[/b]",
-            "In addition to the five normal suits, you will sometimes get special cards in your hand.",
+    text = ["[b]Special cards[/b] will sometimes show up alongside the five normal suits.",
             "These can only be played when certain conditions are met.",
             "Many of them have the power to affect the other cards you play, or even the dealer's cards.",
             "You drew the special card!",
@@ -287,8 +578,8 @@ class TutorialSpecialCard(TutorialScreen):
         """Plant a special card and show dealer text."""
         self._highlight(self.hand_display)
         special = self.manager.plant_special()
-        self.text[4] = self.text[4].replace("special", special.name)
-        self.show_dealer(dealer_index=3)
+        self.text[3] = self.text[3].replace("special", special.name)
+        self.show_dealer(dealer_index=2)
 
 
 class TutorialPlayAFew(TutorialActionItemScreen):
@@ -304,7 +595,8 @@ class TutorialPlayAFew(TutorialActionItemScreen):
         super(TutorialPlayAFew, self).draw_tutorial(*args)
 
     def next_round(self, num, game_over):
-        if num == 11:
+        """Move forward after round 5."""
+        if num == 6:
             self.advance()
             return True
         return False
@@ -321,7 +613,11 @@ class TutorialScoreboard(TutorialScreen):
     def draw_tutorial(self, *args):
         """Show the dealer text."""
         self._highlight(self.scoreboard)
-        self.show_dealer(dealer_index=2, start=(self.size[0]/2, 0))
+        self.manager._reset_scoring()
+        for i in range(4):
+            self.gameboard._score_match(self.scoreboard,
+                                        self.scoreboard.scoreboard, i)
+        self.show_dealer(dealer_index=0, start=(self.size[0]/2, 0))
 
 
 class TutorialScoringHighlights(TutorialScreen):
@@ -335,7 +631,7 @@ class TutorialScoringHighlights(TutorialScreen):
         self._highlight(self.gameboard)
         self.manager._reset_scoring()
         self.manager._score(then_prompt=False)
-        self.show_dealer(dealer_index=2, reverse=True, start=(0, 0))
+        self.show_dealer(dealer_index=0, reverse=True, start=(0, 0))
 
 
 class TutorialScoringReplay(TutorialScreen):
@@ -348,7 +644,11 @@ class TutorialScoringReplay(TutorialScreen):
     def draw_tutorial(self, *args):
         """Replay the scoring sequence behind the dealer text."""
         self._highlight(self.scoreboard)
-        self.show_dealer(dealer_index=2, animate=False)
+        self.manager._reset_scoring()
+        for i in range(4):
+            self.gameboard._score_match(self.scoreboard,
+                                        self.scoreboard.scoreboard, i)
+        self.show_dealer(dealer_index=0, animate=False)
 
     def advance(self, *args):
         """Only advance when the sequence is complete."""
@@ -363,9 +663,50 @@ class TutorialScoring(TutorialScreen):
     next_tutorial = TutorialScoringReplay
     
     def draw_tutorial(self, *args):
-        """Replay the scoring sequence behind the dealer text."""
+        """Show the dealer text."""
         self._highlight(self.scoreboard)
-        self.show_dealer(dealer_index=2)
+        self.manager._reset_scoring()
+        for i in range(4):
+            self.gameboard._score_match(self.scoreboard,
+                                        self.scoreboard.scoreboard, i)
+        self.show_dealer(dealer_index=0)
+
+
+class TutorialMatches(TutorialScreen):
+
+    # text is dynamically generated
+
+    next_tutorial = TutorialScoring
+
+    def draw_tutorial(self, *args):
+        """Generate text based on matches won/lost."""
+        self._highlight(self.gameboard)
+        self.manager._reset_scoring()
+        for i in range(4):
+            self.gameboard._score_match(self.scoreboard,
+                                        self.scoreboard.scoreboard, i)
+        self._count_matches()
+        self.show_dealer(dealer_index=1, reverse=True, animate=False)
+
+    def _count_matches(self):
+        """Use the colors to count matches."""
+        won, lost = 0, 0
+        for slot in self.gameboard.slots[PLAYER]:
+            if slot.color == GREEN:
+                won += 1
+            elif slot.color == RED:
+                lost += 1
+        if won > lost:
+            self.text.append("Well done, you beat me in %s out of 4 matches!" % won)
+            self.text.append("Let's see if you can keep it up...")
+        elif lost > won:
+            if won > 0:
+                self.text.append("Hoo, well, at least you won %s match%s..." % (won, "es" if won > 1 else ""))
+            else:
+                self.text.append("Looks like I got you this round!")
+                self.text.append("We'll see if I can keep it up...")
+        else:
+            self.text.append("Huh.  Looks like we tied this round!")
 
 
 class TutorialDealerPlay(TutorialScreen):
@@ -374,7 +715,7 @@ class TutorialDealerPlay(TutorialScreen):
             "Green highlights are the match winners, and red highlights are the losers.",
             "If the cards tie, then neither one is highlighted."]
 
-    next_tutorial = TutorialScoring
+    next_tutorial = TutorialMatches
     
     def draw_tutorial(self, *args):
         """Play the scoring sequence behind the dealer text."""
@@ -390,8 +731,7 @@ class TutorialDealerPlay(TutorialScreen):
 
 class TutorialDealerTurn(TutorialScreen):
 
-    text = ["[b]My turn![/b]",
-            "I have a hand of 10 cards, just like you.",
+    text = ["I have a hand of 10 cards, just like you.",
             "Each round, I will pick four cards to play against yours."]
     
     next_tutorial = TutorialDealerPlay
@@ -400,7 +740,7 @@ class TutorialDealerTurn(TutorialScreen):
         """Show the dealer text while playing in the background."""
         self._highlight(self.gameboard)
         self.manager._play_dealer(then_score=False)
-        self.show_dealer(dealer_index=1, reverse=True)
+        self.show_dealer(dealer_index=1, reverse=True, animate=False)
 
     def advance(self, *args):
         """Only advance when the play is complete."""
@@ -408,12 +748,25 @@ class TutorialDealerTurn(TutorialScreen):
             super(TutorialDealerTurn, self).advance(*args)
 
 
+class TutorialDealerAnnounce(TutorialScreen):
+
+    text = ["[b]My turn![/b]"]
+    
+    next_tutorial = TutorialDealerTurn
+    
+    def draw_tutorial(self, *args):
+        """Show the dealer text while playing in the background."""
+        self._highlight(self.gameboard)
+        self.show_dealer(dealer_index=1, reverse=True)
+
+
 class TutorialPickingCards(TutorialActionItemScreen):
 
     action_item = "Select 4 cards"
-    next_tutorial = TutorialDealerTurn
+    next_tutorial = TutorialDealerAnnounce
 
     def all_cards_selected(self, *args):
+        """Move forward after all four cards are selected."""
         self.advance()
         return True  # don't play the dealer's cards yet!
     
