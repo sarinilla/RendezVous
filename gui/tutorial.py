@@ -1,6 +1,7 @@
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
+from kivy.animation import Animation
 from kivy.properties import StringProperty, ObjectProperty, NumericProperty
 from kivy.properties import BooleanProperty, ListProperty
 from kivy.uix.screenmanager import Screen
@@ -43,64 +44,37 @@ class SpeechBubble(Label):
             return
         self.text += ' ' + self.words_left.pop(0)
 
+    def finish(self):
+        Clock.unschedule(self._next_word)
+        self.text = self.full_text
+        self.words_left = []
 
-class TutorialDealer(Widget):
 
-    """Display a dealer image with a speech bubble."""
+class DealerImage(Widget):
+
+    """Display a dealer image."""
 
     dealer_index = NumericProperty()
-    text = ListProperty()
-    reverse = BooleanProperty(False)
-    callback = ObjectProperty()
 
     def __init__(self, **kwargs):
         Widget.__init__(self, **kwargs)
-        self.layout = BoxLayout()
-        self.dealer = Widget()
-        Clock.schedule_once(self._show_dealer)
-        self.bubble = SpeechBubble(full_text=self.text.pop(0),
-                                   size_hint=(.3, .6),
-                                   pos_hint={'top': 1})
-        if self.reverse:
-            self.layout.add_widget(self.bubble)
-            self.layout.add_widget(self.dealer)
-        else:
-            self.layout.add_widget(self.dealer)
-            self.layout.add_widget(self.bubble)
-        self.add_widget(self.layout)
-        self.bind(size=self.layout.setter('size'), pos=self.layout.setter('pos'))
-
-    def _show_dealer(self, *args):
-        with self.dealer.canvas:
+        app = App.get_running_app()
+        with self.canvas:
             Color(1, 1, 1, 1)
-            Rectangle(texture=App.get_running_app().get_dealer_texture(
-                                    self.dealer_index, 0),
-                      size=(min(self.dealer.size[0], self.dealer.size[1]),
-                            min(self.dealer.size[0], self.dealer.size[1])),
-                      pos=self.dealer.pos)
+            self.rect = Rectangle(texture=app.get_dealer_texture(self.dealer_index, 0),
+                                  size=self.size, pos=self.pos)
+        self.bind(size=self._place_rect, pos=self._place_rect)
 
-    def on_touch_up(self, touch):
-        self._next_text()
-        return True
-
-    def _next_text(self):
-        """Advance the text in the speech bubble.
-        If no more text, then send a call for the next screen.
-        """
-        if self.bubble.words_left:
-            self.bubble.words_left = []
-            self.bubble.text = self.bubble.full_text
-            return
-        try:
-            self.bubble.full_text = self.text.pop(0)
-        except IndexError:
-            if self.callback is not None:
-                self.callback()
+    def _place_rect(self, *args):
+        self.rect.size = min(*self.size), min(*self.size)
+        self.rect.pos = self.pos
+        
 
 class TutorialScreen(Screen):
     
     """Provides common features for Tutorial Screens."""
 
+    text = []
     next_tutorial = None
 
     def __init__(self, **kwargs):
@@ -159,6 +133,43 @@ class TutorialScreen(Screen):
     def draw_tutorial(self, *args):
         """Draw additional tutorial items."""
         pass
+
+    def show_dealer(self, dealer_index, reverse=False, offset=(0, 0),
+                    start=None, animate=True):
+        if start is None:
+            start = (-500, 0) if not reverse else (self.size[0] + 500, 0)
+        self.dealer = DealerImage(dealer_index=dealer_index,
+                                  size_hint=(.5, .8),
+                                  pos=start)
+        self.float.add_widget(self.dealer)
+        target_x = self.size[0] / 2 if reverse else 0
+        if animate:
+            anim = Animation(x=offset[0] + target_x, y=offset[1])
+            anim.bind(on_complete=lambda *a: self._show_speech(reverse))
+            anim.start(self.dealer)
+        else:
+            self.dealer.pos = (offset[0] + target_x, offset[1])
+            Clock.schedule_once(lambda *a: self._show_speech(reverse))
+
+    def _show_speech(self, reverse):
+        if self.text == []: return
+        delta_x = self.dealer.width if not reverse else -self.dealer.width * 3 / 5
+        self.bubble = SpeechBubble(full_text=self.text.pop(0),
+                                   size_hint=(.3, .4),
+                                   pos=(self.dealer.pos[0] + delta_x,
+                                        self.dealer.pos[1] + self.dealer.height / 2))
+        self.float.add_widget(self.bubble)
+
+    def on_touch_up(self, touch):
+        try: self.bubble
+        except AttributeError:
+            return super(TutorialScreen, self).on_touch_up(touch)
+        if self.bubble.words_left != []:
+            self.bubble.finish()
+        elif self.text != []:
+            self.bubble.full_text = self.text.pop(0)
+        else:
+            self.advance()
 
     def update(self):
         """Prepare the screen to be shown."""
@@ -233,11 +244,7 @@ class TutorialSpecialCardDragged(TutorialScreen):
     def draw_tutorial(self, *args):
         """Show the dealer text."""
         self._fade(self.main)
-        self.float.add_widget(TutorialDealer(dealer_index=3,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             pos=(0, 0),
-                                             callback=self.advance))
+        self.show_dealer(dealer_index=3)
 
 
 class TutorialSpecialCardDrag(TutorialActionItemScreen):
@@ -281,11 +288,7 @@ class TutorialSpecialCard(TutorialScreen):
         self._highlight(self.hand_display)
         special = self.manager.plant_special()
         self.text[4] = self.text[4].replace("special", special.name)
-        self.float.add_widget(TutorialDealer(dealer_index=3,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             pos_hint={'x':.1, 'y':0},
-                                             callback=self.advance))
+        self.show_dealer(dealer_index=3)
 
 
 class TutorialPlayAFew(TutorialActionItemScreen):
@@ -318,10 +321,7 @@ class TutorialScoreboard(TutorialScreen):
     def draw_tutorial(self, *args):
         """Show the dealer text."""
         self._highlight(self.scoreboard)
-        self.float.add_widget(TutorialDealer(dealer_index=2,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             callback=self.advance))
+        self.show_dealer(dealer_index=2, start=(self.size[0]/2, 0))
 
 
 class TutorialScoringHighlights(TutorialScreen):
@@ -335,12 +335,7 @@ class TutorialScoringHighlights(TutorialScreen):
         self._highlight(self.gameboard)
         self.manager._reset_scoring()
         self.manager._score(then_prompt=False)
-        self.float.add_widget(TutorialDealer(dealer_index=2,
-                                             reverse=True,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             pos_hint={'x':.2, 'y':0},
-                                             callback=self.advance))
+        self.show_dealer(dealer_index=2, reverse=True, start=(0, 0))
 
 
 class TutorialScoringReplay(TutorialScreen):
@@ -353,11 +348,7 @@ class TutorialScoringReplay(TutorialScreen):
     def draw_tutorial(self, *args):
         """Replay the scoring sequence behind the dealer text."""
         self._highlight(self.scoreboard)
-        self.float.add_widget(TutorialDealer(dealer_index=2,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             pos=(0, 0),
-                                             callback=self.advance))
+        self.show_dealer(dealer_index=2, animate=False)
 
     def advance(self, *args):
         """Only advance when the sequence is complete."""
@@ -374,11 +365,7 @@ class TutorialScoring(TutorialScreen):
     def draw_tutorial(self, *args):
         """Replay the scoring sequence behind the dealer text."""
         self._highlight(self.scoreboard)
-        self.float.add_widget(TutorialDealer(dealer_index=2,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             pos=(0, 0),
-                                             callback=self.advance))
+        self.show_dealer(dealer_index=2)
 
 
 class TutorialDealerPlay(TutorialScreen):
@@ -393,12 +380,7 @@ class TutorialDealerPlay(TutorialScreen):
         """Play the scoring sequence behind the dealer text."""
         self._highlight(self.gameboard)
         self.manager._score(then_prompt=False)
-        self.float.add_widget(TutorialDealer(dealer_index=1,
-                                             reverse=True,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             pos_hint={'x':.2, 'y':0},
-                                             callback=self.advance))
+        self.show_dealer(dealer_index=1, reverse=True, animate=False)
 
     def advance(self, *args):
         """Only advance when the sequence is complete."""
@@ -418,12 +400,7 @@ class TutorialDealerTurn(TutorialScreen):
         """Show the dealer text while playing in the background."""
         self._highlight(self.gameboard)
         self.manager._play_dealer(then_score=False)
-        self.float.add_widget(TutorialDealer(dealer_index=1,
-                                             reverse=True,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             pos_hint={'right': 1},
-                                             callback=self.advance))
+        self.show_dealer(dealer_index=1, reverse=True)
 
     def advance(self, *args):
         """Only advance when the play is complete."""
@@ -452,11 +429,7 @@ class TutorialPickCards(TutorialScreen):
     def draw_tutorial(self, *args):
         """Highlight the hand and show the welcome text."""
         self._highlight(self.hand_display)
-        self.float.add_widget(TutorialDealer(dealer_index=0,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             pos=(0, 0),
-                                             callback=self.advance))
+        self.show_dealer(dealer_index=0, animate=False)
 
 
 class FirstTutorialScreen(TutorialScreen):
@@ -472,9 +445,4 @@ class FirstTutorialScreen(TutorialScreen):
     def draw_tutorial(self, *args):
         """Cover the game screen items and show the welcome text."""
         self._fade(self.main)
-        self.float.add_widget(TutorialDealer(dealer_index=0,
-                                             text=self.text,
-                                             size_hint=(.8, .8),
-                                             pos=(0, 0),
-                                             callback=self.advance))
-
+        self.show_dealer(dealer_index=0)
