@@ -1,3 +1,5 @@
+import copy
+
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
@@ -9,7 +11,6 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.uix.floatlayout import FloatLayout
-
 
 from gui import PLAYER, DEALER
 from gui.components import RED, GREEN
@@ -84,6 +85,11 @@ class ScreenWithDealer(Screen):
     
     text = []
 
+    def __init__(self, **kwargs):
+        """Separate instance text from class storage."""
+        self.text = copy.deepcopy(self.text)
+        super(ScreenWithDealer, self).__init__(**kwargs)
+
     def show_dealer(self, dealer_index, reverse=False, offset=(0, 0),
                     start=None, animate=True):
         if start is None:
@@ -129,7 +135,7 @@ class GameTutorialScreen(Screen):
     next_tutorial = None
 
     def __init__(self, **kwargs):
-        Screen.__init__(self, **kwargs)
+        super(GameTutorialScreen, self).__init__(**kwargs)
         Clock.schedule_once(self._make_displays)
         # ^^ scheduled so that self.manager is set
 
