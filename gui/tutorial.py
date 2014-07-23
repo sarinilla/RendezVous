@@ -113,7 +113,7 @@ class ScreenWithDealer(Screen):
     def on_touch_up(self, touch):
         try: self.bubble
         except AttributeError:
-            return super(ScreenWithDealer, self).on_touch_up(touch)
+            return True
         if self.bubble.words_left != []:
             self.bubble.finish()
         elif self.text != []:
