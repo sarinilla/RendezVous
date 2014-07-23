@@ -1,5 +1,6 @@
 from kivy.app import App
 from kivy.metrics import dp
+from kivy.clock import Clock
 from kivy.uix.modalview import ModalView
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.stacklayout import StackLayout
@@ -39,6 +40,19 @@ class PowerupTray(ModalView):
 class PowerupsAvailable:
 
     """Abstract parent class to enable powerups on a game screen."""
+
+    def __init__(self, **kwargs):
+        super(PowerupsAvailable, self).__init__(**kwargs)
+        Clock.schedule_once(self._update_powerups, -1)
+
+    def _update_powerups(self, *args):
+        """Load any pre-existing powerups at startup."""
+        try:
+            self.gameboard.show_active_powerups(self.manager.powerups_in_use)
+        except: pass
+        try:
+            self.gameboard.show_next_click_powerup(self.manager.powerup_next_click)
+        except: pass
 
     def open_tray(self):
         self.powerup_tray = PowerupTray()

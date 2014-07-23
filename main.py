@@ -63,10 +63,10 @@ class RendezVousWidget(ScreenManager):
     powerups_in_use = ListProperty()
 
     def on_powerup_next_click(self, instance, value):
-        self.main.gameboard.show_next_click_powerup(value)
+        self.current_screen.gameboard.show_next_click_powerup(value)
 
     def on_powerups_in_use(self, instance, value):
-        self.main.gameboard.show_active_powerups(value)
+        self.current_screen.gameboard.show_active_powerups(value)
 
     def __init__(self, **kwargs):
         """Arrange the widgets."""
@@ -225,7 +225,7 @@ class RendezVousWidget(ScreenManager):
                 self.replay_turn()
             return
         elif self._end_of_round:
-            cont = self.main.gameboard.next_round_prompted()
+            cont = self.current_screen.gameboard.next_round_prompted()
             if not cont: return False
 
         # Some are consumed on the next click
@@ -269,15 +269,15 @@ class RendezVousWidget(ScreenManager):
         if powerup.type == PowerupType.FLUSH_HAND:
             for slot in self.current_screen.gameboard.slots[PLAYER]:
                 self.card_touched(slot)  # return to hand
-            self.main.gameboard.update()
+            self.current_screen.gameboard.update()
             self.game.players[PLAYER].flush()
-            self.main.hand_display.update()
+            self.current_screen.hand_display.update()
             return
 
         # Some require more action later
         self.powerups_in_use.append(powerup)
         if powerup.type == PowerupType.SHOW_DEALER_HAND:
-            self.main.gameboard.show_dealer_hand(self.game.players[DEALER])
+            self.current_screen.gameboard.show_dealer_hand(self.game.players[DEALER])
         elif powerup.type == PowerupType.SHOW_DEALER_PLAY:
             if self.dealer_play is None:
                 self._get_dealer_play()
@@ -302,26 +302,26 @@ class RendezVousWidget(ScreenManager):
             if self._on_gameboard(card_display):
                 if card_display.card is not None and not card_display.waited:
                     card_display.waited = True
-                    p, i = self.main.gameboard.find(card_display)
+                    p, i = self.current_screen.gameboard.find(card_display)
                     self.game.board._wait[p][i] = True
                     self.app.powerups.use(powerup)
                     return True
         elif powerup.type == PowerupType.FLUSH_CARD:
             if card_display.card is None: return False
             try:
-                i = self.main.hand_display.slots.index(card_display)
+                i = self.current_screen.hand_display.slots.index(card_display)
             except ValueError:
                 return False
             self.game.players[PLAYER].pop(i)
             self.game.players[PLAYER].refill()
-            self.main.hand_display.update()
+            self.current_screen.hand_display.update()
             self.app.powerups.use(powerup)
             return True
         elif powerup.type == PowerupType.UNWAIT_CARD:
             if card_display.waited:
                 card_display.waited = False
                 card_display.card = None
-                p, i = self.main.gameboard.find(card_display)
+                p, i = self.current_screen.gameboard.find(card_display)
                 self.game.board._wait[p][i] = False
                 self.game.board.board[p][i] = None
                 self.app.powerups.use(powerup)
@@ -335,24 +335,24 @@ class RendezVousWidget(ScreenManager):
                 self.switch_hands()
                 self.dealer_play = None  # too soon!
                 self.powerups_in_use.remove(powerup)
-                self.main.hand_display.update()
-                self.main.gameboard.update()
+                self.current_screen.hand_display.update()
+                self.current_screen.gameboard.update()
             elif powerup.type == PowerupType.GLOBAL_BUFF:
                 for card in self.game.board[PLAYER]:
                     if card.suit != SpecialSuit.SPECIAL:
                         card.value += powerup.value
-                self.main.gameboard.update()
+                self.current_screen.gameboard.update()
             elif powerup.type == PowerupType.GLOBAL_DEBUFF:
                 for card in self.game.board[DEALER]:
                     if card.suit != SpecialSuit.SPECIAL:
                         card.value -= powerup.value
-                self.main.gameboard.update()
+                self.current_screen.gameboard.update()
 
     def cleanup_powerups(self):
         """Provide any cleanup action for Powerups at the end of a round."""
         for powerup in self.powerups_in_use:
             if powerup.type == PowerupType.SHOW_DEALER_HAND:
-                self.main.gameboard.hide_dealer_hand()
+                self.current_screen.gameboard.hide_dealer_hand()
         self.powerups_in_use = []
 
     def switch_hands(self):
@@ -360,12 +360,12 @@ class RendezVousWidget(ScreenManager):
         self.game.players[PLAYER], self.game.players[DEALER] = self.game.players[DEALER], self.game.players[PLAYER]
         self.game.board.board[PLAYER], self.game.board.board[DEALER] = self.game.board.board[DEALER], self.game.board.board[PLAYER]
         self.game.board._wait[PLAYER], self.game.board._wait[DEALER] = self.game.board._wait[DEALER], self.game.board._wait[PLAYER]
-        self.main.hand_display.hand = self.game.players[PLAYER]
+        self.current_screen.hand_display.hand = self.game.players[PLAYER]
         try:
-            self.main.gameboard.dealer_hand.hand = self.game.players[DEALER]
+            self.current_screen.gameboard.dealer_hand.hand = self.game.players[DEALER]
         except: pass
-        self.main.hand_display.update()
-        self.main.gameboard.update()
+        self.current_screen.hand_display.update()
+        self.current_screen.gameboard.update()
         self._get_dealer_play()
         
     def is_game_screen(self):
@@ -617,10 +617,10 @@ class RendezVousWidget(ScreenManager):
                 if not self.game.board._wait[i][j]:
                     hand.cards.append(card)
                     self.game.board[i][j] = None
-        self.main.hand_display.update()
-        self.main.gameboard.highlight(BLANK)
-        self.main.gameboard.update()
-        self.main.scoreboard.update()
+        self.current_screen.hand_display.update()
+        self.current_screen.gameboard.highlight(BLANK)
+        self.current_screen.gameboard.update()
+        self.current_screen.scoreboard.update()
         self._get_dealer_play()
 
     def prompt_for_next_round(self):

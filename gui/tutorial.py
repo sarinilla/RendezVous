@@ -375,8 +375,8 @@ class TutorialFinishGame(PowerupsAvailable, TutorialActionItemScreen):
     action_item = "Finish it up!"
 
     def draw_tutorial(self, *args):
-        """Advance the round and wait for the game to end."""
-        self.gameboard.next_round_prompted()
+        """Update powerups in use."""
+        self._update_powerups()
         super(TutorialFinishGame, self).draw_tutorial(*args)
 
     # manager will advance automatically when the game's over!
@@ -448,8 +448,8 @@ class TutorialPlayToEndgame(PowerupsAvailable, TutorialActionItemScreen):
     next_tutorial = TutorialEndGame
 
     def draw_tutorial(self, *args):
-        """Start the next round immediately."""
-        self.gameboard.next_round_prompted()
+        """Update powerups in use."""
+        self._update_powerups()
         super(TutorialPlayToEndgame, self).draw_tutorial(*args)
 
     def next_round(self, num, game_over):
@@ -482,6 +482,7 @@ class TutorialDragPowerups(PowerupsAvailable, TutorialActionItemScreen):
 
     def draw_tutorial(self, *args):
         """Watch for a powerup to be used."""
+        self._update_powerups()
         self.manager.bind(powerups_in_use=self.advance)
         self.gameboard.next_round_prompted()
         super(TutorialDragPowerups, self).draw_tutorial(*args)
@@ -496,7 +497,7 @@ class TutorialPowerups(TutorialScreen):
 
     text = ["[b]Powerups[/b] are another way to press your advantage.",
             "You can buy powerups using the winks you earn at the end of a game.",
-            "I’ve given you a simple Super Buff powerup to get you started.",
+            "I’ve given you a simple [b]Super Buff[/b] powerup to get you started.",
             "This powerup will raise the value of each card you play by 2 points.",
             "Swipe from the right to open your powerup tray and put it to use!"]
 
@@ -514,11 +515,6 @@ class TutorialPlayWithSpecials(TutorialActionItemScreen):
     action_item = "Play on, using special cards to your advantage..."
 
     next_tutorial = TutorialPowerups
-
-    def draw_tutorial(self, *args):
-        """Start a new round immediately."""
-        self.gameboard.next_round_prompted()
-        super(TutorialPlayWithSpecials, self).draw_tutorial(*args)
 
     def next_round(self, num, game_over):
         """Move forward after round 10."""
@@ -575,7 +571,7 @@ class TutorialSpecialCard(TutorialScreen):
     text = ["[b]Special cards[/b] will sometimes show up alongside the five normal suits.",
             "These can only be played when certain conditions are met.",
             "Many of them have the power to affect the other cards you play, or even the dealer's cards.",
-            "You drew the special card!",
+            "You drew the [b]special[/b] card!",
             "Drag your new special card onto the tooltip display below the scoreboard to read about what it does and how to use it."]
 
     next_tutorial = TutorialSpecialCardDrag
