@@ -1,5 +1,6 @@
 import os
 import copy
+import random
 
 from kivy.clock import Clock
 from kivy.app import App
@@ -31,7 +32,6 @@ from gui.components import BLANK, DARKEN
 from gui.components import ConfirmPopup
 from gui.screens.home import HomeScreen
 from gui.screens.game import GameScreen, RoundAchievementScreen
-from gui.screens.tutorial import MainBoardTutorial, SidebarTutorial, TooltipTutorial
 from gui.screens.winner import WinnerScreen
 from gui.settings import SettingSlider, SettingAIDifficulty, SettingButton
 from gui.settings import BackgroundPicker
@@ -41,9 +41,10 @@ from gui.screens.cards import DeckEditScreen
 from gui.screens.statistics import StatisticsScreen
 from gui.screens.achievements import AchievementsScreen
 from gui.screens.powerups import PowerupScreen, CardSelect
+from gui.tutorial import GameTutorialScreen, FirstTutorialScreen, TutorialGameOver
 
 
-__version__ = '0.7.0'
+__version__ = '0.8.0'
 
 
 class RendezVousWidget(ScreenManager):
@@ -62,10 +63,10 @@ class RendezVousWidget(ScreenManager):
     powerups_in_use = ListProperty()
 
     def on_powerup_next_click(self, instance, value):
-        self.main.gameboard.show_next_click_powerup(value)
+        self.current_screen.gameboard.show_next_click_powerup(value)
 
     def on_powerups_in_use(self, instance, value):
-        self.main.gameboard.show_active_powerups(value)
+        self.current_screen.gameboard.show_active_powerups(value)
 
     def __init__(self, **kwargs):
         """Arrange the widgets."""
@@ -109,11 +110,20 @@ class RendezVousWidget(ScreenManager):
         for hand in self.game.players:
             hand.deck.suits_only()
             hand.flush()
-        self.switch_to(MainBoardTutorial(game=self.game,
-                                         name='tutorial-hand'))
-        self.current_screen.tutorial.title = "Welcome to RendezVous!"
-        self.current_screen.tutorial.text = "This tutorial will walk you through your first game, introducing key concepts along the way. RendezVous is easy to play, but you will find the strategies to be endless!\n\nYour hand is displayed below. Each round, you will pick 4 cards to play, then your hand will be refilled to 10 again. Go ahead and pick your first four cards now.\n\n(Higher values are better!)"
-        self.current_screen.tutorial.footer = "SELECT 4 CARDS BELOW"
+        self.switch_to(FirstTutorialScreen(game=self.game))
+
+    def plant_special(self):
+        """Replace special cards in deck, and place one into the hand."""
+        special = random.choice(self.app.loaded_deck.specials[:5])
+        special = self.app.loaded_deck.get_special(special.name)  # copy
+        self.game.players[PLAYER].cards[8] = special
+        self.game.players[PLAYER].deck.shuffle()
+        self.game.players[DEALER].deck.shuffle()
+        self.current_screen.hand_display.update()
+        for slot in self.current_screen.hand_display.slots:
+            slot.highlight(DARKEN)
+        self.current_screen.hand_display.slots[8].highlight(BLANK)
+        return special
 
     def rebuild_decks(self):
         """Rebuild the deck catalog screen (e.g. after catalog update)."""
@@ -203,7 +213,7 @@ class RendezVousWidget(ScreenManager):
         self.current_screen.scoreboard.update()
 
     def use_powerup(self, powerup):
-        self.main.close_tray()
+        self.current_screen.close_tray()
 
         # Only certain ones can be used between rounds
         if powerup.type == PowerupType.WAIT_CARD:
@@ -215,7 +225,7 @@ class RendezVousWidget(ScreenManager):
                 self.replay_turn()
             return
         elif self._end_of_round:
-            cont = self.main.gameboard.next_round_prompted()
+            cont = self.current_screen.gameboard.next_round_prompted()
             if not cont: return False
 
         # Some are consumed on the next click
@@ -259,15 +269,15 @@ class RendezVousWidget(ScreenManager):
         if powerup.type == PowerupType.FLUSH_HAND:
             for slot in self.current_screen.gameboard.slots[PLAYER]:
                 self.card_touched(slot)  # return to hand
-            self.main.gameboard.update()
+            self.current_screen.gameboard.update()
             self.game.players[PLAYER].flush()
-            self.main.hand_display.update()
+            self.current_screen.hand_display.update()
             return
 
         # Some require more action later
         self.powerups_in_use.append(powerup)
         if powerup.type == PowerupType.SHOW_DEALER_HAND:
-            self.main.gameboard.show_dealer_hand(self.game.players[DEALER])
+            self.current_screen.gameboard.show_dealer_hand(self.game.players[DEALER])
         elif powerup.type == PowerupType.SHOW_DEALER_PLAY:
             if self.dealer_play is None:
                 self._get_dealer_play()
@@ -292,26 +302,26 @@ class RendezVousWidget(ScreenManager):
             if self._on_gameboard(card_display):
                 if card_display.card is not None and not card_display.waited:
                     card_display.waited = True
-                    p, i = self.main.gameboard.find(card_display)
+                    p, i = self.current_screen.gameboard.find(card_display)
                     self.game.board._wait[p][i] = True
                     self.app.powerups.use(powerup)
                     return True
         elif powerup.type == PowerupType.FLUSH_CARD:
             if card_display.card is None: return False
             try:
-                i = self.main.hand_display.slots.index(card_display)
+                i = self.current_screen.hand_display.slots.index(card_display)
             except ValueError:
                 return False
             self.game.players[PLAYER].pop(i)
             self.game.players[PLAYER].refill()
-            self.main.hand_display.update()
+            self.current_screen.hand_display.update()
             self.app.powerups.use(powerup)
             return True
         elif powerup.type == PowerupType.UNWAIT_CARD:
             if card_display.waited:
                 card_display.waited = False
                 card_display.card = None
-                p, i = self.main.gameboard.find(card_display)
+                p, i = self.current_screen.gameboard.find(card_display)
                 self.game.board._wait[p][i] = False
                 self.game.board.board[p][i] = None
                 self.app.powerups.use(powerup)
@@ -325,24 +335,24 @@ class RendezVousWidget(ScreenManager):
                 self.switch_hands()
                 self.dealer_play = None  # too soon!
                 self.powerups_in_use.remove(powerup)
-                self.main.hand_display.update()
-                self.main.gameboard.update()
+                self.current_screen.hand_display.update()
+                self.current_screen.gameboard.update()
             elif powerup.type == PowerupType.GLOBAL_BUFF:
                 for card in self.game.board[PLAYER]:
                     if card.suit != SpecialSuit.SPECIAL:
                         card.value += powerup.value
-                self.main.gameboard.update()
+                self.current_screen.gameboard.update()
             elif powerup.type == PowerupType.GLOBAL_DEBUFF:
                 for card in self.game.board[DEALER]:
                     if card.suit != SpecialSuit.SPECIAL:
                         card.value -= powerup.value
-                self.main.gameboard.update()
+                self.current_screen.gameboard.update()
 
     def cleanup_powerups(self):
         """Provide any cleanup action for Powerups at the end of a round."""
         for powerup in self.powerups_in_use:
             if powerup.type == PowerupType.SHOW_DEALER_HAND:
-                self.main.gameboard.hide_dealer_hand()
+                self.current_screen.gameboard.hide_dealer_hand()
         self.powerups_in_use = []
 
     def switch_hands(self):
@@ -350,23 +360,25 @@ class RendezVousWidget(ScreenManager):
         self.game.players[PLAYER], self.game.players[DEALER] = self.game.players[DEALER], self.game.players[PLAYER]
         self.game.board.board[PLAYER], self.game.board.board[DEALER] = self.game.board.board[DEALER], self.game.board.board[PLAYER]
         self.game.board._wait[PLAYER], self.game.board._wait[DEALER] = self.game.board._wait[DEALER], self.game.board._wait[PLAYER]
-        self.main.hand_display.hand = self.game.players[PLAYER]
+        self.current_screen.hand_display.hand = self.game.players[PLAYER]
         try:
-            self.main.gameboard.dealer_hand.hand = self.game.players[DEALER]
+            self.current_screen.gameboard.dealer_hand.hand = self.game.players[DEALER]
         except: pass
-        self.main.hand_display.update()
-        self.main.gameboard.update()
+        self.current_screen.hand_display.update()
+        self.current_screen.gameboard.update()
         self._get_dealer_play()
         
     def is_game_screen(self):
-        return self.current == 'main' or self.current.startswith('tutorial')
+        return (self.current == 'main' or self._in_tutorial())
+
+    def _in_tutorial(self):
+        return isinstance(self.current_screen, GameTutorialScreen)
 
     def card_touched(self, card_display):
         """Handle a touch to a displayed card."""
         if self._in_progress: return
-        if self.current == 'tutorial-tooltip':
-            for slot in self.current_screen.hand_display.slots:
-                slot.highlight(BLANK)
+        if self._in_tutorial():
+            if self.current_screen.card_touched(): return
         elif not self.is_game_screen():
             return
         if self.game.round == 0:  # game over!
@@ -415,6 +427,8 @@ class RendezVousWidget(ScreenManager):
         self.powerup_next_click = None
         # No dragging during scoring (except to tooltip; handled separately)
         if self._in_progress: return
+        elif self._in_tutorial():
+            if self.current_screen.card_touched(): return
         elif not self.is_game_screen():
             return
         
@@ -542,17 +556,9 @@ class RendezVousWidget(ScreenManager):
                     break
             else:
                 self._get_dealer_play()
-        if self.current == 'tutorial-hand':
-            self.switch_to(SidebarTutorial(game=self.game,
-                                           name='tutorial-board'))
-            self.current_screen.tutorial.title = "Now it's the\ndealer's turn!"
-            self.current_screen.tutorial.text = "The dealer has a hand of 10 cards, just like you, and will select four cards to play against yours each round.\n\nEach card you play is compared against the card directly above it to determine your score."
-            self.current_screen.button = Button(text="Continue")
-            self.current_screen.button.bind(on_press=self.score_tutorial)
-        elif self.current == 'tutorial-tooltip':
-            self.switch_to(GameScreen(game=self.game,
-                                      name='tutorial-done'))
-        callback = self._specials if then_score else None
+        if self._in_tutorial():
+            if self.current_screen.all_cards_selected(): return
+        callback = self._specials if then_score else self._mark_ready
         self.current_screen.gameboard.play_dealer(self.dealer_play,
                                                   callback=callback,
                                                   timer=GameSettings.SPEED)
@@ -566,45 +572,43 @@ class RendezVousWidget(ScreenManager):
         """Apply all specials."""
         self.prescore_powerups()
         self.game.board.clear_wait()
-        if self.current == 'tutorial-board':
-            self._in_progress = False
-            return  # until continue is pressed
         self.current_screen.gameboard.apply_specials(self.game,
                     self.current_screen.hand_display, self._score,
                     GameSettings.SPEED)
 
-    def score_tutorial(self, *args):
-        """Continue with scoring from tutorial-board."""
-        if self._in_progress: return
-        self._in_progress = True
-        self.switch_to(SidebarTutorial(game=self.game, name='tutorial-score'))
-        self.current_screen.tutorial.title = "Scoring"
-        self.current_screen.tutorial.text = "There are five suits in the deck, and you are scored in each suit.\n\nA win earns you 10 points in the suit you played, and 10 points in the dealer's suit. A loss costs you 10 points in your suit only.\n\nAs the round is scored, the highlighting will help you see who won each match-up."
-        self._score()
-
-    def _score(self):
+    def _score(self, then_prompt=True):
         """Score the round."""
+        self._in_progress = True
+        callback = self.prompt_for_next_round if then_prompt else self._mark_ready
         self.current_screen.gameboard.score_round(
                 self.current_screen.scoreboard,
-                callback=self.prompt_for_next_round,
+                callback=callback,
                 timer=GameSettings.SPEED)
 
-    def replay_scoring(self):
-        """Replay the scoring sequence at the user's request."""
-        self._in_progress = True
-        self.game.score.scores = self._backup_score
+    def _mark_ready(self):
+        """Let watchers know we are ready to continue."""
+        self._in_progress = False
+
+    def _reset_scoring(self):
+        """Reset for another round of scoring."""
+        self.game.score.scores = copy.deepcopy(self._backup_score)
         for card in self.game.board:
             card.reset()
         self.current_screen.gameboard.highlight(BLANK)
         self.current_screen.gameboard.update()
         self.current_screen.scoreboard.update()
+
+    def replay_scoring(self):
+        """Replay the scoring sequence at the user's request."""
+        self._in_progress = True
+        self._reset_scoring()
         Clock.schedule_once(lambda dt: self._specials(), GameSettings.SPEED)
 
     def replay_turn(self):
         """Replay the entire turn at the user's (powerup) request."""
         self.powerups_in_use = []
-        self.game.board._wait = self._backup_waits
-        self.game.score.scores = self._backup_score
+        self.game.board._wait = copy.deepcopy(self._backup_waits)
+        self.game.score.scores = copy.deepcopy(self._backup_score)
         for i, hand in enumerate(self.game.players):
             waits = self.game.board._wait[i].count(True)
             hand.cards = hand.cards[:6-waits]
@@ -613,10 +617,10 @@ class RendezVousWidget(ScreenManager):
                 if not self.game.board._wait[i][j]:
                     hand.cards.append(card)
                     self.game.board[i][j] = None
-        self.main.hand_display.update()
-        self.main.gameboard.highlight(BLANK)
-        self.main.gameboard.update()
-        self.main.scoreboard.update()
+        self.current_screen.hand_display.update()
+        self.current_screen.gameboard.highlight(BLANK)
+        self.current_screen.gameboard.update()
+        self.current_screen.scoreboard.update()
         self._get_dealer_play()
 
     def prompt_for_next_round(self):
@@ -633,18 +637,23 @@ class RendezVousWidget(ScreenManager):
     def next_round(self):
         """Clear the board for the next round. Return whether to continue."""
         self.cleanup_powerups()
-        if self.current == 'tutorial-score':
-            self.switch_to(TooltipTutorial(game=self.game,
-                                           name='tutorial-continue'))
-            self.current_screen.tutorial.title = "The Scoreboard"
-            self.current_screen.tutorial.text= "Your score in each suit is shown above, to the left. The dealer's score is to the right.\n\nAfter %s rounds, the winner is the one leading in the most suits." % GameSettings.NUM_ROUNDS
-            self.current_screen.tutorial.footer = "Play a few rounds!"
         self.achieved += self.app.record_round(self.game.board)
         game_over = self.game.next_round()
+        self._in_progress = False
+        self._end_of_round = False
+        if self._in_tutorial():
+            if self.current_screen.next_round(self.game.round, game_over):
+                return
         if game_over:
             self.achieved += self.app.record_score(self.game.score)
-            self._winner = WinnerScreen(self.game.score, self.achieved,
-                                        name='winner')
+            if self._in_tutorial():
+                self._winner = TutorialGameOver(score=self.game.score,
+                                                achieved=self.achieved,
+                                                name='winner')
+            else:
+                self._winner = WinnerScreen(self.game.score,
+                                            self.achieved,
+                                            name='winner')
             self.switch_to(self._winner)
             self.achieved = []
             self.game.round = 0  # mark GAME OVER to trigger replay
@@ -656,27 +665,10 @@ class RendezVousWidget(ScreenManager):
             self._play_dealer()
             return False
 
-        if self.current == 'tutorial-continue' and self.game.round >= 10:
-            special = self.app.loaded_deck.specials[0]
-            special = self.app.loaded_deck.get_special(special.name)  # copy
-            self.game.players[PLAYER].cards[8] = special
-            self.app.achievements.achieved.append("Tutorial")
-            self.game.players[PLAYER].deck.shuffle()
-            self.switch_to(MainBoardTutorial(game=self.game,
-                                             name='tutorial-tooltip'))
-            self.current_screen.tutorial.title = "Introducing Special Cards"
-            self.current_screen.tutorial.text = "In addition to the five normal suits, you will sometimes get special cards in your hand. These can only be played when certain conditions are met, but they have the power to affect the other cards you play, or even the dealer's cards.\n\nYou drew a %s card! Drag your new special card onto the tooltip display below the scoreboard to read about what it does and how to use it.\n\nThere are many different types of special cards. The best cards are unlocked by completing RendezVous Achievements - and when you download a custom deck, it will come with its own unique Special Cards!" % special
-            self.current_screen.tutorial.footer = "When you are ready to continue, select your 4 cards for this round."
-            for slot in self.current_screen.hand_display.slots:
-                slot.highlight(DARKEN)
-            self.current_screen.hand_display.slots[8].highlight(BLANK)
-        else:
-            self.current_screen.gameboard.highlight(None)
-            self.current_screen.gameboard.update()
+        self.current_screen.gameboard.highlight(None)
+        self.current_screen.gameboard.update()
         self.current_screen.round_counter.round_number = self.game.round
         self.current_screen.hand_display.update()
-        self._in_progress = False
-        self._end_of_round = False
 
         if self.achieved:
             self.switch_to(RoundAchievementScreen(self.achieved,
@@ -938,7 +930,7 @@ class RendezVousApp(App):
         if self.root:
             self.root.game.load_deck(self.loaded_deck)
             update_deck(self.root.main)
-            if self.root.current[:7] == 'tutorial':
+            if self.root._in_tutorial():
                 update_deck(self.root.current_screen)
 
 

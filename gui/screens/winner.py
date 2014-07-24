@@ -94,6 +94,8 @@ class WinnerScreen(Screen):
 
     def __init__(self, score, achieved=None, **kwargs):
         Screen.__init__(self, **kwargs)
+        self.score = score
+        self.achieved = achieved
     
         stat = App.get_running_app().statistics
         deck = App.get_running_app().loaded_deck

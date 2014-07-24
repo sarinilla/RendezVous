@@ -733,8 +733,6 @@ class AchievementList(object):
         No rewards are unlocked until the first Achievement has been earned.
 
         """
-        if self.achieved == []:
-            return False  # beginner mode; no Specials
         for achievement in self.available:
             if achievement.reward == str(reward):  # str is name of SpecialCard
                 return achievement in self.achieved
