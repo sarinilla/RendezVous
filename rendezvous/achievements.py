@@ -79,13 +79,34 @@ class AchievementCriterion(object):
                 self.suit = SpecialSuit.ANY
 
         # Round Achievements
+        elif (code.startswith("MATCH")):
+            self.type = AchieveType.MATCH
+            match = re.match("MATCH\s*(FRIENDLY|ENEMY)?\s*(WIN|LOSE|DRAW|TIE)\s*(\d*)", code)
+            if match.group(1) == "ENEMY":
+                self.alignment = Alignment.ENEMY
+            else:
+                self.alignment = Alignment.FRIENDLY
+            if match.group(2) == "WIN":
+                self.value = SpecialValue.WIN
+            elif match.group(2) == "LOSE":
+                self.value = SpecialValue.LOSE
+            else:
+                self.value = SpecialValue.DRAW
+            if match.group(3) == '':
+                self.count = SpecialSuit.TOTAL
+            else:
+                self.count = int(match.group(3))
+                
         elif (code.startswith("USE") or code.startswith("MASTER")
+                                     or code.startswith("DUNCE")
                                      or code.startswith("WAIT")):
-            match = re.match("(USE|MASTER|WAIT)\s*(\d+\s)?\s*(FRIENDLY|ENEMY)?\s*(.*?)\s*(([<>=]+)\s*(\d*))?\s*$", code)
+            match = re.match("(USE|MASTER|DUNCE|WAIT)\s*(\d+\s)?\s*(FRIENDLY|ENEMY)?\s*(.*?)\s*(([<>=]+)\s*(\d*))?\s*$", code)
             if match.group(1) == "USE":
                 self.type = AchieveType.USE
             elif match.group(1) == "MASTER":
                 self.type = AchieveType.MASTER
+            elif match.group(1) == "DUNCE":
+                self.type = AchieveType.DUNCE
             else:
                 self.type = AchieveType.WAIT
             
@@ -234,8 +255,9 @@ class AchievementCriterion(object):
             else:
                 return "%sth suit" % i
 
-        def statsuit(suit=self.suit):
+        def statsuit(suit=None):
             """Translate self.suit for a Statistics Achievement."""
+            if suit is None: suit = self.suit
             if suit == SpecialSuit.ANY:
                 return ""
             elif "SUIT" in suit:
@@ -306,6 +328,22 @@ class AchievementCriterion(object):
                     % (outcome(self.type), games(), RV(), statsuit()))
 
         # Round Achievements:
+        elif self.type == AchieveType.MATCH:
+            outcome = "Tie"
+            if self.value == SpecialValue.WIN:
+                outcome = "Win"
+            elif self.value == SpecialValue.LOSE:
+                outcome = "Lose"
+            if self.alignment == Alignment.ENEMY:
+                outcome = "Have the dealer %s" % outcome.lower()
+            count = "at least %s" % self.count
+            if self.count == SpecialSuit.TOTAL:
+                count = "most of the"
+            elif self.count == 4:
+                count = "all 4"
+            return ("%s %s match%s in a round"
+                    % (outcome, count, "" if self.count == 1 else "es"))
+            
         elif self.type == AchieveType.USE:
             play = ("Play" if self.alignment == Alignment.FRIENDLY
                     else "Have the dealer play")
@@ -325,6 +363,11 @@ class AchievementCriterion(object):
             play = ("Play" if self.alignment == Alignment.FRIENDLY
                     else "Have the dealer play")
             return ("%s the %s card to its fullest"
+                    % (play, self.suit))
+        elif self.type == AchieveType.DUNCE:
+            play = ("Play" if self.alignment == Alignment.FRIENDLY
+                    else "Have the dealer play")
+            return ("%s the %s card to NO effect"
                     % (play, self.suit))
         elif self.type == AchieveType.WAIT:
             hold = ("Hold" if self.alignment == Alignment.ENEMY
@@ -451,10 +494,45 @@ class AchievementCriterion(object):
                     return False
             return True
 
+    def _check_match(self, board, player_index):
+        """Return whether this MATCH Achievement has been reached."""
+        friendly = board[player_index]
+        enemy = board[player_index-1]
+        if self.alignment == Alignment.ENEMY:
+            friendly, enemy = enemy, friendly
+
+        count, opp = 0, 0
+        for i in range(GameSettings.CARDS_ON_BOARD):
+            if (friendly[i].suit == SpecialSuit.SPECIAL or
+                enemy[i].suit == SpecialSuit.SPECIAL):
+                if self.value == SpecialValue.DRAW:
+                    count += 1
+                continue
+            if friendly[i].value > enemy[i].value:
+                if self.value == SpecialValue.WIN:
+                    count += 1
+                else:
+                    opp += 1
+            elif friendly[i].value < enemy[i].value:
+                if self.value == SpecialValue.LOSE:
+                    count += 1
+                else:
+                    opp += 1
+            elif self.value == SpecialValue.DRAW:
+                count += 1
+
+        if self.count == SpecialSuit.TOTAL:
+            return count > opp
+        else:
+            return count >= self.count
+        
+
     def check_round(self, board, player_index):
         """Return whether this Achievement has been reached."""
         if self.type == None or not AchieveType.per_round(self.type):
             return False
+        elif self.type == AchieveType.MATCH:
+            return self._check_match(board, player_index)
         side = player_index
         if self.alignment == Alignment.ENEMY:
             side -= 1
@@ -471,19 +549,34 @@ class AchievementCriterion(object):
                 if card.name.upper() != self.suit.upper():
                     continue
                 if card.application.has_alignment(Alignment.FRIENDLY):
-                    if len(card.application.filter(Alignment.FRIENDLY,
-                                                   board[player_index])) != 3:
+                    if self._count_applied(card, board, player_index,
+                                           Alignment.FRIENDLY) != 3:
                         return False
                 if card.application.has_alignment(Alignment.ENEMY):
-                    if len(card.application.filter(Alignment.ENEMY,
-                                                   board[player_index-1])) != 4:
+                    if self._count_applied(card, board, player_index,
+                                           Alignment.ENEMY) != 4:
                         return False
                 return True
+            elif self.type == AchieveType.DUNCE:
+                if card.name.upper() != self.suit.upper():
+                    continue
+                if self._count_applied(card, board, player_index) == 0:
+                        return True
             elif self.type == AchieveType.USE or board._wait[side][i]:
                 count += 1
                 if count >= self.count:
                     return True
         return False
+
+    def _count_applied(self, card, board, player_index, alignment=None):
+        if alignment == Alignment.FRIENDLY:
+            return len(card.application.filter(Alignment.FRIENDLY,
+                                               board[player_index]))
+        elif alignment == Alignment.ENEMY:
+            return len(card.application.filter(Alignment.ENEMY,
+                                               board[player_index-1]))
+        return (self._count_applied(card, board, player_index, Alignment.FRIENDLY) +
+                self._count_applied(card, board, player_index, Alignment.ENEMY))
 
     def _get_target(self, score, player_index):
         try:
@@ -681,7 +774,10 @@ class AchievementList(object):
           - USE  -- play the given card or combination
           - MASTER -- play the given card to its fullest
                       (i.e. it applies to as many cards as possible)
+          - DUNCE -- play the given card to NO effect
+                     (i.e. it applies to no cards)
           - WAIT -- hold the given card or combination to the next round
+          - MATCH -- win/lose/draw the specified number of matches, or the round
         * Number of cards that must meet the requirements in a single round
           (default: 1)
         * Alignment: FRIENDLY or ENEMY (default: FRIENDLY)

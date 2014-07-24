@@ -127,7 +127,9 @@ class AchieveType:
     ROUND = 8      ## marker to start round-based types
     USE = 9        #: use a specific card or suit
     MASTER = 10    #: use a specific card to its fullest
-    WAIT = 11      #: hold a specific card or suit
+    DUNCE = 11     #: use a specific card to NO effect
+    WAIT = 12      #: hold a specific card or suit
+    MATCH = 13     #: number of matches won/lost/tied
 
     @classmethod
     def per_round(cls, achievetype):
