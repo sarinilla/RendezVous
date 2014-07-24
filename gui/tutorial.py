@@ -208,6 +208,9 @@ class GameTutorialScreen(Screen):
     def all_cards_selected(self):
         return False
 
+    def scoring_complete(self):
+        return False
+
     def next_round(self, num, game_over):
         return False
 
@@ -242,7 +245,10 @@ class TutorialActionItemScreen(GameTutorialScreen):
                       pos=self.action_prompt.pos)
 
     def on_action_item(self, *args):
-        self.action_prompt.text = self.action_item
+        try:
+            self.action_prompt.text = '[b]%s[/b]' % self.action_item.upper()
+        except AttributeError:
+            pass  # might not be set up yet...
 
     def card_touched(self):
         """Allow card touches to progress normally."""
@@ -586,7 +592,7 @@ class TutorialSpecialCard(TutorialScreen):
 
 class TutorialPlayAFew(TutorialActionItemScreen):
 
-    action_item = "Play a few rounds!"
+    action_item = StringProperty("Play a few rounds!")
 
     next_tutorial = TutorialSpecialCard
 
@@ -601,8 +607,25 @@ class TutorialPlayAFew(TutorialActionItemScreen):
         if num == 6:
             self.advance()
             return True
+        else:
+            self.action_item = "Pick your cards..."
         return False
 
+    def scoring_complete(self, *args):
+        won, lost = 0, 0
+        for slot in self.gameboard.slots[PLAYER]:
+            if slot.color == GREEN: won += 1
+            elif slot.color == RED: lost += 1
+        if won > 0 and lost > 0:
+            self.action_item = "You won %s match%s and lost %s." % (won, "es" if won > 1 else "", lost)
+        elif won > 0:
+            self.action_item = "Yay! You won %s match%s!" % (won, "es" if won > 1 else "")
+        elif lost > 0:
+            self.action_item = "Oops, you lost %s match%s..." % (lost, "es" if lost > 1 else "")
+        else:
+            self.action_item = "It's a tie!"
+        return False
+    
 
 class TutorialScoreboard(TutorialScreen):
 
