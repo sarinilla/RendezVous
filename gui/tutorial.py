@@ -56,7 +56,7 @@ class SpeechBubble(BoxLayout):
         Clock.unschedule(self._next_word)
         self.words_left = self.full_text.split()
         self.bubble.text = self.words_left.pop(0)
-        Clock.schedule_interval(self._next_word, 0.4)
+        Clock.schedule_interval(self._next_word, 0.3)
 
     def _next_word(self, *args):
         if not self.words_left:
@@ -382,7 +382,7 @@ class TutorialGameOver(WinnerScreen, ScreenWithDealer):
         if pwins > dwins:
             self.text.append("You earned %s winks for this game - one for each suit, plus one more for winning the game!" % (pwins + 1))
         elif pwins > 0:
-            self.text.append("You earned %s wink%s for this game - one for each suit you won." % (pwins, "es" if pwins > 1 else ""))
+            self.text.append("You earned %s wink%s for this game - one for each suit you won." % (pwins, "s" if pwins > 1 else ""))
         else:
             self.text.append("You didn't win any suits this game, so you didn't earn any winks this time - keep trying!")
             self.text.append("If you would like to repeat the tutorial, you can access it any time from the Settings icon!")
