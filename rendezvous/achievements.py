@@ -544,6 +544,7 @@ class AchievementCriterion(object):
                 if not (card.suit.upper() == self.suit.upper() or
                         card.name.upper() == self.suit.upper()):
                     continue
+                    
             if self.type == AchieveType.MASTER:
                 if card.name.upper() != self.suit.upper():
                     continue
@@ -557,12 +558,13 @@ class AchievementCriterion(object):
             elif self.type == AchieveType.DUNCE:
                 if card.name.upper() != self.suit.upper():
                     continue
-                if card.applied_to[player_index] + card.applied_to[player_index-1] == 0:
-                        return True
-            elif self.value > 0:
+                return 0 == (card.applied_to[player_index] + 
+                             card.applied_to[player_index-1])
+                
+            if self.value > 0:
                 if not self._check(card.value, card.value, self.value):
                     continue
-            elif self.type == AchieveType.USE or board._wait[side][i]:
+            if self.type == AchieveType.USE or board._wait[side][i]:
                 count += 1
                 if count >= self.count:
                     return True
