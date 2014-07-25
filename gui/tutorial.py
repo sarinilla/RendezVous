@@ -278,7 +278,7 @@ class TutorialActionItemScreen(GameTutorialScreen):
         return False
 
 
-class AnalyzeScore:
+class AnalyzeScore(object):
 
     """Provides methods for analyzing the current score.
 
@@ -526,7 +526,7 @@ class TutorialPowerups(TutorialScreen):
 
     text = ["[b]Powerups[/b] are another way to press your advantage.",
             "You can buy powerups using the winks you earn at the end of a game.",
-            "I’ve given you a simple [b]Super Buff[/b] powerup to get you started.",
+            "I've given you a simple [b]Super Buff[/b] powerup to get you started.",
             "This powerup will raise the value of each card you play by 2 points.",
             "Swipe from the right to open your powerup tray and put it to use!"]
 

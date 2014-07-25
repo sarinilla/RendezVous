@@ -37,7 +37,7 @@ class PowerupTray(ModalView):
         self.add_widget(scroller)
             
 
-class PowerupsAvailable:
+class PowerupsAvailable(object):
 
     """Abstract parent class to enable powerups on a game screen."""
 
