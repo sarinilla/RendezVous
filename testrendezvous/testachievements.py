@@ -447,6 +447,85 @@ class TestAchievement(unittest.TestCase):
         self.assertEqual(self.a.description,
             "Play the 2+2=5 card to its fullest.")
 
+    def test_parse_dunce(self):
+        self.a._parse_code("Dunce Special Card")
+        self.assertEqual(self.a.type, AchieveType.DUNCE)
+        self.assertEqual(self.a.suit, "Special Card")
+        self.assertEqual(self.a.description,
+            "Play the Special Card card to NO effect.")
+
+    def test_parse_match_win(self):
+        self.a._parse_code("Match Win")
+        self.assertEqual(self.a.type, AchieveType.MATCH)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.value, SpecialValue.WIN)
+        self.assertEqual(self.a.count, SpecialSuit.TOTAL)
+        self.assertEqual(self.a.description,
+            "Win most of the matches in a round.")
+
+    def test_parse_match_lose(self):
+        self.a._parse_code("Match Lose")
+        self.assertEqual(self.a.type, AchieveType.MATCH)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.value, SpecialValue.LOSE)
+        self.assertEqual(self.a.count, SpecialSuit.TOTAL)
+        self.assertEqual(self.a.description,
+            "Lose most of the matches in a round.")
+
+    def test_parse_match_draw(self):
+        self.a._parse_code("Match Draw")
+        self.assertEqual(self.a.type, AchieveType.MATCH)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.value, SpecialValue.DRAW)
+        self.assertEqual(self.a.count, SpecialSuit.TOTAL)
+        self.assertEqual(self.a.description,
+            "Tie most of the matches in a round.")
+
+    def test_parse_match_tie(self):
+        self.a._parse_code("Match Tie")
+        self.assertEqual(self.a.type, AchieveType.MATCH)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.value, SpecialValue.DRAW)
+        self.assertEqual(self.a.count, SpecialSuit.TOTAL)
+        self.assertEqual(self.a.description,
+            "Tie most of the matches in a round.")
+
+    def test_parse_match_count(self):
+        self.a._parse_code("Match Win 2")
+        self.assertEqual(self.a.type, AchieveType.MATCH)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.value, SpecialValue.WIN)
+        self.assertEqual(self.a.count, 2)
+        self.assertEqual(self.a.description,
+            "Win at least 2 matches in a round.")
+
+    def test_parse_match_count_one(self):
+        self.a._parse_code("Match Lose 1")
+        self.assertEqual(self.a.type, AchieveType.MATCH)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.value, SpecialValue.LOSE)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.description,
+            "Lose at least 1 match in a round.")
+
+    def test_parse_match_count_all(self):
+        self.a._parse_code("Match Tie 4")
+        self.assertEqual(self.a.type, AchieveType.MATCH)
+        self.assertEqual(self.a.alignment, Alignment.FRIENDLY)
+        self.assertEqual(self.a.value, SpecialValue.DRAW)
+        self.assertEqual(self.a.count, 4)
+        self.assertEqual(self.a.description,
+            "Tie all 4 matches in a round.")
+
+    def test_parse_match_enemy(self):
+        self.a._parse_code("Match Enemy Win 1")
+        self.assertEqual(self.a.type, AchieveType.MATCH)
+        self.assertEqual(self.a.alignment, Alignment.ENEMY)
+        self.assertEqual(self.a.value, SpecialValue.WIN)
+        self.assertEqual(self.a.count, 1)
+        self.assertEqual(self.a.description,
+            "Have the dealer win at least 1 match in a round.")
+
     def test_parse_multiple_round(self):
         self.a._parse_code("Use Specific")
         self.a._parse_code("Use Another")
@@ -886,6 +965,20 @@ class TestAchievementCheckRound(unittest.TestCase):
                             [Card("Girlfriend", i+1) for i in range(3)]]
         self.assertTrue(self.a.check_round(self.board, 1))
 
+    def test_use_enemy_false(self):
+        self.a._parse_code("USE enemy Boyfriend")
+        self.board.board = [[Card("Girlfriend", i+1) for i in range(4)],
+                            [Card("Boyfriend", i+1) for i in range(4)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+
+    def test_use_enemy_true(self):
+        self.a._parse_code("USE enemy Boyfriend")
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [Card("Girlfriend", i+1) for i in range(4)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+
     def test_master_none(self):
         self.a._parse_code("MASTER Special")
         self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
@@ -970,6 +1063,28 @@ class TestAchievementCheckRound(unittest.TestCase):
                             [special] +
                             [Card("Boyfriend", i+1) for i in range(3)]]
         self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_dunce_true(self):
+        self.a._parse_code("DUNCE Special")
+        special = SpecialCard("Special", "Desc", None,
+                              Application(alignment=Alignment.FRIENDLY,
+                                          suits=["Boyfriend"]),
+                              None)
+        self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
+                            [special] +
+                            [Card("Girlfriend", i+1) for i in range(3)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_dunce_false(self):
+        self.a._parse_code("DUNCE Special")
+        special = SpecialCard("Special", "Desc", None,
+                              Application(alignment=Alignment.FRIENDLY,
+                                          suits=["Boyfriend"]),
+                              None)
+        self.board.board = [[Card("Girlfriend", i+1) for i in range(4)],
+                            [special, Card("Boyfriend", 5)] +
+                            [Card("Girlfriend", i+1) for i in range(2)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
 
     def test_wait(self):
         self.a._parse_code("WAIT Girlfriend")
@@ -1057,6 +1172,94 @@ class TestAchievementCheckRound(unittest.TestCase):
                             [Card("Boyfriend", i+2) for i in range(4)]]
         self.assertTrue(self.a.check_round(self.board, 1))
 
+    def test_check_match_win_false(self):
+        self.a._parse_code("Match Win")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 6)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_check_match_win_true(self):
+        self.a._parse_code("Match Win")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_check_match_lose_false(self):
+        self.a._parse_code("Match Lose")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 6)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_check_match_lose_true(self):
+        self.a._parse_code("Match Lose")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 6)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_check_match_tie_false(self):
+        self.a._parse_code("Match Draw")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 8)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_check_match_tie_true(self):
+        self.a._parse_code("Match Draw")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_check_match_count_less(self):
+        self.a._parse_code("Match Win 3")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 8)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_check_match_count_equal(self):
+        self.a._parse_code("Match Win 3")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 5),
+                             Card("Boyfriend", 7), Card("Boyfriend", 8)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_check_match_count_more(self):
+        self.a._parse_code("Match Win 3")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 6),
+                             Card("Boyfriend", 7), Card("Boyfriend", 8)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
+    def test_check_match_enemy_false(self):
+        self.a._parse_code("Match Enemy Win 1")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)]]
+        self.assertFalse(self.a.check_round(self.board, 1))
+
+    def test_check_match_enemy_true(self):
+        self.a._parse_code("Match Enemy Win 1")
+        self.board.board = [[Card("Boyfriend", 4), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 7)],
+                            [Card("Boyfriend", 5), Card("Boyfriend", 5),
+                             Card("Boyfriend", 6), Card("Boyfriend", 6)]]
+        self.assertTrue(self.a.check_round(self.board, 1))
+
     def test_multi_none(self):
         self.a._parse_code("Use == 5")
         self.a._parse_code("Use == 6")
@@ -1140,12 +1343,6 @@ class TestAchievementList(unittest.TestCase):
         self.assertFalse(self.a.unlocked(sc))
         self.a.achieve("RendezVous Student")
         self.assertTrue(self.a.unlocked(sc))
-        
-    def test_unlocked_tutorial(self):
-        """Verify SpecialCards not unlocked until the first Achievement."""
-        self.assertFalse(self.a.unlocked("Flowers"))
-        self.a.achieve("RendezVous Student")
-        self.assertTrue(self.a.unlocked("Flowers"))
         
     def test_unlocked_invalid(self):
         """Verify unlocked SpecialCards not associated with an Achievement."""
