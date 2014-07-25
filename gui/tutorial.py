@@ -30,7 +30,7 @@ class SpeechBubble(BoxLayout):
     def __init__(self, **kwargs):
         self.spacer = Widget(size_hint=(.1, 1))
         self.bubble = Label(markup=True, valign="top", halign="left")
-        BoxLayout.__init__(self, padding=(10, 10), **kwargs)
+        BoxLayout.__init__(self, **kwargs)
         if self.reverse:
             self.add_widget(self.bubble)
             self.add_widget(self.spacer)
@@ -44,11 +44,13 @@ class SpeechBubble(BoxLayout):
         bg_img = "atlas://gui/tutorial/speech-left-btm"
         if self.reverse:
             bg_img = bg_img.replace("left", "right")
+        pad = max(*self.size) * 0.05
+        self.padding = (pad, pad)
         with self.canvas.before:
             Color(1, 1, 1, .75)
             Rectangle(source=bg_img,
-                      size=(self.size[0]+20, self.size[1]+20),
-                      pos=(self.pos[0]-10, self.pos[1]-10))
+                      size=(self.size[0]+2*pad, self.size[1]+2*pad),
+                      pos=(self.pos[0]-pad, self.pos[1]-pad))
 
     def on_full_text(self, *args):
         Clock.unschedule(self._next_word)
@@ -73,6 +75,7 @@ class DealerImage(Widget):
     """Display a dealer image."""
 
     dealer_index = NumericProperty()
+    reverse = BooleanProperty(False)
 
     def __init__(self, **kwargs):
         Widget.__init__(self, **kwargs)
@@ -87,6 +90,9 @@ class DealerImage(Widget):
         self.rect.size = (min(self.size[0], self.size[1] * 340 / 512),
                           min(self.size[0] * 512 / 340, self.size[1]))
         self.rect.pos = self.pos
+        if not self.reverse:
+            self.rect.pos = (self.pos[0] + (self.size[0] - self.rect.size[0]),
+                             self.pos[1])
 
 
 class ScreenWithDealer(Screen):
@@ -109,6 +115,7 @@ class ScreenWithDealer(Screen):
         if start is None:
             start = (-500, 0) if not reverse else (self.size[0] + 500, 0)
         self.dealer = DealerImage(dealer_index=dealer_index,
+                                  reverse=reverse,
                                   size_hint=(.5, .8),
                                   pos=start)
         self.float.add_widget(self.dealer)
