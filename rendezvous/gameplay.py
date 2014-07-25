@@ -360,6 +360,7 @@ class RendezVousGame:
     def _apply(self, player_index, board_index):
         """Apply the special card at the given location across the board."""
         special = self.board[player_index][board_index]
+        special.applied_to = [0 for p in range(GameSettings.NUM_PLAYERS)]
 
         # Flush applies to the hand, not to individual cards      
         if special.effect.effect == EffectType.FLUSH:
@@ -371,12 +372,31 @@ class RendezVousGame:
             special.effect.value = special.requirement.filter(
                         Alignment.FRIENDLY, self.board[player_index])[0]
 
+        # Switches have to be careful not to undo themselves
+        if special.effect.effect == EffectType.SWITCH:
+            for c in range(GameSettings.CARDS_ON_BOARD):
+                for p in range(GameSettings.NUM_PLAYERS):
+                    if special.application.match(p == player_index,
+                                                 self.board[p][c],
+                                                 self.board[p-1][c]):
+                        special.applied_to[p] += 1
+                        self._apply_to_card(special.effect, p, c)
+                        # check the newly switched card
+                        if special.application.match(p != player_index,
+                                                     self.board[p][c],
+                                                     self.board[p-1][c]):
+                            special.applied_to[p-1] += 1
+                            self._apply_to_card(special.effect, p, c)
+                        break  # skip any other checks in this match
+            return
+
         # Apply to some or all of the cards in play
         for p in range(GameSettings.NUM_PLAYERS):
             for c in range(GameSettings.CARDS_ON_BOARD):
                 if special.application.match(p == player_index,
                                              self.board[p][c],
                                              self.board[p-1][c]):
+                    special.applied_to[p] += 1
                     self._apply_to_card(special.effect, p, c)
 
     def _apply_to_card(self, effect, player, index):

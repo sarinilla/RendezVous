@@ -508,7 +508,9 @@ class AchievementCriterion(object):
                 if self.value == SpecialValue.DRAW:
                     count += 1
                 continue
-            if friendly[i].value > enemy[i].value:
+            if (friendly[i].value == SpecialValue.KISS or
+                    enemy[i].value == SpecialValue.KISS or
+                    friendly[i].value > enemy[i].value):
                 if self.value == SpecialValue.WIN:
                     count += 1
                 else:
@@ -542,41 +544,29 @@ class AchievementCriterion(object):
                 if not (card.suit.upper() == self.suit.upper() or
                         card.name.upper() == self.suit.upper()):
                     continue
-            if self.value > 0:
-                if not self._check(card.value, card.value, self.value):
-                    continue
             if self.type == AchieveType.MASTER:
                 if card.name.upper() != self.suit.upper():
                     continue
                 if card.application.has_alignment(Alignment.FRIENDLY):
-                    if self._count_applied(card, board, player_index,
-                                           Alignment.FRIENDLY) != 3:
+                    if card.applied_to[player_index] < 3:
                         return False
                 if card.application.has_alignment(Alignment.ENEMY):
-                    if self._count_applied(card, board, player_index,
-                                           Alignment.ENEMY) != 4:
+                    if card.applied_to[player_index-1] < 4:
                         return False
                 return True
             elif self.type == AchieveType.DUNCE:
                 if card.name.upper() != self.suit.upper():
                     continue
-                if self._count_applied(card, board, player_index) == 0:
+                if card.applied_to[player_index] + card.applied_to[player_index-1] == 0:
                         return True
+            elif self.value > 0:
+                if not self._check(card.value, card.value, self.value):
+                    continue
             elif self.type == AchieveType.USE or board._wait[side][i]:
                 count += 1
                 if count >= self.count:
                     return True
         return False
-
-    def _count_applied(self, card, board, player_index, alignment=None):
-        if alignment == Alignment.FRIENDLY:
-            return len(card.application.filter(Alignment.FRIENDLY,
-                                               board[player_index]))
-        elif alignment == Alignment.ENEMY:
-            return len(card.application.filter(Alignment.ENEMY,
-                                               board[player_index-1]))
-        return (self._count_applied(card, board, player_index, Alignment.FRIENDLY) +
-                self._count_applied(card, board, player_index, Alignment.ENEMY))
 
     def _get_target(self, score, player_index):
         try:
