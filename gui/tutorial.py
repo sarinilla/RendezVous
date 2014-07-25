@@ -211,7 +211,13 @@ class GameTutorialScreen(Screen):
         """Make the given component fade into the background."""
         with component.canvas:
             Color(0, 0, 0, .75)
-            Rectangle(size=component.size, pos=component.pos)
+            component.fade_rect = Rectangle(size=component.size,
+                                            pos=component.pos)
+        component.bind(size=self._fix_fade, pos=self._fix_fade)
+
+    def _fix_fade(self, instance, value):
+        instance.fade_rect.size = instance.size
+        instance.fade_rect.pos = instance.pos
 
     def _highlight(self, component):
         """Fade all but the given component."""
@@ -274,9 +280,14 @@ class TutorialActionItemScreen(GameTutorialScreen):
     def _draw_background(self, *args):
         with self.action_prompt.canvas.before:
             Color(0, 0, 0, .75)
-            Rectangle(source="atlas://gui/tutorial/action-item-1",
-                      size=self.action_prompt.size,
-                      pos=self.action_prompt.pos)
+            self.ap_rect = Rectangle(source="atlas://gui/tutorial/action-item-1",
+                                     size=self.action_prompt.size,
+                                     pos=self.action_prompt.pos)
+        self.action_prompt.bind(size=self._place_background, pos=self._place_background)
+
+    def _place_background(self, *args):
+        self.ap_rect.size = self.action_prompt.size
+        self.ap_rect.pos = self.action_prompt.pos
 
     def on_action_item(self, *args):
         try:
