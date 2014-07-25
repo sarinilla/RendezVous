@@ -38,7 +38,7 @@ class SpeechBubble(BoxLayout):
             self.add_widget(self.spacer)
             self.add_widget(self.bubble)
         self.bubble.bind(size=self.bubble.setter('text_size'))
-        Clock.schedule_once(self._draw)
+        Clock.schedule_once(self._draw, -1)
 
     def _draw(self, *args):
         bg_img = "atlas://gui/tutorial/speech-left-btm"
@@ -126,7 +126,7 @@ class ScreenWithDealer(Screen):
             anim.start(self.dealer)
         else:
             self.dealer.pos = (offset[0] + target_x, offset[1])
-            Clock.schedule_once(lambda *a: self._show_speech(reverse))
+            Clock.schedule_once(lambda *a: self._show_speech(reverse), -1)
 
     def _show_speech(self, reverse):
         if self.text == []: return
@@ -158,7 +158,7 @@ class GameTutorialScreen(Screen):
 
     def __init__(self, **kwargs):
         super(GameTutorialScreen, self).__init__(**kwargs)
-        Clock.schedule_once(self._make_displays)
+        Clock.schedule_once(self._make_displays, -1)
         # ^^ scheduled so that self.manager is set
 
     def _make_displays(self, *args):
@@ -194,7 +194,7 @@ class GameTutorialScreen(Screen):
         main.add_widget(self.hand_display)
         self.float.add_widget(main)
         self.add_widget(self.float)
-        Clock.schedule_once(self.draw_tutorial)
+        Clock.schedule_once(self.draw_tutorial, -1)
 
     def _fade(self, component):
         """Make the given component fade into the background."""
@@ -258,7 +258,7 @@ class TutorialActionItemScreen(GameTutorialScreen):
                                    size_hint=(.8, .1),
                                    pos_hint={'x':0, 'y':.85})
         self.float.add_widget(self.action_prompt)
-        Clock.schedule_once(self._draw_background)
+        Clock.schedule_once(self._draw_background, -1)
 
     def _draw_background(self, *args):
         with self.action_prompt.canvas.before:
@@ -357,7 +357,7 @@ class TutorialGameOver(WinnerScreen, ScreenWithDealer):
         super(TutorialGameOver, self).__init__(**kwargs)
         self.float = self.ids.float  # rename for ScreenWithDealer
         self._analyze()
-        Clock.schedule_once(lambda *a: self.show_dealer(dealer_index=1, reverse=True))
+        Clock.schedule_once(lambda *a: self.show_dealer(dealer_index=1, reverse=True), -1)
 
     def advance(self, *args):
         self.float.remove_widget(self.dealer)
@@ -382,7 +382,7 @@ class TutorialGameOver(WinnerScreen, ScreenWithDealer):
         if pwins > dwins:
             self.text.append("You earned %s winks for this game - one for each suit, plus one more for winning the game!" % (pwins + 1))
         elif pwins > 0:
-            self.text.append("You earned %s winks for this game - one for each suit you won.")
+            self.text.append("You earned %s wink%s for this game - one for each suit you won." % (pwins, "es" if pwins > 1 else ""))
         else:
             self.text.append("You didn't win any suits this game, so you didn't earn any winks this time - keep trying!")
             self.text.append("If you would like to repeat the tutorial, you can access it any time from the Settings icon!")
@@ -390,7 +390,7 @@ class TutorialGameOver(WinnerScreen, ScreenWithDealer):
         # Comment on kisses earned
         kisses = len(self.achieved) if self.achieved is not None else 0
         if kisses > 0:
-            self.text.extend(["You earned %s kisses for unlocking Achievements during the game!" % kisses,
+            self.text.extend(["You earned %s kiss%s for unlocking Achievements during the game!" % (kisses, "es" if kisses > 1 else ""),
                               "You can use your kisses to unlock backgrounds, or even new decks to play with.",
                               "Swipe left and right to look through your Achievements, or to see the final score."])
         else:
@@ -513,7 +513,6 @@ class TutorialDragPowerups(PowerupsAvailable, TutorialActionItemScreen):
         """Watch for a powerup to be used."""
         self._update_powerups()
         self.manager.bind(powerups_in_use=self.advance)
-        self.gameboard.next_round_prompted()
         super(TutorialDragPowerups, self).draw_tutorial(*args)
 
     def advance(self, *args):
