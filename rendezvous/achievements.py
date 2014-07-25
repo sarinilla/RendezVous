@@ -508,7 +508,9 @@ class AchievementCriterion(object):
                 if self.value == SpecialValue.DRAW:
                     count += 1
                 continue
-            if friendly[i].value > enemy[i].value:
+            if (friendly[i].value == SpecialValue.KISS or
+                    enemy[i].value == SpecialValue.KISS or
+                    friendly[i].value > enemy[i].value):
                 if self.value == SpecialValue.WIN:
                     count += 1
                 else:
