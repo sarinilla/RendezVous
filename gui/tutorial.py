@@ -44,13 +44,19 @@ class SpeechBubble(BoxLayout):
         bg_img = "atlas://gui/tutorial/speech-left-btm"
         if self.reverse:
             bg_img = bg_img.replace("left", "right")
-        pad = max(*self.size) * 0.05
-        self.padding = (pad, pad)
         with self.canvas.before:
             Color(1, 1, 1, .75)
-            Rectangle(source=bg_img,
-                      size=(self.size[0]+2*pad, self.size[1]+2*pad),
-                      pos=(self.pos[0]-pad, self.pos[1]-pad))
+            self.rect = Rectangle(source=bg_img,
+                                  size=self.size,
+                                  pos=self.pos)
+        self._adjust()
+        self.bind(size=self._adjust, pos=self._adjust)
+
+    def _adjust(self, *args):
+        pad = max(*self.size) * 0.05
+        self.padding = (pad, pad)
+        self.rect.size = (self.size[0] + 2*pad, self.size[1] + 2*pad)
+        self.rect.pos = (self.pos[0]-pad, self.pos[1]-pad)
 
     def on_full_text(self, *args):
         Clock.unschedule(self._next_word)
@@ -130,13 +136,18 @@ class ScreenWithDealer(Screen):
 
     def _show_speech(self, reverse):
         if self.text == []: return
-        delta_x = self.dealer.width if not reverse else -self.dealer.width * 3 / 5
         self.bubble = SpeechBubble(full_text=self.text.pop(0),
                                    reverse=reverse,
                                    size_hint=(.3, .4),
-                                   pos=(self.dealer.pos[0] + delta_x,
-                                        self.dealer.pos[1] + self.dealer.height / 2))
+                                   pos=self.dealer.pos)
         self.float.add_widget(self.bubble)
+        self._place_speech()
+        self.dealer.bind(size=self._place_speech, pos=self._place_speech)
+
+    def _place_speech(self, *args):
+      delta_x = self.dealer.width if not self.bubble.reverse else -self.dealer.width * 3 / 5
+      self.bubble.pos = (self.dealer.pos[0] + delta_x,
+                         self.dealer.pos[1] + self.dealer.height / 2)
 
     def on_touch_up(self, touch):
         try: self.bubble
