@@ -20,38 +20,51 @@ from gui.screens.winner import WinnerScreen
 from gui.powerups import PowerupsAvailable
 
 
-class SpeechBubble(Label):
+class SpeechBubble(BoxLayout):
 
     """Display a speech bubble with word-by-word text."""
 
     full_text = StringProperty()
+    reverse = BooleanProperty(False)
 
     def __init__(self, **kwargs):
-        Label.__init__(self, markup=True, valign="top", halign="left", **kwargs)
-        self.bind(size=self.setter('text_size'))
+        self.spacer = Widget(size_hint=(.1, 1))
+        self.bubble = Label(markup=True, valign="top", halign="left")
+        BoxLayout.__init__(self, padding=(10, 10), **kwargs)
+        if self.reverse:
+            self.add_widget(self.bubble)
+            self.add_widget(self.spacer)
+        else:
+            self.add_widget(self.spacer)
+            self.add_widget(self.bubble)
+        self.bubble.bind(size=self.bubble.setter('text_size'))
         Clock.schedule_once(self._draw)
 
     def _draw(self, *args):
+        bg_img = "atlas://gui/tutorial/speech-left-btm"
+        if self.reverse:
+            bg_img = bg_img.replace("left", "right")
         with self.canvas.before:
-            Color(0, 0, 0, .75)
-            Rectangle(size=(self.size[0]+20, self.size[1]+20),
+            Color(1, 1, 1, .75)
+            Rectangle(source=bg_img,
+                      size=(self.size[0]+20, self.size[1]+20),
                       pos=(self.pos[0]-10, self.pos[1]-10))
 
     def on_full_text(self, *args):
         Clock.unschedule(self._next_word)
         self.words_left = self.full_text.split()
-        self.text = self.words_left.pop(0)
+        self.bubble.text = self.words_left.pop(0)
         Clock.schedule_interval(self._next_word, 0.4)
 
     def _next_word(self, *args):
         if not self.words_left:
             Clock.unschedule(self._next_word)
             return
-        self.text += ' ' + self.words_left.pop(0)
+        self.bubble.text += ' ' + self.words_left.pop(0)
 
     def finish(self):
         Clock.unschedule(self._next_word)
-        self.text = self.full_text
+        self.bubble.text = self.full_text
         self.words_left = []
 
 
@@ -66,12 +79,13 @@ class DealerImage(Widget):
         app = App.get_running_app()
         with self.canvas:
             Color(1, 1, 1, 1)
-            self.rect = Rectangle(texture=app.get_dealer_texture(self.dealer_index, 0),
+            self.rect = Rectangle(source="atlas://gui/tutorial/dealer-%s" % self.dealer_index,
                                   size=self.size, pos=self.pos)
         self.bind(size=self._place_rect, pos=self._place_rect)
 
     def _place_rect(self, *args):
-        self.rect.size = min(*self.size), min(*self.size)
+        self.rect.size = (min(self.size[0], self.size[1] * 340 / 512),
+                          min(self.size[0] * 512 / 340, self.size[1]))
         self.rect.pos = self.pos
 
 
@@ -111,6 +125,7 @@ class ScreenWithDealer(Screen):
         if self.text == []: return
         delta_x = self.dealer.width if not reverse else -self.dealer.width * 3 / 5
         self.bubble = SpeechBubble(full_text=self.text.pop(0),
+                                   reverse=reverse,
                                    size_hint=(.3, .4),
                                    pos=(self.dealer.pos[0] + delta_x,
                                         self.dealer.pos[1] + self.dealer.height / 2))
@@ -241,7 +256,8 @@ class TutorialActionItemScreen(GameTutorialScreen):
     def _draw_background(self, *args):
         with self.action_prompt.canvas.before:
             Color(0, 0, 0, .75)
-            Rectangle(size=self.action_prompt.size,
+            Rectangle(source="atlas://gui/tutorial/action-item-1",
+                      size=self.action_prompt.size,
                       pos=self.action_prompt.pos)
 
     def on_action_item(self, *args):
