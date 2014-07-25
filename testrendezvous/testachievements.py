@@ -991,6 +991,7 @@ class TestAchievementCheckRound(unittest.TestCase):
                               Application(alignment=Alignment.FRIENDLY,
                                           suits="Boyfriend"),
                               None)
+        special.applied_to = [0, 1]
         self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
                             [special, Card("Boyfriend", 1)] +
                             [Card("Girlfriend", i+1) for i in range(2)]]
@@ -1002,6 +1003,7 @@ class TestAchievementCheckRound(unittest.TestCase):
                               Application(alignment=Alignment.FRIENDLY,
                                           suits="Boyfriend"),
                               None)
+        special.applied_to = [0, 3]
         self.board.board = [[Card("Girlfriend", i+1) for i in range(4)],
                             [special] +
                             [Card("Boyfriend", i+1) for i in range(3)]]
@@ -1013,6 +1015,7 @@ class TestAchievementCheckRound(unittest.TestCase):
                               Application(alignment=Alignment.ENEMY,
                                           suits="Boyfriend"),
                               None)
+        special.applied_to = [3, 3]
         self.board.board = [[special] +
                             [Card("Boyfriend", i+1) for i in range(3)],
                             [special] +
@@ -1025,6 +1028,7 @@ class TestAchievementCheckRound(unittest.TestCase):
                               Application(alignment=Alignment.ENEMY,
                                           suits="Boyfriend"),
                               None)
+        special.applied_to = [4, 0]
         self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
                             [special, Card("Girlfriend", 1)] +
                             [Card("Boyfriend", i+1) for i in range(2)]]
@@ -1036,6 +1040,7 @@ class TestAchievementCheckRound(unittest.TestCase):
                               Application(alignment=Alignment.ALL,
                                           suits="Boyfriend"),
                               None)
+        special.applied_to = [3, 3]
         self.board.board = [[special] +
                             [Card("Boyfriend", i+1) for i in range(3)],
                             [special] +
@@ -1048,6 +1053,7 @@ class TestAchievementCheckRound(unittest.TestCase):
                               Application(alignment=Alignment.ALL,
                                           suits="Boyfriend"),
                               None)
+        special.applied_to = [4, 2]
         self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
                             [special, Card("Girlfriend", 1)] +
                             [Card("Boyfriend", i+1) for i in range(2)]]
@@ -1059,6 +1065,7 @@ class TestAchievementCheckRound(unittest.TestCase):
                               Application(alignment=Alignment.ALL,
                                           suits="Boyfriend"),
                               None)
+        special.applied_to = [4, 3]
         self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
                             [special] +
                             [Card("Boyfriend", i+1) for i in range(3)]]
@@ -1070,6 +1077,7 @@ class TestAchievementCheckRound(unittest.TestCase):
                               Application(alignment=Alignment.FRIENDLY,
                                           suits=["Boyfriend"]),
                               None)
+        special.applied_to = [0, 0]
         self.board.board = [[Card("Boyfriend", i+1) for i in range(4)],
                             [special] +
                             [Card("Girlfriend", i+1) for i in range(3)]]
@@ -1081,6 +1089,7 @@ class TestAchievementCheckRound(unittest.TestCase):
                               Application(alignment=Alignment.FRIENDLY,
                                           suits=["Boyfriend"]),
                               None)
+        special.applied_to = [0, 1]
         self.board.board = [[Card("Girlfriend", i+1) for i in range(4)],
                             [special, Card("Boyfriend", 5)] +
                             [Card("Girlfriend", i+1) for i in range(2)]]
