@@ -44,7 +44,7 @@ from gui.screens.powerups import PowerupScreen, CardSelect
 from gui.tutorial import GameTutorialScreen, FirstTutorialScreen, TutorialGameOver
 
 
-__version__ = '0.8.0'
+__version__ = '0.8.1'
 
 
 class RendezVousWidget(ScreenManager):
