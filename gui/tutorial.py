@@ -44,19 +44,25 @@ class SpeechBubble(BoxLayout):
         bg_img = "atlas://gui/tutorial/speech-left-btm"
         if self.reverse:
             bg_img = bg_img.replace("left", "right")
-        pad = max(*self.size) * 0.05
-        self.padding = (pad, pad)
         with self.canvas.before:
             Color(1, 1, 1, .75)
-            Rectangle(source=bg_img,
-                      size=(self.size[0]+2*pad, self.size[1]+2*pad),
-                      pos=(self.pos[0]-pad, self.pos[1]-pad))
+            self.rect = Rectangle(source=bg_img,
+                                  size=self.size,
+                                  pos=self.pos)
+        self._adjust()
+        self.bind(size=self._adjust, pos=self._adjust)
+
+    def _adjust(self, *args):
+        pad = max(*self.size) * 0.05
+        self.padding = (pad, pad)
+        self.rect.size = (self.size[0] + 2*pad, self.size[1] + 2*pad)
+        self.rect.pos = (self.pos[0]-pad, self.pos[1]-pad)
 
     def on_full_text(self, *args):
         Clock.unschedule(self._next_word)
         self.words_left = self.full_text.split()
         self.bubble.text = self.words_left.pop(0)
-        Clock.schedule_interval(self._next_word, 0.4)
+        Clock.schedule_interval(self._next_word, 0.3)
 
     def _next_word(self, *args):
         if not self.words_left:
@@ -130,13 +136,18 @@ class ScreenWithDealer(Screen):
 
     def _show_speech(self, reverse):
         if self.text == []: return
-        delta_x = self.dealer.width if not reverse else -self.dealer.width * 3 / 5
         self.bubble = SpeechBubble(full_text=self.text.pop(0),
                                    reverse=reverse,
                                    size_hint=(.3, .4),
-                                   pos=(self.dealer.pos[0] + delta_x,
-                                        self.dealer.pos[1] + self.dealer.height / 2))
+                                   pos=self.dealer.pos)
         self.float.add_widget(self.bubble)
+        self._place_speech()
+        self.dealer.bind(size=self._place_speech, pos=self._place_speech)
+
+    def _place_speech(self, *args):
+      delta_x = self.dealer.width if not self.bubble.reverse else -self.dealer.width * 3 / 5
+      self.bubble.pos = (self.dealer.pos[0] + delta_x,
+                         self.dealer.pos[1] + self.dealer.height / 2)
 
     def on_touch_up(self, touch):
         try: self.bubble
@@ -200,7 +211,13 @@ class GameTutorialScreen(Screen):
         """Make the given component fade into the background."""
         with component.canvas:
             Color(0, 0, 0, .75)
-            Rectangle(size=component.size, pos=component.pos)
+            component.fade_rect = Rectangle(size=component.size,
+                                            pos=component.pos)
+        component.bind(size=self._fix_fade, pos=self._fix_fade)
+
+    def _fix_fade(self, instance, value):
+        instance.fade_rect.size = instance.size
+        instance.fade_rect.pos = instance.pos
 
     def _highlight(self, component):
         """Fade all but the given component."""
@@ -263,9 +280,14 @@ class TutorialActionItemScreen(GameTutorialScreen):
     def _draw_background(self, *args):
         with self.action_prompt.canvas.before:
             Color(0, 0, 0, .75)
-            Rectangle(source="atlas://gui/tutorial/action-item-1",
-                      size=self.action_prompt.size,
-                      pos=self.action_prompt.pos)
+            self.ap_rect = Rectangle(source="atlas://gui/tutorial/action-item-1",
+                                     size=self.action_prompt.size,
+                                     pos=self.action_prompt.pos)
+        self.action_prompt.bind(size=self._place_background, pos=self._place_background)
+
+    def _place_background(self, *args):
+        self.ap_rect.size = self.action_prompt.size
+        self.ap_rect.pos = self.action_prompt.pos
 
     def on_action_item(self, *args):
         try:
@@ -380,9 +402,9 @@ class TutorialGameOver(WinnerScreen, ScreenWithDealer):
 
         # Comment on winks earned
         if pwins > dwins:
-            self.text.append("You earned %s winks for this game - one for each suit, plus one more for winning the game!" % (pwins + 1))
+            self.text.append("You earned %s winks for this game - one for each suit won, plus one more for winning the game!" % (pwins + 1))
         elif pwins > 0:
-            self.text.append("You earned %s wink%s for this game - one for each suit you won." % (pwins, "es" if pwins > 1 else ""))
+            self.text.append("You earned %s wink%s for this game - one for each suit you won." % (pwins, "s" if pwins > 1 else ""))
         else:
             self.text.append("You didn't win any suits this game, so you didn't earn any winks this time - keep trying!")
             self.text.append("If you would like to repeat the tutorial, you can access it any time from the Settings icon!")
