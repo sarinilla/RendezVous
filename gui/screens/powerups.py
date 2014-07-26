@@ -108,9 +108,9 @@ class PowerupDisplay(BoxLayout):
         self.powerup = copy.deepcopy(self.powerup)  # divorce from other stored versions
         self.powerup.value = str(card)
         if card.suit == SpecialSuit.SPECIAL:
-            self.powerup.price = 50
+            self.powerup.price = 25
         else:
-            self.powerup.price = card.value * 5
+            self.powerup.price = card.value
         popup = ConfirmationPopup(title="%s: %s" % (self.powerup, card),
                                   item_name="card", powerup=self.powerup,
                                   popup_chain=[selection_popup],
