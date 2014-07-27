@@ -389,14 +389,14 @@
     Widget:
         canvas:
             Color:
-                rgba: (1, 1, 1, 1) if root.filename in app.backgrounds else (1, 1, 1, .5)
+                rgba: (1, 1, 1, 1) if (not root.label or (app.root is not None and root.filename in app.root.backgrounds.purchased)) else (1, 1, 1, .5)
             Rectangle:
-                texture: app.background_catalog and app.get_bg_thumbnail(root.filename[:3])
+                texture: app.background_catalog and app.get_bg_thumbnail(root.index)
                 size: min(self.size[0], self.size[1] * 5 / 3), min(self.size[1], self.size[0] * 3 / 5)
                 pos: self.pos[0] + (self.size[0] - min(self.size[0], self.size[1] * 5 / 3)) / 2, self.pos[1]
     Label:
         size_hint: (1, .2)
-        text: '[b]' + root.filename[3:-4] + '[/b]'
+        text: '[b]' + root.get_name() + '[/b]' if (root.label and root.filename is not None) else ''
         markup: True
         valign: "middle"
         halign: "center"
