@@ -180,6 +180,11 @@ class RendezVousWidget(ScreenManager):
                                         name='cards')
             self.switch_to(self.cards)
             return
+        elif screen == 'backgrounds':
+            self.remove_widget(self.backgrounds)
+            self.backgrounds = BackgroundCategoryDisplay(name='backgrounds',
+                player_file=os.path.join(self.app.user_dir, "backgrounds.txt"))
+            self.add_widget(self.backgrounds)
 
         # Switch & auto-update
         self.current = screen

@@ -14,7 +14,7 @@ from kivy.uix.actionbar import ActionBar
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 
-from rendezvous import FileReader
+from rendezvous import FileReader, GameSettings
 
 
 class BackgroundCategory(object):
@@ -52,6 +52,7 @@ class BackgroundDisplay(BoxLayout):
 
     """Display one available background image."""
 
+    screen = ObjectProperty()
     filename = StringProperty()
     index = NumericProperty()
     popup = ObjectProperty()
@@ -59,7 +60,8 @@ class BackgroundDisplay(BoxLayout):
 
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
-            App.get_running_app().purchase_background(self.filename, self.index, self.popup)
+            App.get_running_app().purchase_background(self.filename,
+                                                      self.index, self.popup)
             return True
         return super(BackgroundDisplay, self).on_touch_up(touch)
 
@@ -70,11 +72,19 @@ class BackgroundDisplay(BoxLayout):
         except ValueError: pass
         return self.filename[:-4]
 
+    def get_color(self, *args):
+        if self.filename == GameSettings.BACKGROUND:
+            return (0, 0, 1, 1)
+        elif self.filename in self.screen.purchased:
+                return (1, 1, 1, 1)
+        return (0, 0, 0, 0)
+
 
 class CategoryIcon(BoxLayout):
 
     """Show the category name plus a selection of icons."""
 
+    screen = ObjectProperty()
     category = ObjectProperty()
 
     def __init__(self, **kwargs):
@@ -85,7 +95,8 @@ class CategoryIcon(BoxLayout):
         label.bind(size=label.setter('text_size'))
         self.add_widget(label)
         for filename, index in self.category.backgrounds[:3]:
-            self.add_widget(BackgroundDisplay(filename=filename,
+            self.add_widget(BackgroundDisplay(screen=self.screen,
+                                              filename=filename,
                                               index=index,
                                               label=False))
         for i in range(3 - len(self.category.backgrounds)):
@@ -106,7 +117,8 @@ class CategoryIcon(BoxLayout):
         self.scroller = ScrollView(do_scroll_x=False)
         self.grid = GridLayout(cols=3, size_hint_y=None)
         for filename, index in self.category.backgrounds:
-            self.grid.add_widget(BackgroundDisplay(filename=filename,
+            self.grid.add_widget(BackgroundDisplay(screen=self.screen,
+                                                   filename=filename,
                                                    index=index,
                                                    popup=popup))
         for i in range(3 - len(self.category.backgrounds)):
@@ -151,10 +163,12 @@ class BackgroundCategoryDisplay(Screen):
         layout.add_widget(ActionBar(size_hint=(1, .125)))
         scroller = ScrollView(do_scroll_x=False)
         self.grid = GridLayout(cols=1, size_hint_y=None)
-        self.grid.add_widget(CategoryIcon(category=self.purchased_cat))
+        self.grid.add_widget(CategoryIcon(screen=self,
+                                          category=self.purchased_cat))
         self.bind(size=self._resize_grid)
         for cat in self.categories:
-            self.grid.add_widget(CategoryIcon(category=cat))
+            self.grid.add_widget(CategoryIcon(screen=self,
+                                              category=cat))
         scroller.add_widget(self.grid)
         layout.add_widget(scroller)
         self.add_widget(layout)
