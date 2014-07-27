@@ -42,10 +42,11 @@ from gui.screens.statistics import StatisticsScreen
 from gui.screens.achievements import AchievementsScreen
 from gui.screens.powerups import PowerupScreen, CardSelect
 from gui.screens.backgrounds import BackgroundCategoryDisplay
+from gui.screens.kisses import KissesScreen
 from gui.tutorial import GameTutorialScreen, FirstTutorialScreen, TutorialGameOver
 
 
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 
 
 class RendezVousWidget(ScreenManager):
@@ -104,6 +105,7 @@ class RendezVousWidget(ScreenManager):
         self.backgrounds = BackgroundCategoryDisplay(name='backgrounds',
             player_file=os.path.join(self.app.user_dir, "backgrounds.txt"))
         self.add_widget(self.backgrounds)
+        self.add_widget(KissesScreen(name='kisses'))
         # 'stats' and 'cards' will be generated new on each view
 
         # Prepare the tutorial (if needed)

@@ -431,6 +431,7 @@
             text_size: self.size
             pos: root.pos
             halign: "center"
+            valign: "middle"
 
 <HomeScreen>:
     BoxLayout:
@@ -471,7 +472,7 @@
             HomeButton:
                 source: "atlas://gui/homescreen/kiss"
                 text_below: str(app.kisses)
-                on_release: root.manager.switcher('decks')
+                on_release: root.manager.switcher('kisses')
             HomeButton:
                 source: "atlas://gui/homescreen/achievements"
                 text_below: "Achievements"
@@ -627,20 +628,24 @@
             text: app.winks and str(app.winks.balance)
             background_down: self.background_normal
             important: True
+            on_release: app.root.switcher('powerups')
         ActionButton:
             icon: "atlas://gui/homescreen/wink"
             text: "Winks"
             background_down: self.background_normal
             important: True
+            on_release: app.root.switcher('powerups')
         ActionButton:
             text: app.kisses and str(app.kisses.balance)
             background_down: self.background_normal
             important: True
+            on_release: app.root.switcher('kisses')
         ActionButton:
             icon: "atlas://gui/homescreen/kiss"
             text: "Kisses"
             background_down: self.background_normal
             important: True
+            on_release: app.root.switcher('kisses')
         ActionButton:
             text: "GAME"
             on_release: app.root.switcher('main')
