@@ -382,6 +382,7 @@
                 text: "Cancel"
                 on_release: root.setting._dismiss()
 
+#:import GameSettings rendezvous.GameSettings
 <BackgroundDisplay>:
     orientation: "vertical"
     size_hint_y: None
@@ -389,14 +390,19 @@
     Widget:
         canvas:
             Color:
-                rgba: (1, 1, 1, 1) if root.filename in app.backgrounds else (1, 1, 1, .5)
+                rgba: root.get_color(app.root)
             Rectangle:
-                texture: app.background_catalog and app.get_bg_thumbnail(root.filename[:3])
-                size: min(self.size[0], self.size[1] * 5 / 3), min(self.size[1], self.size[0] * 3 / 5)
-                pos: self.pos[0] + (self.size[0] - min(self.size[0], self.size[1] * 5 / 3)) / 2, self.pos[1]
+                size: self.size[0], self.size[0] * 3 / 5
+                pos: self.pos
+            Color:
+                rgba: (1, 1, 1, 1) if (not root.label or (app.root is not None and root.filename in app.root.backgrounds.purchased)) else (1, 1, 1, .5)
+            Rectangle:
+                texture: app.background_catalog and app.get_bg_thumbnail(root.index)
+                size: self.size[0] * 0.95, self.size[0] * 3 / 5 * 0.95
+                pos: self.pos[0] + self.size[0] * 0.025, self.pos[1] + self.size[1] * 0.025
     Label:
         size_hint: (1, .2)
-        text: '[b]' + root.filename[3:-4] + '[/b]'
+        text: '[b]' + root.get_name() + '[/b]' if (root.label and root.filename is not None) else ''
         markup: True
         valign: "middle"
         halign: "center"
@@ -425,6 +431,7 @@
             text_size: self.size
             pos: root.pos
             halign: "center"
+            valign: "middle"
 
 <HomeScreen>:
     BoxLayout:
@@ -465,7 +472,7 @@
             HomeButton:
                 source: "atlas://gui/homescreen/kiss"
                 text_below: str(app.kisses)
-                on_release: root.manager.switcher('decks')
+                on_release: root.manager.switcher('kisses')
             HomeButton:
                 source: "atlas://gui/homescreen/achievements"
                 text_below: "Achievements"
@@ -621,20 +628,24 @@
             text: app.winks and str(app.winks.balance)
             background_down: self.background_normal
             important: True
+            on_release: app.root.switcher('powerups')
         ActionButton:
             icon: "atlas://gui/homescreen/wink"
             text: "Winks"
             background_down: self.background_normal
             important: True
+            on_release: app.root.switcher('powerups')
         ActionButton:
             text: app.kisses and str(app.kisses.balance)
             background_down: self.background_normal
             important: True
+            on_release: app.root.switcher('kisses')
         ActionButton:
             icon: "atlas://gui/homescreen/kiss"
             text: "Kisses"
             background_down: self.background_normal
             important: True
+            on_release: app.root.switcher('kisses')
         ActionButton:
             text: "GAME"
             on_release: app.root.switcher('main')
@@ -708,44 +719,38 @@
 
 ## Deck Display / Edit - gui/screens/cards.py ##
 
-<DeckEditDisplay>:
-    do_scroll_y: False
-    BoxLayout:
-        id: layout
-        size_hint_x: None
-        size: root.size[1] * 5 / 7 * len(list(root.definition.cards())), root.size[1]
-        
-
-<DeckCardDisplay>:
-    do_scroll_x: False
-    BoxLayout:
-        orientation: "vertical"
-        size_hint_y: None
-        size: root.size[0], root.size[1] * 2
-        canvas:
-            Color:
-                rgba: root.get_backdrop(root.blocked)
-            Rectangle:
-                size: self.size
-                pos: self.pos
-        CardDisplay:
-            card: root.card
-            color: root.get_shading(root.blocked)
-        Label:
-            size_hint: 1, .4
-            text: "[b]" + root.card.name + "[/b]"
-            markup: True
-            text_size: self.size
-            halign: "center"
-            valign: "middle"
-        Label:
-            size_hint: 1, .75
-            text: root.card.description
-            text_size: self.size
-            halign: "center"
-            valign: "top"
-        Button:
-            size_hint: 1, .25
-            text: root.button_text(root.blocked)
-            on_release: root.clicked()
+<CardDetail>:
+    title: root.card.name
+    ScrollView:
+        do_scroll_x: False
+        BoxLayout:
+            orientation: "vertical"
+            size_hint_y: None
+            size: root.size[0], root.size[1] * 2
+            canvas:
+                Color:
+                    rgba: root.get_backdrop(root.blocked)
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            CardDisplay:
+                card: root.card
+                color: root.get_shading(root.blocked)
+            Label:
+                size_hint: 1, .4
+                text: "[b]" + root.card.name + "[/b]"
+                markup: True
+                text_size: self.size
+                halign: "center"
+                valign: "middle"
+            Label:
+                size_hint: 1, .75
+                text: root.card.description
+                text_size: self.size
+                halign: "center"
+                valign: "top"
+            Button:
+                size_hint: 1, .25
+                text: root.button_text(root.blocked)
+                on_release: root.clicked()
 

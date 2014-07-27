@@ -53,3 +53,34 @@
 [ACH-NAME]Inconceivable!
 [ACH-CODE]Streak 1000 Standard
 [ACH-REWARD]
+
+[ACH-NAME]Power House
+[ACH-CODE]EACH WIN
+[ACH-REWARD]Muscle
+
+[ACH-NAME]Blew It!
+[ACH-CODE]EACH LOSE
+[ACH-DESC]Well, THAT could have gone better!
+[ACH-DESC]
+[ACH-REWARD]Blown Cover
+
+[ACH-NAME] Trailer Trash
+[ACH-CODE]	Use Gossip
+[ACH-CODE]	Use Perfume
+[ACH-DESC]	Did you smell what she was wearing? 
+[ACH-DESC]
+[ACH-REWARD] 
+
+[ACH-NAME] MuscleHead
+[ACH-CODE]	Use Muscle
+[ACH-CODE]	Use Flowers
+[ACH-DESC] You didn't think this through, did you?
+[ACH-DESC]
+[ACH-REWARD]
+
+[ACH-NAME]	Time Lord
+[ACH-CODE]	Use Missed Opportunity
+[ACH-CODE]	Use Time Waits for No Man
+[ACH-DESC]	Bowties are Cool!
+[ACH-DESC]
+[ACH-REWARD] 

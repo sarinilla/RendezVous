@@ -41,10 +41,12 @@ from gui.screens.cards import DeckEditScreen
 from gui.screens.statistics import StatisticsScreen
 from gui.screens.achievements import AchievementsScreen
 from gui.screens.powerups import PowerupScreen, CardSelect
+from gui.screens.backgrounds import BackgroundCategoryDisplay
+from gui.screens.kisses import KissesScreen
 from gui.tutorial import GameTutorialScreen, FirstTutorialScreen, TutorialGameOver
 
 
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 
 
 class RendezVousWidget(ScreenManager):
@@ -100,6 +102,10 @@ class RendezVousWidget(ScreenManager):
                                        name='decks')
         self.add_widget(self.decks)
         self.add_widget(PowerupScreen(name='powerups'))
+        self.backgrounds = BackgroundCategoryDisplay(name='backgrounds',
+            player_file=os.path.join(self.app.user_dir, "backgrounds.txt"))
+        self.add_widget(self.backgrounds)
+        self.add_widget(KissesScreen(name='kisses'))
         # 'stats' and 'cards' will be generated new on each view
 
         # Prepare the tutorial (if needed)
@@ -176,6 +182,11 @@ class RendezVousWidget(ScreenManager):
                                         name='cards')
             self.switch_to(self.cards)
             return
+        elif screen == 'backgrounds':
+            self.remove_widget(self.backgrounds)
+            self.backgrounds = BackgroundCategoryDisplay(name='backgrounds',
+                player_file=os.path.join(self.app.user_dir, "backgrounds.txt"))
+            self.add_widget(self.backgrounds)
 
         # Switch & auto-update
         self.current = screen
@@ -732,7 +743,6 @@ class RendezVousApp(App):
     loaded_deck = ObjectProperty()
     background = ObjectProperty(allownone=True)
     background_catalog = ObjectProperty(allownone=True)
-    backgrounds = ListProperty()  # purchased
     deck_texture = ObjectProperty(allownone=True)
     achievement_texture = ObjectProperty(allownone=True)
     powerups_texture = ObjectProperty(allownone=True)
@@ -759,7 +769,6 @@ class RendezVousApp(App):
         self._loaded_decks = {}
         self.load_deck(GameSettings.CURRENT_DECK)
         self.load_background(GameSettings.BACKGROUND)
-        self._read_backgrounds()
         loader = Loader.image(self.achievements.image_file)
         loader.bind(on_load=self._achievements_loaded)
         self.powerups = Powerups(os.path.join(user_dir, "powerups.txt"))
@@ -807,26 +816,6 @@ class RendezVousApp(App):
         self.kisses = Currency('kiss',
                       "When lovers rendezvous, a simple kiss is priceless.",
                       self.user_dir)
-
-    def _read_backgrounds(self):
-        """Read backgrounds from the file."""
-        filename = os.path.join(self.user_dir, 'backgrounds.txt')
-        if not os.path.isfile(filename):
-            self.backgrounds = [GameSettings.BACKGROUND]
-            return
-        temp = []
-        f = open(filename, 'r')
-        for filename in f.readlines():
-            temp.append(filename.strip())
-        f.close()
-        self.backgrounds = temp
-
-    def on_backgrounds(self, *args):
-        """Automatically update the backgrounds file."""
-        f = open(os.path.join(self.user_dir, 'backgrounds.txt'), 'w')
-        for filename in self.backgrounds:
-            f.write('%s\n' % filename)
-        f.close()
 
     def _background_loaded(self, loader):
         """Update the background texture when it's finished loading."""
@@ -938,9 +927,9 @@ class RendezVousApp(App):
 
     # Game Features
 
-    def purchase_background(self, filename, popup_):
+    def purchase_background(self, filename, index, popup_):
         """Confirm the purchase of the given background."""
-        if filename in self.backgrounds:
+        if filename in self.root.backgrounds.purchased:
             popup_.dismiss()
             return self.load_background(filename)
         
@@ -969,7 +958,7 @@ class RendezVousApp(App):
                                 size_hint=(1, 4)))
         buttons = BoxLayout()
         buttons.add_widget(Widget())
-        buttons.add_widget(Button(text="YES", on_release=lambda x: self._purchase_background(filename, (popup_, popup))))
+        buttons.add_widget(Button(text="YES", on_release=lambda x: self._purchase_background(filename, index, (popup_, popup))))
         buttons.add_widget(Button(text="no", on_release=popup.dismiss))
         buttons.add_widget(Widget())
         layout.add_widget(buttons)
@@ -983,14 +972,14 @@ class RendezVousApp(App):
         popup.add_widget(preview)
         popup.open()
 
-    def _purchase_background(self, filename, popups):
+    def _purchase_background(self, filename, index, popups):
         """Purchase and load the given background."""
         for popup in popups:
             popup.dismiss()
-        if not self.kisses.purchase(filename[3:-4], 5):
+        if not self.kisses.purchase(filename[:-4], 5):
             return
         self._load_currency()
-        self.backgrounds.append(filename)
+        self.root.backgrounds.purchase(filename, index)
         self.load_background(filename)
 
     def purchase_deck(self, deck_entry):
