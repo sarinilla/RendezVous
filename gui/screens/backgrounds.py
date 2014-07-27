@@ -129,7 +129,7 @@ class CategoryIcon(BoxLayout):
         popup.open()
 
     def _resize(self, *args):
-        rows = math.ceil(len(self.category.backgrounds) / 3)
+        rows = math.ceil(len(self.category.backgrounds) / 3.0)
         self.grid.size = (self.scroller.size[0],
                           rows * self.scroller.size[0] / 3)
         
