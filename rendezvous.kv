@@ -714,44 +714,38 @@
 
 ## Deck Display / Edit - gui/screens/cards.py ##
 
-<DeckEditDisplay>:
-    do_scroll_y: False
-    BoxLayout:
-        id: layout
-        size_hint_x: None
-        size: root.size[1] * 5 / 7 * len(list(root.definition.cards())), root.size[1]
-        
-
-<DeckCardDisplay>:
-    do_scroll_x: False
-    BoxLayout:
-        orientation: "vertical"
-        size_hint_y: None
-        size: root.size[0], root.size[1] * 2
-        canvas:
-            Color:
-                rgba: root.get_backdrop(root.blocked)
-            Rectangle:
-                size: self.size
-                pos: self.pos
-        CardDisplay:
-            card: root.card
-            color: root.get_shading(root.blocked)
-        Label:
-            size_hint: 1, .4
-            text: "[b]" + root.card.name + "[/b]"
-            markup: True
-            text_size: self.size
-            halign: "center"
-            valign: "middle"
-        Label:
-            size_hint: 1, .75
-            text: root.card.description
-            text_size: self.size
-            halign: "center"
-            valign: "top"
-        Button:
-            size_hint: 1, .25
-            text: root.button_text(root.blocked)
-            on_release: root.clicked()
+<CardDetail>:
+    title: root.card.name
+    ScrollView:
+        do_scroll_x: False
+        BoxLayout:
+            orientation: "vertical"
+            size_hint_y: None
+            size: root.size[0], root.size[1] * 2
+            canvas:
+                Color:
+                    rgba: root.get_backdrop(root.blocked)
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+            CardDisplay:
+                card: root.card
+                color: root.get_shading(root.blocked)
+            Label:
+                size_hint: 1, .4
+                text: "[b]" + root.card.name + "[/b]"
+                markup: True
+                text_size: self.size
+                halign: "center"
+                valign: "middle"
+            Label:
+                size_hint: 1, .75
+                text: root.card.description
+                text_size: self.size
+                halign: "center"
+                valign: "top"
+            Button:
+                size_hint: 1, .25
+                text: root.button_text(root.blocked)
+                on_release: root.clicked()
 
