@@ -1313,7 +1313,7 @@ class TestAchievementList(unittest.TestCase):
     def test_init(self):
         self.assertEqual(repr(self.a.available[0]), 
                          "Achievement('RendezVous Beginner', 'Play a game of RendezVous with Standard.', 'Reinforcements')")
-        self.assertEqual(len(self.a.available), 24)
+        self.assertEqual(len(self.a.available), 29)
         self.assertEqual(self.a.achieved, [])
         self.assertTrue(os.path.isfile("test_unlock.test"))
         

@@ -46,7 +46,7 @@ from gui.screens.kisses import KissesScreen
 from gui.tutorial import GameTutorialScreen, FirstTutorialScreen, TutorialGameOver
 
 
-__version__ = '0.8.2'
+__version__ = '0.8.3'
 
 
 class RendezVousWidget(ScreenManager):
