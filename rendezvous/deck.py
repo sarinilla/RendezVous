@@ -575,6 +575,11 @@ class DeckDefinition:
                 return Card(match.group(1), int(match.group(2)))
         return self.get_special(name)
 
+    def get_cards(self, names):
+        """Return the named Cards, only if they are valid in this deck."""
+        return list(filter(lambda c: c is not None,
+                    [self.get_card(name) for name in names]))
+
     def get_card_texture(self, card):
         """Return texture details for the given card."""
         return self._get_rect(*self._get_card_loc(card))

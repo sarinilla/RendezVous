@@ -140,13 +140,17 @@ class Powerups:
             except KeyError:
                 self.purchased[powerup] = int(value)
 
-    def purchase(self, powerup, count=1):
-        """Purchase another copy of the given powerup."""
+    def _copy(self, powerup):
+        """Return a copy of the powerup (or find by name), with value intact."""
         new_powerup = self.find(powerup)
         try:
             new_powerup.value = powerup.value
-        except AttributeError: pass  # purchase by name
-        powerup = new_powerup
+        except AttributeError: pass  # found by name
+        return new_powerup
+
+    def purchase(self, powerup, count=1):
+        """Purchase another copy of the given powerup."""
+        powerup = self._copy(powerup)
         try:
             self.purchased[powerup] += count
         except KeyError:
@@ -160,7 +164,7 @@ class Powerups:
 
     def use(self, powerup):
         """Mark one copy of the given powerup used."""
-        powerup = self.find(powerup)
+        powerup = self._copy(powerup)
         self.purchased[powerup] -= 1
         if self.purchased[powerup] == 0:
             del self.purchased[powerup]

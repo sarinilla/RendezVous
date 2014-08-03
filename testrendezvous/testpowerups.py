@@ -62,7 +62,11 @@ class TestPowerups(unittest.TestCase):
         powerup.value = Card('Boyfriend', 10)
         self.powerups.purchase(powerup)
         self.assertEqual(self.powerups.cards(), ['Boyfriend 10'])
-
+        powerup = self.powerups.find('Up Your Sleeve')
+        powerup.value = Card('Boyfriend', 10)
+        self.powerups.use(powerup)
+        self.assertEqual(self.powerups.cards(), [])
+        
     def test_persistent(self):
         self.assertEqual(self.powerups.count('Ultra Debuff'), 0)
         self.powerups.purchase('Ultra Debuff')
