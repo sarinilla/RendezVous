@@ -46,7 +46,7 @@ from gui.screens.kisses import KissesScreen
 from gui.tutorial import GameTutorialScreen, FirstTutorialScreen, TutorialGameOver
 
 
-__version__ = '0.8.2'
+__version__ = '0.8.3'
 
 
 class RendezVousWidget(ScreenManager):
@@ -254,8 +254,7 @@ class RendezVousWidget(ScreenManager):
             else:
                 popup = Popup(title='Select a card to play:')
                 carousel = Carousel(direction='right')
-                cards = [self.app.loaded_deck.get_card(name)
-                         for name in self.app.powerups.cards()]
+                cards = self.app.loaded_deck.get_cards(self.app.powerups.cards())
                 for i in range(0, len(cards), 10):
                     layout = GridLayout(rows=2)
                     for card in cards[i:i+10]:

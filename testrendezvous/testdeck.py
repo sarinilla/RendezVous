@@ -446,6 +446,17 @@ class TestDeckDefinition(unittest.TestCase):
         result = self.dd.get_special()
         self.assertIn(result, self.dd.specials)
 
+    def test_get_card(self):
+        self.assertEqual(self.dd.get_card('Boyfriend 10'),
+                         Card('Boyfriend', 10))
+        self.assertIs(self.dd.get_card('No Suit 1'), None)
+        self.assertEqual(self.dd.get_card(self.dd.specials[0].name),
+                         self.dd.specials[0])
+
+    def test_get_cards(self):
+        self.assertEqual(self.dd.get_cards(['Boyfriend 10', 'Knight 10']),
+                         [Card('Boyfriend', 10)])
+
     def test_get_card_texture(self):
         self.assertEqual(self.dd.get_card_texture(Card("Boyfriend", 1)),
                          (0, 2048 - 182, 130, 182))

@@ -7,6 +7,7 @@ from kivy.uix.stacklayout import StackLayout
 
 from gui.components import PowerupIcon
 
+from rendezvous import PowerupType
 from rendezvous.powerups import Powerup
 
 
@@ -30,9 +31,13 @@ class PowerupTray(ModalView):
         layout = StackLayout(padding=[dp(10)], size_hint_y=None)
         layout.height = layout.width * len(app.powerups.purchased)
         for powerup in app.powerups.purchased:
-            if isinstance(powerup, Powerup):
-                layout.add_widget(UsablePowerupIcon(powerup=powerup,
-                                                    size_hint=(1, None)))
+            if not isinstance(powerup, Powerup):
+                continue
+            if powerup.type == PowerupType.PLAY_CARD:
+                if not app.loaded_deck.get_cards(app.powerups.cards()):
+                    continue
+            layout.add_widget(UsablePowerupIcon(powerup=powerup,
+                                                size_hint=(1, None)))
         scroller.add_widget(layout)
         self.add_widget(scroller)
             
