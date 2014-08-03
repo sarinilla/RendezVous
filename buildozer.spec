@@ -55,7 +55,7 @@ fullscreen = 0
 #
 
 # (list) Permissions
-android.permissions = BILLING
+android.permissions = com.android.vending.BILLING
 
 # (int) Android API to use
 #android.api = 14
@@ -122,7 +122,7 @@ android.permissions = BILLING
 #android.wakelock = False
 
 # (list) Android application meta-data to set (key=value format)
-#android.meta_data =
+android.meta_data = billing_pubkey = 
 
 # (list) Android library project to add (will be added in the
 # project.properties automatically.)
