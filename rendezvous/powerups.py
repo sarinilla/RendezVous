@@ -113,7 +113,10 @@ class Powerups:
 
     def cards(self):
         """Return list of available cards for PLAY_CARD powerup."""
-        return self.purchased['cards_to_play']
+        try:
+            return self.purchased['cards_to_play']
+        except KeyError:
+            return []
 
     def get_powerup_texture(self, powerup):
         """Return (L, B, W, H) rectangle for the given Powerup."""
@@ -139,7 +142,11 @@ class Powerups:
 
     def purchase(self, powerup, count=1):
         """Purchase another copy of the given powerup."""
-        powerup = self.find(powerup)
+        new_powerup = self.find(powerup)
+        try:
+            new_powerup.value = powerup.value
+        except AttributeError: pass  # purchase by name
+        powerup = new_powerup
         try:
             self.purchased[powerup] += count
         except KeyError:
