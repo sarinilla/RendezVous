@@ -617,6 +617,8 @@ class RendezVousWidget(ScreenManager):
     def replay_turn(self):
         """Replay the entire turn at the user's (powerup) request."""
         self.powerups_in_use = []
+        self._in_progress = False
+        self._end_of_round = False
         self.game.board._wait = copy.deepcopy(self._backup_waits)
         self.game.score.scores = copy.deepcopy(self._backup_score)
         for i, hand in enumerate(self.game.players):

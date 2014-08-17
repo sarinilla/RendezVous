@@ -429,7 +429,7 @@ class RendezVousGame:
             elif effect.value == TargetField.VALUE:
                 self.board[player][index].value = random.randint(1, 10)
             else:  #effect.value == TargetField.ALL:
-                if random.randint(6) == 0:
+                if random.randint(1, 6) == 0:
                     self.board[player][index] = self.deck.get_special()
                     return
                 self.board[player][index].suit = random.choice(self.score.suits)
