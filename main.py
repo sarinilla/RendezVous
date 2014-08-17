@@ -1,6 +1,7 @@
 import os
 import copy
 import random
+import warnings
 
 from kivy.clock import Clock
 from kivy.app import App
@@ -46,7 +47,17 @@ from gui.screens.kisses import KissesScreen
 from gui.tutorial import GameTutorialScreen, FirstTutorialScreen, TutorialGameOver
 
 
-__version__ = '0.8.3'
+__version__ = '1.0.0'
+
+
+# Look for Android billing service
+BILLING_ACTIVE = False
+try:
+    from android.billing import BillingService
+except ImportError:
+    warnings.warn("Android billing service unavailable.")
+else:
+    BILLING_ACTIVE = True
 
 
 class RendezVousWidget(ScreenManager):
@@ -777,6 +788,22 @@ class RendezVousApp(App):
         loader.bind(on_load=self._powerups_loaded)
         loader = Loader.image(os.path.join("data", "Backgrounds.png"))
         loader.bind(on_load=self._backgrounds_loaded)
+        if BILLING_ACTIVE:
+            self.billing = BillingService(self.billing_callback)
+            Clock.schedule_interval(self.billing.check, 1.0)
+
+
+    # In-app billing
+
+    def billing_callback(self, action, *args):
+        if action == BillingService.BILLING_ACTION_ITEMSCHANGED:
+            for item in args[0]:
+                if item.startswith('deck.'):
+                    deck = item[5:].replace('_', ' ')
+                    if not self.deck_catalog.purchased(deck):
+                        deck = self.deck_catalog.puchase(deck)
+                        self.load_deck(deck.base_filename)
+            
 
 
     # Persistent configuration
@@ -988,12 +1015,26 @@ class RendezVousApp(App):
         popup = Popup(title=deck_entry.name,
                       size_hint=(1, .5))
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Label(text="Are you sure you would like to purchase this deck for 15 kisses?",
-                                valign="middle", halign="center"))
         buttons = BoxLayout()
         buttons.add_widget(Widget())
-        buttons.add_widget(Button(text="YES", on_release=lambda x: self._purchase_deck(deck_entry, popup)))
-        buttons.add_widget(Button(text="no", on_release=popup.dismiss))
+
+        if not BILLING_ACTIVE:
+            layout.add_widget(Label(text="Are you sure you would like to purchase this deck for 15 kisses?",
+                                    valign="middle", halign="center"))
+            buttons.add_widget(Button(text="YES", on_release=lambda x: self._purchase_deck(deck_entry, popup)))
+            buttons.add_widget(Button(text="no", on_release=popup.dismiss))
+        elif self.kisses.balance >= 15:
+            layout.add_widget(Label(text="How would you like to purchase this deck?",
+                                    valign="middle", halign="center"))
+            buttons.add_widget(Button(text="15 kisses", on_release=lambda x: self._purchase_deck(deck_entry, popup)))
+            buttons.add_widget(Button(text="$1.50", on_release=lambda x: self._purchase_deck_cash(deck_entry, popup)))
+            buttons.add_widget(Button(text="cancel", on_release=popup.dismiss))
+        else:
+            layout.add_widget(Label(text="Are you sure you would like to purchase this deck for $1.50?",
+                                    valign="middle", halign="center"))
+            buttons.add_widget(Button(text="YES", on_release=lambda x: self._purchase_deck_cash(deck_entry, popup)))
+            buttons.add_widget(Button(text="no", on_release=popup.dismiss))
+            
         buttons.add_widget(Widget())
         layout.add_widget(buttons)
         popup.add_widget(layout)
@@ -1007,6 +1048,12 @@ class RendezVousApp(App):
         self._load_currency()
         self.deck_catalog.purchase(deck_entry)
         self.load_deck(deck_entry.base_filename)
+        self.root.switcher('home')
+
+    def _purchase_deck_cash(self, deck_entry, popup):
+        """Request to purchase the given deck."""
+        popup.dismiss()
+        self.billing.buy('deck.' + deck_entry.base_filename.lower().replace(" ", "_"))
         self.root.switcher('home')
         
     def record_score(self, score):

@@ -716,7 +716,8 @@ class DeckCatalog:
         """Locate and return a deck by name or base filename."""
         name = str(name)
         for deck in self.decks:
-            if deck.name == name or deck.base_filename == name:
+            if (deck.name.upper() == name.upper() or
+                deck.base_filename.upper() == name.upper()):
                 return deck
         raise ValueError("invalid deck name '%s'" % name)
 
